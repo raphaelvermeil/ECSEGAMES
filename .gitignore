@@ -1,0 +1,37 @@
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Go
+/backend/bin/
+/backend/tmp/
+/backend/build-errors.log
+*.exe
+*.test
+*.out
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Superpowers scratch
+.superpowers/
+
+# Graphify output & machine-specific Claude hook config
+# (commit .claude/settings.example.json; each dev runs `graphify claude install`)
+graphify-out/
+.code-review-graph/
+.claude/settings.json

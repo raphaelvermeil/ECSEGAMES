@@ -1,0 +1,22 @@
+# Dependencies & build output
+node_modules/
+.next/
+dist/
+build/
+out/
+
+# Go build artifacts
+backend/tmp/
+backend/bin/
+
+# Graphify's own output & caches
+graphify-out/
+.code-review-graph/
+
+# Lockfiles & vendored data (noise, not source)
+frontend/package-lock.json
+
+# Env & secrets
+.env
+.env.local
+.env.*.local
