@@ -47,6 +47,7 @@ func main() {
 	}))
 
 	r.Get("/health", handlers.Health)
+	r.Get("/ready", handlers.Readiness(database))
 
 	// Data routes need MongoDB. When it isn't connected (dev without a cluster),
 	// the webhook and user API are disabled.
