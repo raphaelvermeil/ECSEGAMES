@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	Port           string
-	MongoURI       string
-	MongoDB        string
-	ClerkSecretKey string
-	FrontendOrigin string
+	Port                      string
+	MongoURI                  string
+	MongoDB                   string
+	ClerkSecretKey            string
+	ClerkWebhookSigningSecret string
+	FrontendOrigin            string
 }
 
 // Load reads config from a .env file if present, then environment variables,
@@ -20,11 +21,12 @@ func Load() Config {
 	_ = godotenv.Load() // .env is optional; ignore if missing
 
 	return Config{
-		Port:           getenv("PORT", "8082"),
-		MongoURI:       os.Getenv("MONGO_URI"),
-		MongoDB:        getenv("MONGO_DB", "ecsegames"),
-		ClerkSecretKey: os.Getenv("CLERK_SECRET_KEY"),
-		FrontendOrigin: getenv("FRONTEND_ORIGIN", "http://localhost:3000"),
+		Port:                      getenv("PORT", "8082"),
+		MongoURI:                  os.Getenv("MONGO_URI"),
+		MongoDB:                   getenv("MONGO_DB", "ecsegames"),
+		ClerkSecretKey:            os.Getenv("CLERK_SECRET_KEY"),
+		ClerkWebhookSigningSecret: os.Getenv("CLERK_WEBHOOK_SIGNING_SECRET"),
+		FrontendOrigin:            getenv("FRONTEND_ORIGIN", "http://localhost:3000"),
 	}
 }
 

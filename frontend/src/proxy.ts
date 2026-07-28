@@ -1,5 +1,8 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
+// Auth is enforced per-resource via `await auth.protect()` in each page/layout,
+// with the @clerk/eslint-plugin rule guaranteeing every route is covered.
+// Middleware stays minimal — Clerk deprecated middleware-based route protection.
 export default clerkMiddleware();
 
 export const config = {

@@ -10,9 +10,11 @@ import (
 	"github.com/ecsegames/backend/internal/db"
 	"github.com/ecsegames/backend/internal/handlers"
 	appmw "github.com/ecsegames/backend/internal/middleware"
+	"github.com/ecsegames/backend/internal/users"
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func main() {
@@ -20,12 +22,14 @@ func main() {
 
 	// Mongo is optional at boot so the scaffold runs without a cluster.
 	// When MONGO_URI is set we connect and ping; otherwise we log and continue.
+	var database *mongo.Database
 	if cfg.MongoURI != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if _, err := db.Connect(ctx, cfg.MongoURI, cfg.MongoDB); err != nil {
+		if d, err := db.Connect(ctx, cfg.MongoURI, cfg.MongoDB); err != nil {
 			log.Printf("warning: mongo not connected: %v", err)
 		} else {
+			database = d
 			log.Printf("connected to mongo database %q", cfg.MongoDB)
 		}
 	} else {
@@ -43,6 +47,16 @@ func main() {
 	}))
 
 	r.Get("/health", handlers.Health)
+
+	// Clerk webhook (public route — authenticated by its Svix signature, not the
+	// Clerk JWT middleware). Only wired when a database is available.
+	if database != nil {
+		userRepo := users.NewRepository(database)
+		clerkWebhook := handlers.NewClerkWebhook(userRepo, cfg.ClerkWebhookSigningSecret)
+		r.Post("/webhooks/clerk", clerkWebhook.Handle)
+	} else {
+		log.Printf("clerk webhook disabled: no database connection")
+	}
 
 	r.Group(func(pr chi.Router) {
 		pr.Use(appmw.RequireAuth(cfg.ClerkSecretKey))
