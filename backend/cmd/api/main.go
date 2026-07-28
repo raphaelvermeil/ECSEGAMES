@@ -48,24 +48,26 @@ func main() {
 
 	r.Get("/health", handlers.Health)
 
-	// Clerk webhook (public route — authenticated by its Svix signature, not the
-	// Clerk JWT middleware). Only wired when a database is available.
+	// Data routes need MongoDB. When it isn't connected (dev without a cluster),
+	// the webhook and user API are disabled.
 	if database != nil {
 		userRepo := users.NewRepository(database)
+
+		// Clerk webhook (public route — authenticated by its Svix signature,
+		// not the Clerk JWT middleware).
 		clerkWebhook := handlers.NewClerkWebhook(userRepo, cfg.ClerkWebhookSigningSecret)
 		r.Post("/webhooks/clerk", clerkWebhook.Handle)
-	} else {
-		log.Printf("clerk webhook disabled: no database connection")
-	}
 
-	r.Group(func(pr chi.Router) {
-		pr.Use(appmw.RequireAuth(cfg.ClerkSecretKey))
-		pr.Get("/api/me", func(w http.ResponseWriter, r *http.Request) {
-			id, _ := appmw.UserIDFromContext(r.Context())
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"userId":"` + id + `"}`))
+		// Authenticated user API.
+		usersHandler := handlers.NewUsers(userRepo)
+		r.Group(func(pr chi.Router) {
+			pr.Use(appmw.RequireAuth(cfg.ClerkSecretKey))
+			pr.Get("/api/me", usersHandler.Me)
+			pr.Post("/api/team", usersHandler.SetTeam)
 		})
-	})
+	} else {
+		log.Printf("database not connected: webhook + user API disabled")
+	}
 
 	addr := ":" + cfg.Port
 	log.Printf("listening on %s", addr)

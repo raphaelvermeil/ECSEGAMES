@@ -1,0 +1,40 @@
+import { auth } from "@clerk/nextjs/server";
+import { UserButton } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
+
+// Gate for all real features: the user must be signed in AND have joined a
+// program team. If they haven't joined one yet, send them to /select-team.
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  await auth.protect();
+
+  const { getToken } = await auth();
+  const token = await getToken();
+
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+
+  // If we can't confirm a team (error or none set), route to team selection.
+  if (!res.ok) {
+    redirect("/select-team");
+  }
+  const user = await res.json();
+  if (!user.team) {
+    redirect("/select-team");
+  }
+
+  return (
+    <>
+      <header className="flex items-center justify-between border-b border-black/10 px-6 py-3">
+        <span className="font-semibold">ECSESS Games</span>
+        <UserButton />
+      </header>
+      {children}
+    </>
+  );
+}
