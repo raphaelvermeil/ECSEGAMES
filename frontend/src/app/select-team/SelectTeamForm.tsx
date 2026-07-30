@@ -27,7 +27,7 @@ export default function SelectTeamForm() {
         { team },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      router.push("/dashboard");
+      router.push("/calendar");
       router.refresh();
     } catch (err) {
       const status =
@@ -36,7 +36,7 @@ export default function SelectTeamForm() {
           : undefined;
       if (status === 409) {
         // Already joined a team — nothing to change, go to the dashboard.
-        router.push("/dashboard");
+        router.push("/calendar");
         router.refresh();
         return;
       }

@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
-import { UserButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
+import Navbar from "./Navbar";
 
 // Gate for all real features: the user must be signed in AND have joined a
 // program team. If they haven't joined one yet, send them to /select-team.
@@ -30,10 +30,7 @@ export default async function AppLayout({
 
   return (
     <>
-      <header className="flex items-center justify-between border-b border-black/10 px-6 py-3">
-        <span className="font-semibold">ECSESS Games</span>
-        <UserButton />
-      </header>
+      <Navbar />
       {children}
     </>
   );
