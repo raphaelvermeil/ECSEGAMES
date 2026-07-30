@@ -1,26 +1,61 @@
 @import "tailwindcss";
 
+/* ============================================================
+   ECSESS design system — dark-first, single deep-forest-green ramp.
+   Tailwind v4 is configured in CSS: the @theme block below registers
+   the ecsess color ramp so utilities like `bg-ecsess-800`,
+   `text-ecsess-100`, `border-ecsess-700` all work.
+   ============================================================ */
+@theme {
+  --font-sans:
+    var(--font-saira), "Saira", "Noto Sans Symbols", system-ui, sans-serif;
+
+  /* Core green ramp */
+  --color-ecsess-50: #e8ffd9;
+  --color-ecsess-100: #cce7ba;
+  --color-ecsess-150: #bae9a5;
+  --color-ecsess-200: #a9d0a0;
+  --color-ecsess-300: #8fb98a;
+  --color-ecsess-400: #6a9a6a;
+  --color-ecsess-500: #5a8b5a;
+  --color-ecsess-600: #3f6a3f;
+  --color-ecsess-700: #2f4d29;
+  --color-ecsess-750: #1c4a1e;
+  --color-ecsess-800: #0a3d2a;
+  --color-ecsess-850: #083525;
+  --color-ecsess-900: #062c20;
+  --color-ecsess-950: #031c15;
+  --color-ecsess-black: #1f1f1f;
+  --color-ecsess-black-hover: #161917;
+}
+
+/* Signature homepage gradients (walk the ramp down section by section) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --gradient-hero: linear-gradient(to bottom, #1f1f1f, #031c15, #062c20);
+  --gradient-section-a: linear-gradient(to bottom, #062c20, #306032, #2f4d29);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #02120d;
+  color: var(--color-ecsess-100);
+  font-family: var(--font-sans);
+  font-weight: 500; /* ECSESS default weight */
+}
+
+a {
+  color: var(--color-ecsess-150);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--color-ecsess-50);
+}
+
+@keyframes ecsess-pulse-ring {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }

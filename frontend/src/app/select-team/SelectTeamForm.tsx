@@ -4,11 +4,12 @@ import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import api from "@/lib/api";
+import { Zap, Cpu, CodeXml } from "@/components/icons";
 
 const TEAMS = [
-  { slug: "electrical", label: "Electrical" },
-  { slug: "computer", label: "Computer" },
-  { slug: "software", label: "Software" },
+  { slug: "electrical", label: "Electrical", sub: "U1–U3 · EE", Icon: Zap },
+  { slug: "computer", label: "Computer", sub: "U1–U3 · CE", Icon: Cpu },
+  { slug: "software", label: "Software", sub: "U1–U3 · SE", Icon: CodeXml },
 ];
 
 export default function SelectTeamForm() {
@@ -27,7 +28,7 @@ export default function SelectTeamForm() {
         { team },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      router.push("/calendar");
+      router.push("/schedule");
       router.refresh();
     } catch (err) {
       const status =
@@ -35,8 +36,7 @@ export default function SelectTeamForm() {
           ? (err as { response?: { status?: number } }).response?.status
           : undefined;
       if (status === 409) {
-        // Already joined a team — nothing to change, go to the dashboard.
-        router.push("/calendar");
+        router.push("/schedule");
         router.refresh();
         return;
       }
@@ -46,20 +46,25 @@ export default function SelectTeamForm() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="flex flex-col items-center gap-5">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         {TEAMS.map((t) => (
           <button
             key={t.slug}
             onClick={() => join(t.slug)}
             disabled={submitting !== null}
-            className="rounded-lg border border-black/10 px-8 py-6 text-lg font-semibold transition hover:border-black/40 disabled:opacity-50"
+            className="flex w-60 flex-col items-center gap-4 rounded-xl border border-ecsess-700 bg-ecsess-800 px-6 py-8
+              transition-colors hover:border-ecsess-400 hover:bg-ecsess-750 disabled:opacity-50"
           >
-            {t.label}
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ecsess-700 text-ecsess-100">
+              <t.Icon width={26} height={26} />
+            </span>
+            <span className="text-2xl font-bold text-ecsess-50">{t.label}</span>
+            <span className="text-sm text-ecsess-300">{t.sub}</span>
           </button>
         ))}
       </div>
-      {error && <p className="text-red-500">{error}</p>}
+      {error && <p className="text-ecsess-200">{error}</p>}
     </div>
   );
 }
