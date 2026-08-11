@@ -21,8 +21,9 @@ func NewUsers(repo *users.Repository) *Users {
 	return &Users{repo: repo}
 }
 
-// Me returns the current user, creating a minimal record if the Clerk webhook
-// hasn't synced them yet (webhooks are eventually consistent).
+// Me returns the current user, creating a minimal record on first call. This is
+// the only path that puts a user into Mongo: the Clerk ID comes from the
+// verified session token, never from the request body.
 func (h *Users) Me(w http.ResponseWriter, r *http.Request) {
 	clerkID, ok := appmw.UserIDFromContext(r.Context())
 	if !ok {

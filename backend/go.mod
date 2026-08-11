@@ -7,14 +7,12 @@ require (
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-chi/cors v1.2.2
 	github.com/joho/godotenv v1.5.1
-	github.com/svix/svix-webhooks v1.99.1
 	go.mongodb.org/mongo-driver v1.17.9
 )
 
 require (
 	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect

@@ -30,11 +30,11 @@ func IsValidTeam(t Team) bool {
 	}
 }
 
-// User is a person with an account, synced from Clerk into MongoDB.
-// ClerkID is the stable identity from Clerk and the upsert key.
+// User is the app-side record for a person with an account: the state Clerk
+// doesn't own (role, team). ClerkID is the stable identity from Clerk and the
+// upsert key; profile data like email stays in Clerk rather than being copied.
 type User struct {
 	ClerkID   string    `bson:"clerkId" json:"clerkId"`
-	Email     string    `bson:"email" json:"email"`
 	Role      Role      `bson:"role" json:"role"`
 	Team      Team      `bson:"team" json:"team"`
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
