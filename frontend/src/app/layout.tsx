@@ -21,11 +21,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // Browser extensions inject attributes onto <html> before React hydrates,
-    // which React reports as a hydration mismatch. Suppression is one level
-    // deep, so this only covers <html>'s own attributes.
+    // Browser extensions inject attributes onto <html> and <body> before React
+    // hydrates, which React reports as a hydration mismatch. Suppression is one
+    // level deep, so this covers only these two elements' own attributes and
+    // leaves real mismatches inside the tree reported as usual.
     <html lang="en" className={saira.variable} suppressHydrationWarning>
-      <body>
+      <body suppressHydrationWarning>
         {/* Sign-out goes straight to the public sign-in page, not the
             protected home route (which would stall on the auth gate). */}
         <ClerkProvider afterSignOutUrl="/sign-in">{children}</ClerkProvider>
