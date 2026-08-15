@@ -8,6 +8,7 @@ import (
 
 	"github.com/ecsegames/backend/internal/config"
 	"github.com/ecsegames/backend/internal/db"
+	"github.com/ecsegames/backend/internal/events"
 	"github.com/ecsegames/backend/internal/handlers"
 	appmw "github.com/ecsegames/backend/internal/middleware"
 	"github.com/ecsegames/backend/internal/users"
@@ -53,6 +54,8 @@ func main() {
 	// the webhook and user API are disabled.
 	if database != nil {
 		userRepo := users.NewRepository(database)
+		eventStore := events.NewStore(database)
+		eventHandler := events.NewHandler(eventStore)
 
 		// Clerk webhook (public route — authenticated by its Svix signature,
 		// not the Clerk JWT middleware).
@@ -66,6 +69,8 @@ func main() {
 			pr.Get("/api/me", usersHandler.Me)
 			pr.Post("/api/team", usersHandler.SetTeam)
 		})
+
+		events.Mount(r, eventHandler, userRepo, cfg.ClerkSecretKey)
 	} else {
 		log.Printf("database not connected: webhook + user API disabled")
 	}

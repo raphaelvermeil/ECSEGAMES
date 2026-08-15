@@ -35,3 +35,5 @@ yarn-error.log*
 graphify-out/
 .code-review-graph/
 .claude/settings.json
+
+UI mockups project
