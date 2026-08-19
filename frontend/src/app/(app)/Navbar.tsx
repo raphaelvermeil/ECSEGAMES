@@ -15,9 +15,18 @@ const LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  // The mobile Schedule view merges the logo/bell/account row into its own
+  // green banner (matching the design mockup), so the shared bar underneath
+  // would be redundant there — hide it below lg on that route only.
+  const onSchedule =
+    pathname === "/schedule" || pathname.startsWith("/schedule/");
 
   return (
-    <header className="flex h-[72px] items-center gap-[30px] bg-sched-chrome px-[22px] font-mono">
+    <header
+      className={`h-[72px] items-center gap-[30px] bg-sched-chrome px-[22px] font-mono ${
+        onSchedule ? "hidden lg:flex" : "flex"
+      }`}
+    >
       <Link href="/" className="flex items-center gap-3">
         <Image
           src="/logo.png"
@@ -31,7 +40,7 @@ export default function Navbar() {
           GAMES
         </span>
       </Link>
-      <nav className="flex items-center gap-2">
+      <nav className="hidden items-center gap-2 lg:flex">
         {LINKS.map((l) => {
           const active = l.exact
             ? pathname === l.href

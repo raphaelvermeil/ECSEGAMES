@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ecsegames/backend/internal/audit"
 	"github.com/ecsegames/backend/internal/config"
 	"github.com/ecsegames/backend/internal/db"
 	"github.com/ecsegames/backend/internal/events"
 	"github.com/ecsegames/backend/internal/handlers"
 	appmw "github.com/ecsegames/backend/internal/middleware"
+	"github.com/ecsegames/backend/internal/scores"
 	"github.com/ecsegames/backend/internal/users"
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
@@ -54,8 +56,11 @@ func main() {
 	// the webhook and user API are disabled.
 	if database != nil {
 		userRepo := users.NewRepository(database)
+		auditStore := audit.NewStore(database)
 		eventStore := events.NewStore(database)
-		eventHandler := events.NewHandler(eventStore)
+		eventHandler := events.NewHandler(eventStore, auditStore)
+		scoreStore := scores.NewStore(database)
+		scoreHandler := scores.NewHandler(scoreStore, auditStore)
 
 		// Clerk webhook (public route — authenticated by its Svix signature,
 		// not the Clerk JWT middleware).
@@ -71,6 +76,7 @@ func main() {
 		})
 
 		events.Mount(r, eventHandler, userRepo, cfg.ClerkSecretKey)
+		scores.Mount(r, scoreHandler, userRepo, cfg.ClerkSecretKey)
 	} else {
 		log.Printf("database not connected: webhook + user API disabled")
 	}

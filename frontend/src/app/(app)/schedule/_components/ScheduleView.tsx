@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pin } from "@/components/icons";
+import { ChevronRight, Clock, Pin } from "@/components/icons";
 import type { EventCategory, ScheduleEvent } from "@/lib/events";
 import {
   CATEGORIES,
@@ -11,6 +11,7 @@ import {
   buildRailGroups,
   categoryColor,
   dateKey,
+  formatBannerDateRange,
   formatDayLabel,
   formatTime,
   isOngoing,
@@ -51,6 +52,16 @@ export default function ScheduleView({
   );
   const ongoing = useMemo(() => filtered.filter(isOngoing), [filtered]);
   const dayBuckets = useMemo(() => buildDayBuckets(filtered), [filtered]);
+  // Unfiltered — the banner's date range shouldn't shrink when categories
+  // are toggled off.
+  const allDayBuckets = useMemo(() => buildDayBuckets(events), [events]);
+  const dateRangeLabel =
+    allDayBuckets.length > 0
+      ? formatBannerDateRange(
+          allDayBuckets[0].date,
+          allDayBuckets[allDayBuckets.length - 1].date,
+        )
+      : undefined;
   const activeDayKey = selectedDay ?? dayBuckets[0]?.key ?? null;
   const activeBucket = dayBuckets.find((b) => b.key === activeDayKey) ?? null;
   const railGroups = useMemo(
@@ -96,14 +107,71 @@ export default function ScheduleView({
       <ScheduleBanner
         canManage={canManage}
         onAdd={() => setFormMode("create")}
+        dateRangeLabel={dateRangeLabel}
       />
-      <main className="bg-sched-bg px-10 pb-20 pt-[26px]">
+      <main className="bg-sched-bg px-4 pb-24 pt-4 lg:px-10 lg:pb-20 lg:pt-[26px]">
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2.05fr)_minmax(340px,1fr)]">
           <section className="min-w-0">
+            {dayBuckets.length > 0 && (
+              <div
+                role="tablist"
+                aria-label="Games days"
+                className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 grid border-b border-sched-hair bg-sched-chrome lg:hidden"
+                style={{
+                  gridTemplateColumns: `repeat(${dayBuckets.length}, minmax(0, 1fr))`,
+                }}
+              >
+                {dayBuckets.map((b, i) => {
+                  const active = b.key === activeDayKey;
+                  return (
+                    <button
+                      key={b.key}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setSelectedDay(b.key)}
+                      className="flex min-h-[60px] flex-col items-center justify-center gap-[3px] px-1 py-[9px]"
+                      style={{
+                        background: active
+                          ? "var(--color-sched-bg)"
+                          : "transparent",
+                        borderBottom: `3px solid ${active ? "var(--color-sched-accent)" : "transparent"}`,
+                      }}
+                    >
+                      <span
+                        className="font-mono text-[9px] font-medium tracking-[0.16em]"
+                        style={{
+                          color: active
+                            ? "var(--color-sched-accent)"
+                            : "var(--color-sched-text-muted)",
+                        }}
+                      >
+                        DAY {i + 1}
+                      </span>
+                      <span
+                        className="font-display text-[19px] font-semibold leading-none tracking-[0.03em]"
+                        style={{
+                          color: active
+                            ? "var(--color-sched-cream)"
+                            : "var(--color-sched-text-muted)",
+                        }}
+                      >
+                        {formatDayLabel(b.date)}
+                      </span>
+                      <span className="font-mono text-[9px] text-sched-text-muted">
+                        {b.events.length}{" "}
+                        {b.events.length === 1 ? "event" : "events"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             <div
               role="group"
               aria-label="Category filters"
-              className="mb-4 flex flex-wrap gap-[10px]"
+              className="mb-4 flex flex-wrap gap-2 lg:gap-[10px]"
             >
               {CATEGORIES.map((c) => {
                 const active = filters[c];
@@ -114,7 +182,7 @@ export default function ScheduleView({
                     type="button"
                     aria-pressed={active}
                     onClick={() => toggleFilter(c)}
-                    className="flex items-center gap-[9px] px-[14px] py-2 font-mono text-xs font-medium uppercase tracking-[0.09em] transition-colors"
+                    className="flex flex-none items-center gap-[7px] px-[13px] py-2 font-mono text-[11px] font-medium uppercase tracking-[0.08em] transition-colors lg:gap-[9px] lg:px-[14px] lg:text-xs lg:tracking-[0.09em]"
                     style={{
                       background: active
                         ? withAlpha(color, 0.12)
@@ -124,7 +192,7 @@ export default function ScheduleView({
                     }}
                   >
                     <span
-                      className="block h-[9px] w-[9px]"
+                      className="block h-2 w-2 lg:h-[9px] lg:w-[9px]"
                       style={{
                         background: active
                           ? color
@@ -138,32 +206,38 @@ export default function ScheduleView({
             </div>
 
             {ongoing.length > 0 && (
-              <div className="mb-4 flex flex-wrap items-center gap-[22px] border border-dashed border-sched-hair bg-sched-bg-raised px-[18px] py-[14px]">
+              <div className="mb-4 flex flex-col gap-[10px] border border-dashed border-sched-hair bg-sched-bg-raised px-[18px] py-[14px] lg:flex-row lg:flex-wrap lg:items-center lg:gap-[22px]">
                 <span className="whitespace-nowrap font-mono text-[10px] font-medium tracking-[0.16em] text-sched-accent-dim">
                   RUNS ALL WEEKEND
                 </span>
-                <div className="flex flex-wrap gap-[10px]">
+                <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:gap-[10px]">
                   {ongoing.map((e) => (
                     <button
                       key={e.id}
                       type="button"
                       onClick={() => setOpenEventId(e.id)}
-                      className="flex items-center gap-[10px] border-l-[3px] bg-sched-bg px-[14px] py-[9px] text-left transition-colors hover:bg-[#17251d]"
+                      className="flex min-h-11 w-full items-center justify-between gap-[10px] border-l-[3px] bg-sched-bg px-[14px] py-[9px] text-left transition-colors hover:bg-[#17251d] lg:min-h-0 lg:w-auto lg:justify-start"
                       style={{ borderLeftColor: categoryColor(e.category) }}
                     >
                       <span className="font-mono text-[13px] text-sched-cream">
                         {e.title}
                       </span>
-                      <span className="font-mono text-[11px] text-sched-text-muted">
+                      <span className="hidden font-mono text-[11px] text-sched-text-muted lg:inline">
                         {e.shortDescription}
                       </span>
+                      <ChevronRight
+                        width={13}
+                        height={13}
+                        strokeWidth={2.2}
+                        className="flex-none text-sched-accent-dim lg:hidden"
+                      />
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="border border-sched-hair bg-sched-bg-raised">
+            <div className="lg:border lg:border-sched-hair lg:bg-sched-bg-raised">
               {dayBuckets.length === 0 ? (
                 <EmptyState
                   message={
@@ -179,7 +253,7 @@ export default function ScheduleView({
                   <div
                     role="tablist"
                     aria-label="Games days"
-                    className="grid"
+                    className="sticky top-0 z-10 hidden bg-sched-bg-raised lg:static lg:grid"
                     style={{
                       gridTemplateColumns: `repeat(${dayBuckets.length}, minmax(0, 1fr))`,
                     }}
@@ -232,59 +306,118 @@ export default function ScheduleView({
 
                   <div
                     role="tabpanel"
-                    className="px-[22px] pb-[26px] pt-[22px]"
+                    className="pb-[18px] pt-4 lg:px-[22px] lg:pb-[26px] lg:pt-[22px]"
                   >
                     {activeBucket && activeBucket.events.length > 0 ? (
                       activeBucket.events.map((e) => {
                         const color = categoryColor(e.category);
-                        return (
-                          <button
-                            key={e.id}
-                            type="button"
-                            onClick={() => setOpenEventId(e.id)}
-                            className="sched-day-row mb-3 grid w-full items-start gap-5 bg-sched-bg px-5 py-[18px] text-left"
-                            style={
-                              {
-                                gridTemplateColumns: "96px minmax(0,1fr) auto",
-                                borderLeftColor: color,
-                                "--row-color": color,
-                              } as React.CSSProperties
-                            }
+                        const chip = (
+                          <span
+                            className="flex items-center gap-[7px] whitespace-nowrap border px-[10px] py-[5px] font-mono text-[10px] font-medium uppercase tracking-[0.11em]"
+                            style={{
+                              borderColor: withAlpha(color, 0.4),
+                              color,
+                            }}
                           >
-                            <span className="block">
-                              <span className="block font-display text-2xl font-semibold leading-none tracking-[0.02em] text-sched-cream">
-                                {formatTime(new Date(e.startsAt))}
+                            <span
+                              className="block h-[7px] w-[7px]"
+                              style={{ background: color }}
+                            />
+                            {e.category}
+                          </span>
+                        );
+                        return (
+                          <div key={e.id}>
+                            {/* Desktop — flat 3-column grid row. */}
+                            <button
+                              type="button"
+                              onClick={() => setOpenEventId(e.id)}
+                              className="sched-day-row mb-3 hidden w-full items-start gap-5 bg-sched-bg px-5 py-[18px] text-left lg:grid"
+                              style={
+                                {
+                                  gridTemplateColumns:
+                                    "96px minmax(0,1fr) auto",
+                                  borderLeftColor: color,
+                                  "--row-color": color,
+                                } as React.CSSProperties
+                              }
+                            >
+                              <span className="block">
+                                <span className="block font-display text-2xl font-semibold leading-none tracking-[0.02em] text-sched-cream">
+                                  {formatTime(new Date(e.startsAt))}
+                                </span>
+                                <span className="mt-[7px] block font-mono text-[11px] text-sched-text-muted">
+                                  until {formatTime(new Date(e.endsAt))}
+                                </span>
                               </span>
-                              <span className="mt-[7px] block font-mono text-[11px] text-sched-text-muted">
-                                until {formatTime(new Date(e.endsAt))}
+                              <span className="block min-w-0">
+                                <span className="block font-mono text-base text-sched-cream">
+                                  {e.title}
+                                </span>
+                                <span className="mt-[7px] block max-w-[60ch] text-pretty font-mono text-[13px] leading-[1.6] text-sched-text-muted">
+                                  {e.shortDescription}
+                                </span>
+                                <span className="mt-[11px] flex items-center gap-2 font-mono text-[11px] text-sched-accent-dim">
+                                  <Pin
+                                    width={12}
+                                    height={12}
+                                    strokeWidth={1.8}
+                                  />
+                                  {e.location}
+                                </span>
                               </span>
-                            </span>
-                            <span className="block min-w-0">
-                              <span className="block font-mono text-base text-sched-cream">
+                              {chip}
+                            </button>
+
+                            {/* Mobile — chip moves up next to the time, end
+                                time moves down into a shared meta row with
+                                location. Same data, same onClick. */}
+                            <button
+                              type="button"
+                              onClick={() => setOpenEventId(e.id)}
+                              className="sched-day-row mb-3 block w-full border-l-[3px] bg-sched-bg px-[15px] py-[14px] text-left lg:hidden"
+                              style={
+                                {
+                                  borderLeftColor: color,
+                                  "--row-color": color,
+                                } as React.CSSProperties
+                              }
+                            >
+                              <span className="flex items-baseline justify-between gap-[10px]">
+                                <span className="font-display text-[22px] font-semibold leading-none tracking-[0.02em] text-sched-cream">
+                                  {formatTime(new Date(e.startsAt))}
+                                </span>
+                                {chip}
+                              </span>
+                              <span className="mt-[10px] block font-mono text-[15px] text-sched-cream">
                                 {e.title}
                               </span>
-                              <span className="mt-[7px] block max-w-[60ch] text-pretty font-mono text-[13px] leading-[1.6] text-sched-text-muted">
+                              <span className="mt-[6px] block text-pretty font-mono text-xs leading-[1.6] text-sched-text-muted">
                                 {e.shortDescription}
                               </span>
-                              <span className="mt-[11px] flex items-center gap-2 font-mono text-[11px] text-sched-accent-dim">
-                                <Pin width={12} height={12} strokeWidth={1.8} />
-                                {e.location}
+                              <span className="mt-[11px] flex items-center gap-[14px] font-mono text-[10px] text-sched-accent-dim">
+                                <span className="flex items-center gap-[5px]">
+                                  <Clock
+                                    width={11}
+                                    height={11}
+                                    strokeWidth={1.8}
+                                  />
+                                  {formatTime(new Date(e.endsAt))}
+                                </span>
+                                <span className="flex min-w-0 items-center gap-[5px]">
+                                  <Pin
+                                    width={11}
+                                    height={11}
+                                    strokeWidth={1.8}
+                                    className="flex-none"
+                                  />
+                                  <span className="truncate">
+                                    {e.location}
+                                  </span>
+                                </span>
                               </span>
-                            </span>
-                            <span
-                              className="flex items-center gap-[7px] whitespace-nowrap border px-[10px] py-[5px] font-mono text-[10px] font-medium uppercase tracking-[0.11em]"
-                              style={{
-                                borderColor: withAlpha(color, 0.4),
-                                color,
-                              }}
-                            >
-                              <span
-                                className="block h-[7px] w-[7px]"
-                                style={{ background: color }}
-                              />
-                              {e.category}
-                            </span>
-                          </button>
+                            </button>
+                          </div>
                         );
                       })
                     ) : (
@@ -300,16 +433,29 @@ export default function ScheduleView({
             </div>
           </section>
 
-          <UpcomingRail
-            groups={railGroups}
-            count={railCount}
-            emptyMessage={railEmptyMessage}
-            canManage={canManage}
-            onClearFilters={clearFilters}
-            onOpen={(e) => setOpenEventId(e.id)}
-            onAdd={() => setFormMode("create")}
-          />
+          <div className="hidden lg:block">
+            <UpcomingRail
+              groups={railGroups}
+              count={railCount}
+              emptyMessage={railEmptyMessage}
+              canManage={canManage}
+              onClearFilters={clearFilters}
+              onOpen={(e) => setOpenEventId(e.id)}
+              onAdd={() => setFormMode("create")}
+            />
+          </div>
         </div>
+
+        {canManage && (
+          <button
+            type="button"
+            onClick={() => setFormMode("create")}
+            aria-label="Add event"
+            className="fixed bottom-4 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-sched-accent text-sched-fill shadow-lg lg:hidden"
+          >
+            <span className="font-display text-3xl leading-none">+</span>
+          </button>
+        )}
 
         {formMode === null && openEvent && (
           <EventDetailModal

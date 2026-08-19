@@ -87,6 +87,11 @@ export const X = (p: SVGProps<SVGSVGElement>) => (
     <path d="M5 5l14 14M19 5 5 19" />
   </svg>
 );
+export const ChevronRight = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}>
+    <path d="m9 5 7 7-7 7" />
+  </svg>
+);
 export const Cpu = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}>
     <rect width="16" height="16" x="4" y="4" rx="2" />

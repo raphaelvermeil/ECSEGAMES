@@ -64,6 +64,20 @@ const MO_TITLE = [
   "Nov",
   "Dec",
 ];
+const MO_FULL = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 function pad2(n: number): string {
   return n.toString().padStart(2, "0");
@@ -92,6 +106,11 @@ export function formatModalDate(d: Date): string {
 // "Fri 25 – Sun 27 Sep 2026" — ongoing event detail date line.
 export function formatModalDateRange(start: Date, end: Date): string {
   return `${WD_TITLE[start.getDay()]} ${start.getDate()} – ${WD_TITLE[end.getDay()]} ${end.getDate()} ${MO_TITLE[end.getMonth()]} ${end.getFullYear()}`;
+}
+
+// "Fri 25 – Sun 27 September" — mobile schedule banner subtitle.
+export function formatBannerDateRange(start: Date, end: Date): string {
+  return `${WD_TITLE[start.getDay()]} ${start.getDate()} – ${WD_TITLE[end.getDay()]} ${end.getDate()} ${MO_FULL[end.getMonth()]}`;
 }
 
 // "3 Aug 2026, 14:22" — event detail footer ("Created by"/"Last edited by").

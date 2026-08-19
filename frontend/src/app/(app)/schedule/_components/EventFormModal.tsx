@@ -192,8 +192,12 @@ export default function EventFormModal({
         return;
       }
       if (e.key !== "Tab" || !panelRef.current) return;
-      const focusables =
-        panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE);
+      // Same visibility filter as EventDetailModal — without it, a hidden
+      // (display:none) focusable at either end of the DOM order would make
+      // the trap boundary a silent no-op.
+      const focusables = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE),
+      ).filter((el) => el.offsetWidth || el.offsetHeight);
       if (focusables.length === 0) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
@@ -278,11 +282,7 @@ export default function EventFormModal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto px-5 py-12 backdrop-blur-[4px]"
-      style={{
-        background: "rgba(4,9,7,.72)",
-        animation: "sched-fade 180ms ease-out",
-      }}
+      className="fixed inset-0 z-[70] flex flex-col overflow-hidden bg-sched-bg lg:flex-row lg:items-start lg:justify-center lg:overflow-y-auto lg:bg-[rgba(4,9,7,.72)] lg:px-5 lg:py-12 lg:backdrop-blur-[4px] lg:animate-sched-fade"
     >
       <div
         ref={panelRef}
@@ -291,11 +291,10 @@ export default function EventFormModal({
         aria-label={mode === "create" ? "New event" : "Edit event"}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[700px] border border-sched-accent-dim bg-sched-bg-raised font-mono outline-none"
-        style={{ animation: "sched-pop 180ms ease-out" }}
+        className="animate-sched-sheet flex h-full w-full flex-col bg-sched-bg-raised font-mono outline-none lg:animate-sched-pop lg:h-auto lg:max-w-[700px] lg:border lg:border-sched-accent-dim"
       >
-        <div className="flex items-center justify-between border-b border-sched-hair px-[30px] py-6">
-          <h2 className="font-display text-[26px] font-semibold tracking-[0.04em] text-sched-cream">
+        <div className="flex flex-none items-center justify-between border-b border-sched-hair px-5 py-6 lg:px-[30px]">
+          <h2 className="font-display text-[22px] font-semibold tracking-[0.04em] text-sched-cream lg:text-[26px]">
             {mode === "create" ? "NEW EVENT" : "EDIT EVENT"}
           </h2>
           <button
@@ -308,7 +307,7 @@ export default function EventFormModal({
           </button>
         </div>
 
-        <div className="grid gap-[18px] px-[30px] pb-2 pt-6">
+        <div className="grid flex-1 gap-[18px] overflow-y-auto px-5 pb-2 pt-6 lg:flex-none lg:overflow-visible lg:px-[30px]">
           <div>
             <label htmlFor="f-title" className={labelClass}>
               TITLE
@@ -368,7 +367,7 @@ export default function EventFormModal({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-[18px]">
+          <div className="grid grid-cols-1 gap-[18px] lg:grid-cols-2">
             <div>
               <label htmlFor="f-access" className={labelClass}>
                 ACCESS &amp; SUSTAINABILITY
@@ -397,7 +396,7 @@ export default function EventFormModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-[18px]">
+          <div className="grid grid-cols-1 gap-[18px] lg:grid-cols-[1.4fr_1fr_1fr]">
             <div>
               <span className={labelClass}>DAY</span>
               <div
@@ -483,7 +482,7 @@ export default function EventFormModal({
             <div
               role="radiogroup"
               aria-label="Category"
-              className="flex border border-sched-hair"
+              className="grid grid-cols-2 border border-sched-hair lg:flex"
             >
               {CATEGORIES.map((c) => {
                 const active = fields.category === c;
@@ -495,7 +494,7 @@ export default function EventFormModal({
                     role="radio"
                     aria-checked={active}
                     onClick={() => set("category", c)}
-                    className="flex flex-1 items-center justify-center gap-2 px-[6px] py-[11px] font-mono text-[11px] font-medium uppercase tracking-[0.08em]"
+                    className="flex min-h-11 items-center justify-center gap-2 px-[6px] py-[11px] font-mono text-[11px] font-medium uppercase tracking-[0.08em] lg:flex-1"
                     style={{
                       background: active
                         ? withAlpha(color, 0.12)
@@ -518,14 +517,53 @@ export default function EventFormModal({
               })}
             </div>
           </div>
+
+          {mode === "edit" && !confirmingDelete && (
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              className="border border-[rgba(255,123,84,.35)] px-[14px] py-3 font-mono text-[12px] text-sched-coral lg:hidden"
+            >
+              Delete event
+            </button>
+          )}
+
+          {submitError && (
+            <p role="alert" className="font-mono text-xs text-sched-coral">
+              {submitError}
+            </p>
+          )}
+
+          {confirmingDelete && (
+            <div className="flex flex-wrap items-center gap-4 border border-[rgba(255,123,84,.4)] px-4 py-[14px]">
+              <span className="font-mono text-[13px] text-sched-coral">
+                Remove &quot;{fields.title || event?.title}&quot;?
+              </span>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="border border-sched-coral px-[14px] py-[7px] font-mono text-xs font-medium tracking-[0.06em] text-sched-coral disabled:opacity-60"
+              >
+                Remove
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                className="px-[2px] py-[7px] font-mono text-xs text-sched-text-muted underline"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-4 px-[30px] pb-[26px] pt-5">
+        <div className="flex flex-none items-center gap-4 border-t border-sched-hair px-5 pb-[26px] pt-5 lg:border-t-0 lg:px-[30px]">
           <button
             type="button"
             onClick={handleSave}
             disabled={submitting}
-            className="bg-sched-accent px-6 py-[13px] font-display text-sm font-semibold tracking-[0.07em] text-sched-fill transition-[filter] hover:brightness-[1.12] disabled:opacity-60"
+            className="flex-1 bg-sched-accent px-6 py-[13px] font-display text-sm font-semibold tracking-[0.07em] text-sched-fill transition-[filter] hover:brightness-[1.12] disabled:opacity-60 lg:flex-none"
           >
             {mode === "create" ? "SAVE EVENT" : "SAVE CHANGES"}
           </button>
@@ -536,49 +574,17 @@ export default function EventFormModal({
           >
             Cancel
           </button>
-          <div className="flex-1" />
+          <div className="hidden flex-1 lg:block" />
           {mode === "edit" && (
             <button
               type="button"
               onClick={() => setConfirmingDelete(true)}
-              className="px-1 py-3 font-mono text-[13px] text-sched-coral underline decoration-1 underline-offset-[3px]"
+              className="hidden px-1 py-3 font-mono text-[13px] text-sched-coral underline decoration-1 underline-offset-[3px] lg:inline"
             >
               Delete event
             </button>
           )}
         </div>
-
-        {submitError && (
-          <p
-            role="alert"
-            className="px-[30px] pb-5 font-mono text-xs text-sched-coral"
-          >
-            {submitError}
-          </p>
-        )}
-
-        {confirmingDelete && (
-          <div className="mx-[30px] mb-[26px] flex flex-wrap items-center gap-4 border border-[rgba(255,123,84,.4)] px-4 py-[14px]">
-            <span className="font-mono text-[13px] text-sched-coral">
-              Remove &quot;{fields.title || event?.title}&quot;?
-            </span>
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={deleting}
-              className="border border-sched-coral px-[14px] py-[7px] font-mono text-xs font-medium tracking-[0.06em] text-sched-coral disabled:opacity-60"
-            >
-              Remove
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(false)}
-              className="px-[2px] py-[7px] font-mono text-xs text-sched-text-muted underline"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
