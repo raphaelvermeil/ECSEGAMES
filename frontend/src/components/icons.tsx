@@ -70,6 +70,23 @@ export const Zap = (p: SVGProps<SVGSVGElement>) => (
     <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
   </svg>
 );
+export const Clock = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3.5 2" />
+  </svg>
+);
+export const Pin = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}>
+    <path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" />
+    <circle cx="12" cy="10" r="2.5" />
+  </svg>
+);
+export const X = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}>
+    <path d="M5 5l14 14M19 5 5 19" />
+  </svg>
+);
 export const Cpu = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}>
     <rect width="16" height="16" x="4" y="4" rx="2" />

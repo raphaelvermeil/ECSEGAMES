@@ -1,11 +1,19 @@
 import { auth } from "@clerk/nextjs/server";
+import { listEvents } from "@/lib/events";
+import ScheduleView from "./_components/ScheduleView";
 
 export default async function SchedulePage() {
   await auth.protect();
-  return (
-    <main className="bg-ecsess-900 px-10 pb-11 pt-9">
-      <h1 className="text-4xl font-extrabold text-ecsess-50">Schedule</h1>
-      <p className="mt-1.5 text-base text-ecsess-300">Coming soon.</p>
-    </main>
-  );
+  const events = await listEvents();
+
+  const { getToken } = await auth();
+  const token = await getToken();
+  const meRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const role = meRes.ok ? (await meRes.json()).role : null;
+  const canManage = role === "exec" || role === "admin";
+
+  return <ScheduleView events={events} canManage={canManage} />;
 }

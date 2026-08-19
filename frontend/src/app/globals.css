@@ -27,6 +27,31 @@
   --color-ecsess-950: #031c15;
   --color-ecsess-black: #1f1f1f;
   --color-ecsess-black-hover: #161917;
+
+  /* Schedule tab — CRT/arcade design language (see UI mockups project/
+     design_handoff_games_schedule). Namespaced "sched-" since it's a
+     distinct palette from the ecsess-* ramp above, not a replacement. */
+  --font-display: var(--font-pixelify), var(--font-plex-mono), monospace;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --color-sched-bg: #0b1310;
+  --color-sched-bg-raised: #101a15;
+  --color-sched-chrome: #1a1c1a;
+  --color-sched-band: #093325;
+  --color-sched-accent: #6ee787;
+  --color-sched-accent-dim: #3f8f57;
+  --color-sched-cream: #e9f5cd;
+  --color-sched-text: #c6d6c0;
+  --color-sched-text-muted: #7f9482;
+  --color-sched-hair: rgba(63, 143, 87, 0.32);
+  --color-sched-row-line: rgba(63, 143, 87, 0.18);
+  --color-sched-fill: #07130d;
+  --color-sched-frame-page: #f4f4f0;
+
+  --color-sched-coral: #ff7b54;
+  --color-sched-amber: #ffd23f;
+  --color-sched-cyan: #4cc9f0;
+  --color-sched-violet: #c77dff;
 }
 
 /* Signature homepage gradients (walk the ramp down section by section) */
@@ -58,4 +83,55 @@ a:hover {
   50% {
     opacity: 1;
   }
+}
+
+@keyframes sched-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes sched-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Schedule tab — hover states that recolor to a per-event category colour
+   (set via the --row-color custom property) can't be expressed as static
+   Tailwind utilities, since the colour is only known at render time. */
+.sched-day-row {
+  border: 1px solid var(--color-sched-hair);
+  border-left-width: 3px;
+  transition:
+    border-color 120ms,
+    background-color 120ms;
+}
+.sched-day-row:hover {
+  border-color: var(--row-color, var(--color-sched-hair));
+  background: #141f19;
+}
+.sched-rail-row {
+  border-left: 2px solid transparent;
+  transition:
+    border-color 120ms,
+    background-color 120ms;
+}
+.sched-rail-row:hover {
+  border-left-color: var(--row-color, transparent);
+  background: rgba(110, 231, 135, 0.035);
 }
