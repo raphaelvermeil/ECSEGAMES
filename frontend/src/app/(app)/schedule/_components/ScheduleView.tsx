@@ -149,7 +149,7 @@ export default function ScheduleView({
                         DAY {i + 1}
                       </span>
                       <span
-                        className="font-display text-[19px] font-semibold leading-none tracking-[0.03em]"
+                        className="font-mono text-[19px] font-semibold leading-none tracking-[0.03em]"
                         style={{
                           color: active
                             ? "var(--color-sched-cream)"
@@ -171,7 +171,7 @@ export default function ScheduleView({
             <div
               role="group"
               aria-label="Category filters"
-              className="mb-4 flex flex-wrap gap-2 lg:gap-[10px]"
+              className="mb-4 flex gap-2 overflow-x-auto lg:flex-wrap lg:gap-[10px] lg:overflow-visible"
             >
               {CATEGORIES.map((c) => {
                 const active = filters[c];
@@ -286,7 +286,7 @@ export default function ScheduleView({
                             DAY {i + 1}
                           </span>
                           <span
-                            className="font-display text-[26px] font-semibold leading-none tracking-[0.03em]"
+                            className="font-mono text-[26px] font-semibold leading-none tracking-[0.03em]"
                             style={{
                               color: active
                                 ? "var(--color-sched-cream)"
@@ -343,7 +343,7 @@ export default function ScheduleView({
                               }
                             >
                               <span className="block">
-                                <span className="block font-display text-2xl font-semibold leading-none tracking-[0.02em] text-sched-cream">
+                                <span className="block font-mono text-2xl font-semibold leading-none tracking-[0.02em] text-sched-cream">
                                   {formatTime(new Date(e.startsAt))}
                                 </span>
                                 <span className="mt-[7px] block font-mono text-[11px] text-sched-text-muted">
@@ -384,7 +384,7 @@ export default function ScheduleView({
                               }
                             >
                               <span className="flex items-baseline justify-between gap-[10px]">
-                                <span className="font-display text-[22px] font-semibold leading-none tracking-[0.02em] text-sched-cream">
+                                <span className="font-mono text-[22px] font-semibold leading-none tracking-[0.02em] text-sched-cream">
                                   {formatTime(new Date(e.startsAt))}
                                 </span>
                                 {chip}

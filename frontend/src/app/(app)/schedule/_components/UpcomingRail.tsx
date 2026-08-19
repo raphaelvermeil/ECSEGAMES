@@ -51,7 +51,7 @@ export default function UpcomingRail({
                     } as React.CSSProperties
                   }
                 >
-                  <span className="font-display text-[17px] font-medium tracking-[0.03em] text-sched-cream">
+                  <span className="font-mono text-[17px] font-medium tracking-[0.03em] text-sched-cream">
                     {formatTime(new Date(e.startsAt))}
                   </span>
                   <span className="block min-w-0">

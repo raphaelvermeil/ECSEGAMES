@@ -250,7 +250,7 @@ export default function ScoringPanel({ eventId }: { eventId: string }) {
                       {s.segment}
                     </span>
                     <span
-                      className="font-display text-[17px] font-medium"
+                      className="font-mono text-[17px] font-medium"
                       style={{
                         color:
                           s.value > 0
@@ -388,7 +388,7 @@ export default function ScoringPanel({ eventId }: { eventId: string }) {
                     </div>
                     <div className="flex flex-none items-center gap-[6px]">
                       <span
-                        className="font-display text-[19px] font-medium"
+                        className="font-mono text-[19px] font-medium"
                         style={{
                           color:
                             s.value > 0

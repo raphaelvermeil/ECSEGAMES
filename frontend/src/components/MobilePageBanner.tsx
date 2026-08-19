@@ -5,24 +5,22 @@ import { UserButton } from "@clerk/nextjs";
 import { Bell, Menu } from "@/components/icons";
 import MobileNavMenu from "@/components/MobileNavMenu";
 
-export default function ScheduleBanner({
-  canManage,
-  onAdd,
-  dateRangeLabel,
+// Mobile-only header for every non-Schedule page — same black top bar +
+// green band + pixel title treatment as ScheduleBanner's mobile header, so
+// the app doesn't switch visual language between tabs on a phone. Desktop
+// is untouched: each page keeps its own existing desktop layout below this.
+export default function MobilePageBanner({
+  title,
+  subtitle,
 }: {
-  canManage: boolean;
-  onAdd: () => void;
-  dateRangeLabel?: string;
+  title: string;
+  subtitle: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <>
-      {/* Mobile only — the shared Navbar is hidden on this route below lg,
-          so its logo/bell/account row lives here instead: same chrome
-          color as the Navbar, sitting above the green band rather than
-          merged into it. */}
-      <div className="flex items-center justify-between gap-3 bg-sched-chrome px-4 py-3 lg:hidden">
+    <div className="lg:hidden">
+      <div className="flex items-center justify-between gap-3 bg-sched-chrome px-4 py-3">
         <div className="flex items-center gap-[9px]">
           <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-sched-accent-dim font-mono text-[10px] font-semibold tracking-[0.05em] text-sched-accent-dim">
             ECSE
@@ -51,7 +49,7 @@ export default function ScheduleBanner({
         </div>
       </div>
 
-      <div className="relative flex items-center bg-sched-band px-5 pb-4 pt-5 lg:min-h-[180px] lg:px-10 lg:py-9">
+      <div className="relative flex items-center bg-sched-band px-5 pb-4 pt-5">
         <div
           aria-hidden="true"
           className="absolute inset-0 opacity-[0.28]"
@@ -60,31 +58,17 @@ export default function ScheduleBanner({
               "repeating-linear-gradient(to bottom, rgba(0,0,0,.5) 0 1px, transparent 1px 3px)",
           }}
         />
-        <div className="relative w-full lg:flex lg:flex-1 lg:items-center lg:justify-between lg:gap-10">
-          <div>
-            <h1 className="font-display text-[40px] font-semibold leading-none tracking-[0.01em] text-sched-cream lg:text-[56px]">
-              SCHEDULE
-            </h1>
-            <p className="mt-[9px] font-mono text-xs text-sched-accent lg:hidden">
-              {dateRangeLabel ?? "Everything happening at the Games."}
-            </p>
-            <p className="mt-[14px] hidden font-mono text-[15px] text-sched-accent lg:block">
-              Everything happening at the Games.
-            </p>
-          </div>
-          {canManage && (
-            <button
-              type="button"
-              onClick={onAdd}
-              className="hidden bg-sched-accent px-[22px] py-[14px] font-display text-[15px] font-semibold tracking-[0.06em] text-sched-fill transition-[filter] hover:brightness-[1.12] lg:inline-flex"
-            >
-              + ADD EVENT
-            </button>
-          )}
+        <div className="relative">
+          <h1 className="font-display text-[40px] font-semibold leading-none tracking-[0.01em] text-sched-cream">
+            {title}
+          </h1>
+          <p className="mt-[9px] font-mono text-xs text-sched-accent">
+            {subtitle}
+          </p>
         </div>
       </div>
 
       <MobileNavMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
-    </>
+    </div>
   );
 }

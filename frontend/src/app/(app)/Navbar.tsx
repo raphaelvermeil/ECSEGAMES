@@ -1,47 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { Bell } from "@/components/icons";
+import { NAV_LINKS } from "@/lib/nav";
 
-const LINKS = [
-  { href: "/", label: "Home", exact: true },
-  { href: "/schedule", label: "Schedule" },
-  { href: "/events", label: "Events" },
-  { href: "/leaderboard", label: "Leaderboard" },
-];
-
+// Desktop only — every page renders its own mobile header (ScheduleBanner
+// for /schedule, MobilePageBanner elsewhere) with its own logo/bell/account
+// row and hamburger menu, so this bar would just duplicate that below lg.
 export default function Navbar() {
   const pathname = usePathname();
-  // The mobile Schedule view merges the logo/bell/account row into its own
-  // green banner (matching the design mockup), so the shared bar underneath
-  // would be redundant there — hide it below lg on that route only.
-  const onSchedule =
-    pathname === "/schedule" || pathname.startsWith("/schedule/");
 
   return (
-    <header
-      className={`h-[72px] items-center gap-[30px] bg-sched-chrome px-[22px] font-mono ${
-        onSchedule ? "hidden lg:flex" : "flex"
-      }`}
-    >
+    <header className="hidden h-[72px] items-center gap-[30px] bg-sched-chrome px-[22px] font-mono lg:flex">
       <Link href="/" className="flex items-center gap-3">
-        <Image
-          src="/logo.png"
-          alt="ECSESS"
-          width={120}
-          height={30}
-          className="h-8 w-auto"
-          priority
-        />
+        <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-sched-accent-dim font-mono text-[10px] font-semibold tracking-[0.05em] text-sched-accent-dim">
+          ECSE
+        </div>
         <span className="font-display text-[21px] font-semibold tracking-[0.2em] text-sched-cream">
           GAMES
         </span>
       </Link>
-      <nav className="hidden items-center gap-2 lg:flex">
-        {LINKS.map((l) => {
+      <nav className="flex items-center gap-2">
+        {NAV_LINKS.map((l) => {
           const active = l.exact
             ? pathname === l.href
             : pathname === l.href || pathname.startsWith(l.href + "/");
