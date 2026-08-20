@@ -109,7 +109,7 @@ export default function ScheduleView({
         onAdd={() => setFormMode("create")}
         dateRangeLabel={dateRangeLabel}
       />
-      <main className="bg-sched-bg px-4 pb-24 pt-4 lg:px-10 lg:pb-20 lg:pt-[26px]">
+      <main className="bg-sched-bg px-4 pb-36 pt-4 lg:px-10 lg:pb-20 lg:pt-[26px]">
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2.05fr)_minmax(340px,1fr)]">
           <section className="min-w-0">
             {dayBuckets.length > 0 && (
@@ -451,7 +451,7 @@ export default function ScheduleView({
             type="button"
             onClick={() => setFormMode("create")}
             aria-label="Add event"
-            className="fixed bottom-4 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-sched-accent text-sched-fill shadow-lg lg:hidden"
+            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-40 flex h-14 w-14 items-center justify-center rounded-full bg-sched-accent text-sched-fill shadow-lg lg:hidden"
           >
             <span className="font-display text-3xl leading-none">+</span>
           </button>

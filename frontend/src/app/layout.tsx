@@ -23,8 +23,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ECSESS Games",
-  description: "ECSESS Games competition platform",
+  title: "ECSE Games",
+  description: "ECSE Games competition platform",
 };
 
 export default function RootLayout({
