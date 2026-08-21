@@ -134,15 +134,15 @@ func (h *Handler) History(w http.ResponseWriter, r *http.Request) {
 // full editable event body (not a sparse patch) — simplest thing that works
 // for the skeleton.
 type eventRequest struct {
-	Title            string          `json:"title"`
-	ShortDescription string          `json:"shortDescription"`
-	LongDescription  string          `json:"longDescription"`
-	Access           string          `json:"access"`
-	Captain          string          `json:"captain"`
-	StartsAt         time.Time       `json:"startsAt"`
-	EndsAt           time.Time       `json:"endsAt"`
-	Location         string          `json:"location"`
-	Category         Category        `json:"category"`
+	Title            string    `json:"title"`
+	ShortDescription string    `json:"shortDescription"`
+	LongDescription  string    `json:"longDescription"`
+	Access           string    `json:"access"`
+	Captain          string    `json:"captain"`
+	StartsAt         time.Time `json:"startsAt"`
+	EndsAt           time.Time `json:"endsAt"`
+	Location         string    `json:"location"`
+	Category         Category  `json:"category"`
 }
 
 // validate checks the fields required by the event CRUD spec: non-empty
