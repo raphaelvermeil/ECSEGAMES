@@ -42,6 +42,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body>
+
         {/* Sign-out goes straight to the public sign-in page, not the
             protected home route (which would stall on the auth gate). */}
         <ClerkProvider afterSignOutUrl="/sign-in">{children}</ClerkProvider>

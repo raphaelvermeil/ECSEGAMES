@@ -53,7 +53,7 @@ func main() {
 	r.Get("/ready", handlers.Readiness(database))
 
 	// Data routes need MongoDB. When it isn't connected (dev without a cluster),
-	// the webhook and user API are disabled.
+	// the user API is disabled.
 	if database != nil {
 		userRepo := users.NewRepository(database)
 		auditStore := audit.NewStore(database)
@@ -62,12 +62,8 @@ func main() {
 		scoreStore := scores.NewStore(database)
 		scoreHandler := scores.NewHandler(scoreStore, auditStore)
 
-		// Clerk webhook (public route — authenticated by its Svix signature,
-		// not the Clerk JWT middleware).
-		clerkWebhook := handlers.NewClerkWebhook(userRepo, cfg.ClerkWebhookSigningSecret)
-		r.Post("/webhooks/clerk", clerkWebhook.Handle)
-
-		// Authenticated user API.
+		// Authenticated user API. Users are created in Mongo lazily on their
+		// first request here, so no Clerk webhook is needed.
 		usersHandler := handlers.NewUsers(userRepo)
 		r.Group(func(pr chi.Router) {
 			pr.Use(appmw.RequireAuth(cfg.ClerkSecretKey))
@@ -78,7 +74,7 @@ func main() {
 		events.Mount(r, eventHandler, userRepo, cfg.ClerkSecretKey)
 		scores.Mount(r, scoreHandler, userRepo, cfg.ClerkSecretKey)
 	} else {
-		log.Printf("database not connected: webhook + user API disabled")
+		log.Printf("database not connected: user API disabled")
 	}
 
 	addr := ":" + cfg.Port

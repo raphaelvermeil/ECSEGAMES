@@ -22,36 +22,16 @@ func NewRepository(database *mongo.Database) *Repository {
 	return &Repository{coll: database.Collection(collectionName)}
 }
 
-// Upsert creates the user, or updates the email of an existing one, keyed on
-// ClerkID. It is idempotent so repeated webhook deliveries don't duplicate
-// records. Role and CreatedAt are written only on first insert, so re-delivered
-// creation events can't reset a user's role or creation time.
-func (r *Repository) Upsert(ctx context.Context, u models.User) error {
-	filter := bson.M{"clerkId": u.ClerkID}
-	update := bson.M{
-		"$set": bson.M{
-			"email": u.Email,
-		},
-		"$setOnInsert": bson.M{
-			"clerkId":   u.ClerkID,
-			"role":      u.Role,
-			"createdAt": u.CreatedAt,
-		},
-	}
-	_, err := r.coll.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
-	return err
-}
-
 // GetOrCreate returns the user for clerkID, inserting a minimal record (role
-// student, no team) if none exists yet. It only ever writes on insert
-// (`$setOnInsert`), so it never overwrites fields an existing record already
-// has — in particular the email the webhook populated.
+// student, no team) if none exists yet. This is how users first land in Mongo:
+// the record is created on their first authenticated request rather than by a
+// webhook. It only ever writes on insert (`$setOnInsert`), so it never
+// overwrites fields an existing record already has.
 func (r *Repository) GetOrCreate(ctx context.Context, clerkID string) (*models.User, error) {
 	filter := bson.M{"clerkId": clerkID}
 	update := bson.M{
 		"$setOnInsert": bson.M{
 			"clerkId":   clerkID,
-			"email":     "",
 			"role":      models.RoleStudent,
 			"team":      models.Team(""),
 			"createdAt": time.Now().UTC(),
