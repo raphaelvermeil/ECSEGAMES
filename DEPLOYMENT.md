@@ -37,6 +37,9 @@ Network Access likely set to `0.0.0.0/0` for convenience.
 - Consider a separate database/cluster for prod vs. dev so test data stays out of prod.
 - (Optional hardening) add a unique index on `users.clerkId` — the upsert already prevents
   duplicates logically, but the index enforces it at the DB level.
+- (Optional hardening) same for a compound unique index on `scoreEntries (eventId, team)` —
+  a team's points-per-event upsert relies on the same "logically enforced, not DB-enforced"
+  pattern.
 
 ## 3. 🌐 URLs, ports & CORS
 

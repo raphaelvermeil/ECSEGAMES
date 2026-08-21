@@ -212,15 +212,6 @@ to the component it affects.
 > top of `src/app/globals.css` (the line `@import "tailwindcss";`) and in
 > `postcss.config.mjs`.
 
-### Zustand — state management
-
-As an app grows, different components need to share the same information — e.g. "who is the
-logged-in user" or "which team did they pick." Passing that data manually through every
-component gets painful. **Zustand** is a tiny **state-management** library: it creates a
-central "store" (a shared bucket of data) that any component can read from or update, and
-components automatically re-render when the data they use changes. Right now we have a single
-placeholder store in `src/store/`; real stores (auth, team, competitions) come later.
-
 ### axios — talking to the backend
 
 **axios** is a library for making **HTTP requests** — the mechanism a web page uses to ask a
@@ -308,8 +299,6 @@ frontend/
 │   │   └── favicon.ico      ← The little icon shown in the browser tab.
 │   ├── lib/
 │   │   └── api.ts           ← The pre-configured axios instance for calling the backend.
-│   ├── store/
-│   │   └── useAppStore.ts   ← A placeholder Zustand store (shared frontend state).
 │   └── proxy.ts             ← Clerk route protection (Next 16's renamed "middleware").
 │                              Runs on requests before pages render.
 ├── public/                  ← Static files served as-is (images, SVGs).
@@ -432,7 +421,6 @@ ready to connect real services; leave them blank/dummy for basic local developme
 | Frontend   | Next.js 16 (on React 19)          | The website framework — pages and UI.          |
 | Frontend   | TypeScript                        | JavaScript with type-checking.                 |
 | Frontend   | Tailwind CSS v4                   | Utility-class styling.                         |
-| Frontend   | Zustand                           | Shared frontend state.                         |
 | Frontend   | axios                             | Calls the backend API.                         |
 | Backend    | Go                                | The server language.                           |
 | Backend    | chi                               | HTTP routing + middleware.                      |
