@@ -39,5 +39,7 @@ yarn-error.log*
 graphify-out/
 .code-review-graph/
 .claude/settings.json
+# Local Claude Code discovery links to .agents/skills/<name>
+.claude/skills/
 
 UI mockups project

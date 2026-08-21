@@ -21,8 +21,8 @@ Rules:
 
 ## Project overview
 
-ECSESS Games: students register with a McGill email, join one of three program teams
-(Electrical, Computer, Software), and earn points in competitions run by execs. A Go backend
+ECSESS Games: students register with a McGill email, join one of four teams
+(Electrical, Computer, Software, Old Patrol), and earn points in competitions run by execs. A Go backend
 and Next.js frontend live side by side in this monorepo. See [README.md](README.md) for a
 from-scratch explanation of every technology used, and [DEPLOYMENT.md](DEPLOYMENT.md) for what
 is currently dev-only and must change before production.

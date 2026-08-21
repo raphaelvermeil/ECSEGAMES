@@ -171,3 +171,15 @@ a:hover {
   border-left-color: var(--row-color, transparent);
   background: rgba(110, 231, 135, 0.035);
 }
+
+/* Number inputs (e.g. the scoring panel's POINTS field) without the
+   browser's up/down spinner — no Tailwind utility covers the WebKit
+   pseudo-elements. */
+.sched-no-spinner {
+  -moz-appearance: textfield;
+}
+.sched-no-spinner::-webkit-inner-spin-button,
+.sched-no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

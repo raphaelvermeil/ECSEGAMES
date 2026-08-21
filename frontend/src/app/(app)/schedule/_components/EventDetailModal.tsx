@@ -219,7 +219,9 @@ export default function EventDetailModal({
               </div>
             )}
 
-            {canManage && <ScoringPanel eventId={event.id} />}
+            {canManage && (
+              <ScoringPanel eventId={event.id} category={event.category} />
+            )}
 
             {canManage && (
               <div className="px-5 pb-3 pt-1 lg:hidden">

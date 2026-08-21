@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Clock, Pin } from "@/components/icons";
 import type { EventCategory, ScheduleEvent } from "@/lib/events";
@@ -43,6 +43,56 @@ export default function ScheduleView({
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
   const [formEvent, setFormEvent] = useState<ScheduleEvent | null>(null);
+  const fabRef = useRef<HTMLButtonElement>(null);
+
+  // Mobile browsers resize the *visual* viewport (not window.innerHeight)
+  // as their address-bar toolbar slides in/out on scroll, but `position:
+  // fixed` is anchored to the layout viewport — so a plain `bottom: 1rem`
+  // FAB drifts out of the visible area mid-scroll. Offset it by the gap
+  // between the two viewports to keep it pinned to what's actually visible.
+  //
+  // Three things keep this from causing the jitter it's meant to fix:
+  //   - `transform`, not `bottom`. Writing `bottom` forces a layout pass on
+  //     every event (measured: 400 writes => 400 layouts; transform => 0),
+  //     and visualViewport's scroll event fires every frame while scrolling.
+  //   - rAF-throttled, so at most one write per painted frame no matter how
+  //     many events arrive.
+  //   - deduped, so ordinary scrolling (where the gap doesn't change at all)
+  //     performs no DOM writes whatsoever — only a real toolbar slide or a
+  //     pinch-zoom pan actually moves the button.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    let frame = 0;
+    let appliedGap = -1;
+
+    function apply() {
+      frame = 0;
+      const gap = Math.max(
+        0,
+        window.innerHeight - (vv!.height + vv!.offsetTop),
+      );
+      if (gap === appliedGap) return;
+      appliedGap = gap;
+      const el = fabRef.current;
+      if (el) {
+        el.style.transform = gap ? `translate3d(0, ${-gap}px, 0)` : "";
+      }
+    }
+    function schedule() {
+      if (frame) return;
+      frame = requestAnimationFrame(apply);
+    }
+
+    vv.addEventListener("resize", schedule);
+    vv.addEventListener("scroll", schedule);
+    apply();
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      vv.removeEventListener("resize", schedule);
+      vv.removeEventListener("scroll", schedule);
+    };
+  }, []);
 
   const now = useMemo(() => new Date(), []);
   const allFiltered = CATEGORIES.every((c) => filters[c]);
@@ -411,9 +461,7 @@ export default function ScheduleView({
                                     strokeWidth={1.8}
                                     className="flex-none"
                                   />
-                                  <span className="truncate">
-                                    {e.location}
-                                  </span>
+                                  <span className="truncate">{e.location}</span>
                                 </span>
                               </span>
                             </button>
@@ -448,6 +496,7 @@ export default function ScheduleView({
 
         {canManage && (
           <button
+            ref={fabRef}
             type="button"
             onClick={() => setFormMode("create")}
             aria-label="Add event"
