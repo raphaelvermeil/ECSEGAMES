@@ -11,19 +11,22 @@ const (
 	RoleAdmin   Role = "admin"
 )
 
-// Team is a student's program team. Empty means not yet joined.
+// Team is a student's team. Empty means not yet joined.
 type Team string
 
 const (
 	TeamElectrical Team = "electrical"
 	TeamComputer   Team = "computer"
 	TeamSoftware   Team = "software"
+	TeamOldPatrol  Team = "oldPatrol"
 )
 
-// IsValidTeam reports whether t is one of the three program teams.
+// IsValidTeam reports whether t is one of the four teams. Gates both team
+// selection at sign-up and the recipient of a score entry — Old Patrol is a
+// joinable team, not a scoring-only recipient.
 func IsValidTeam(t Team) bool {
 	switch t {
-	case TeamElectrical, TeamComputer, TeamSoftware:
+	case TeamElectrical, TeamComputer, TeamSoftware, TeamOldPatrol:
 		return true
 	default:
 		return false

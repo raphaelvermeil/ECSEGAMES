@@ -29,9 +29,11 @@ export default async function AppLayout({
   }
 
   return (
-    <>
-      <Navbar />
-      {children}
-    </>
+    <div className="min-h-screen bg-sched-frame-page">
+      <div className="mx-auto min-h-screen w-full overflow-hidden bg-sched-bg lg:min-w-[1380px] lg:max-w-[2500px]">
+        <Navbar />
+        {children}
+      </div>
+    </div>
   );
 }

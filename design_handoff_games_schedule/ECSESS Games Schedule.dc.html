@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b1310;--bg-raised:#101a15;--chrome:#1a1c1a;--band:#093325;--accent:#6ee787;--accent-dim:#3f8f57;--cream:#e9f5cd;--text:#c6d6c0;--text-muted:#7f9482;--coral:#ff7b54;--amber:#ffd23f;--cyan:#4cc9f0;--violet:#c77dff;--hair:rgba(63,143,87,.32);--disp:'Pixelify Sans','IBM Plex Mono',monospace;--mono:'IBM Plex Mono',ui-monospace,monospace}
+html,body{margin:0;padding:0;background:#f4f4f0;font-family:var(--mono);color:var(--text)}
+a{color:var(--accent);text-decoration:none}
+a:hover{color:var(--cream)}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+input::placeholder,textarea::placeholder{color:#5d7063}
+*:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#22392c;border:2px solid transparent;background-clip:content-box}
+@keyframes ecFade{from{opacity:0}to{opacity:1}}
+@keyframes ecPop{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+</style>
+</helmet>
+<div style="background:#f4f4f0;padding:8px 8px 0">
+<div style="background:var(--bg);border-radius:14px 14px 0 0;overflow:hidden;min-height:100vh;min-width:1380px;max-width:2500px;margin:0 auto">
+
+<header style="height:72px;background:var(--chrome);display:flex;align-items:center;gap:30px;padding:0 22px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:36px;height:36px;border-radius:50%;border:1px solid var(--accent-dim);display:flex;align-items:center;justify-content:center;font:600 9px var(--mono);letter-spacing:.06em;color:var(--accent-dim)">ECS</div>
+    <span style="font:600 21px var(--disp);letter-spacing:.2em;color:var(--cream)">GAMES</span>
+  </div>
+  <nav style="display:flex;align-items:center;gap:8px">
+    <a href="#" style="padding:9px 14px;font:500 14px var(--mono);color:var(--accent);border:1px solid transparent" style-hover="border-color:var(--accent-dim)">Home</a>
+    <a href="#" aria-current="page" style="padding:9px 14px;font:500 14px var(--mono);color:var(--accent);border:1px solid var(--accent);box-shadow:0 3px 0 0 var(--accent)">Schedule</a>
+    <a href="#" style="padding:9px 14px;font:500 14px var(--mono);color:var(--accent);border:1px solid transparent" style-hover="border-color:var(--accent-dim)">Events</a>
+    <a href="#" style="padding:9px 14px;font:500 14px var(--mono);color:var(--accent);border:1px solid transparent" style-hover="border-color:var(--accent-dim)">Leaderboard</a>
+  </nav>
+  <div style="flex:1"></div>
+  <div style="display:flex;align-items:center;gap:18px">
+    <button type="button" aria-label="Notifications" style="background:none;border:0;padding:4px;cursor:pointer;color:var(--accent);display:flex">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"></path><path d="M10.3 20a2 2 0 0 0 3.4 0"></path></svg>
+    </button>
+    <div aria-label="Account" style="width:34px;height:34px;border-radius:50%;background:#4a5cd6;display:flex;align-items:center;justify-content:center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7"><circle cx="12" cy="9" r="3.4"></circle><path d="M4.8 20a7.4 7.4 0 0 1 14.4 0"></path></svg>
+    </div>
+  </div>
+</header>
+
+<div style="position:relative;background:var(--band);min-height:180px;display:flex;align-items:center;padding:36px 40px">
+  <sc-if value="{{ scanlines }}" hint-placeholder-val="{{ true }}">
+    <div aria-hidden="true" style="position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.5) 0 1px,transparent 1px 3px);opacity:.28;pointer-events:none"></div>
+  </sc-if>
+  <div style="position:relative;flex:1;display:flex;align-items:center;justify-content:space-between;gap:40px">
+    <div style="flex:1;min-width:0">
+      <h1 style="margin:0;font:600 56px/1 var(--disp);letter-spacing:.01em;color:var(--cream)">SCHEDULE</h1>
+      <p style="margin:14px 0 0;font:400 15px var(--mono);color:var(--accent)">Everything happening at the Games.</p>
+    </div>
+    <sc-if value="{{ isExec }}" hint-placeholder-val="{{ false }}">
+      <button type="button" onClick="{{ onAdd }}" style="background:var(--accent);color:#07130d;border:0;padding:14px 22px;font:600 15px var(--disp);letter-spacing:.06em;cursor:pointer;transition:filter 120ms" style-hover="filter:brightness(1.12)">+ ADD EVENT</button>
+    </sc-if>
+  </div>
+</div>
+
+<main style="padding:26px 40px 80px;display:grid;grid-template-columns:minmax(0,2.05fr) minmax(340px,1fr);gap:24px;align-items:start">
+
+  <section style="min-width:0">
+    <div role="group" aria-label="Category filters" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+      <sc-for list="{{ chips }}" as="c" hint-placeholder-count="4">
+        <button type="button" onClick="{{ c.toggle }}" aria-pressed="{{ c.active }}" style="display:flex;align-items:center;gap:9px;padding:8px 14px;cursor:pointer;font:500 12px var(--mono);letter-spacing:.09em;text-transform:uppercase;background:{{ c.bg }};border:1px solid {{ c.border }};color:{{ c.fg }};transition:border-color 120ms,color 120ms">
+          <span style="width:9px;height:9px;background:{{ c.dot }};display:block"></span>{{ c.name }}
+        </button>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ showOngoing }}" hint-placeholder-val="{{ true }}">
+      <div style="border:1px dashed var(--hair);background:var(--bg-raised);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:22px;flex-wrap:wrap">
+        <span style="font:500 10px var(--mono);letter-spacing:.16em;color:var(--accent-dim);white-space:nowrap">RUNS ALL WEEKEND</span>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <sc-for list="{{ ongoing }}" as="o" hint-placeholder-count="2">
+            <button type="button" onClick="{{ o.open }}" style="display:flex;align-items:center;gap:10px;background:var(--bg);border:0;border-left:3px solid {{ o.color }};padding:9px 14px;cursor:pointer;text-align:left" style-hover="background:#17251d">
+              <span style="font:400 13px var(--mono);color:var(--cream)">{{ o.title }}</span>
+              <span style="font:400 11px var(--mono);color:var(--text-muted)">{{ o.short }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="background:var(--bg-raised);border:1px solid var(--hair)">
+      <div role="tablist" aria-label="Games days" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr))">
+        <sc-for list="{{ dayTabs }}" as="t" hint-placeholder-count="3">
+          <button type="button" role="tab" aria-selected="{{ t.active }}" onClick="{{ t.onClick }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:7px;padding:18px 20px;background:{{ t.bg }};border:0;border-bottom:3px solid {{ t.under }};border-right:1px solid var(--hair);cursor:pointer;text-align:left;transition:background 120ms">
+            <span style="font:500 10px var(--mono);letter-spacing:.18em;color:{{ t.kickerColor }}">{{ t.kicker }}</span>
+            <span style="font:600 26px/1 var(--disp);letter-spacing:.03em;color:{{ t.titleColor }}">{{ t.label }}</span>
+            <span style="font:400 11px var(--mono);color:var(--text-muted)">{{ t.count }}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div role="tabpanel" style="padding:22px 22px 26px">
+        <sc-for list="{{ dayRows }}" as="r" hint-placeholder-count="4">
+          <button type="button" onClick="{{ r.open }}" style="display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:20px;align-items:start;width:100%;text-align:left;background:var(--bg);border:1px solid var(--hair);border-left:3px solid {{ r.color }};padding:18px 20px;margin-bottom:12px;cursor:pointer;transition:border-color 120ms,background 120ms" style-hover="border-color:{{ r.color }};background:#141f19">
+            <span style="display:block">
+              <span style="display:block;font:600 24px/1 var(--disp);letter-spacing:.02em;color:var(--cream)">{{ r.time }}</span>
+              <span style="display:block;margin-top:7px;font:400 11px var(--mono);color:var(--text-muted)">{{ r.endTime }}</span>
+            </span>
+            <span style="min-width:0;display:block">
+              <span style="display:block;font:400 16px var(--mono);color:var(--cream)">{{ r.title }}</span>
+              <span style="display:block;margin-top:7px;font:400 13px/1.6 var(--mono);color:var(--text-muted);text-wrap:pretty;max-width:60ch">{{ r.short }}</span>
+              <span style="display:flex;align-items:center;gap:8px;margin-top:11px;font:400 11px var(--mono);color:var(--accent-dim)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>{{ r.loc }}
+              </span>
+            </span>
+            <span style="display:flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid {{ r.chipBorder }};color:{{ r.color }};font:500 10px var(--mono);letter-spacing:.11em;text-transform:uppercase;white-space:nowrap">
+              <span style="width:7px;height:7px;background:{{ r.color }};display:block"></span>{{ r.cat }}
+            </span>
+          </button>
+        </sc-for>
+        <sc-if value="{{ dayEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:52px 10px;text-align:center">
+            <p style="margin:0;font:400 13px var(--mono);color:var(--text-muted)">No events match these filters.</p>
+            <button type="button" onClick="{{ clearFilters }}" style="margin-top:14px;background:none;border:1px solid var(--hair);color:var(--accent);padding:9px 16px;font:500 12px var(--mono);letter-spacing:.09em;text-transform:uppercase;cursor:pointer" style-hover="border-color:var(--accent)">Clear filters</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </section>
+
+  <aside style="background:var(--bg-raised);border:1px solid var(--hair);min-width:0">
+    <div style="padding:16px 18px;border-bottom:1px solid var(--hair);display:flex;align-items:baseline;justify-content:space-between">
+      <h2 style="margin:0;font:600 18px var(--disp);letter-spacing:.08em;color:var(--cream)">UPCOMING</h2>
+      <span style="font:400 11px var(--mono);letter-spacing:.09em;color:var(--text-muted)">{{ railCount }}</span>
+    </div>
+    <div style="max-height:860px;overflow-y:auto;overflow-x:hidden">
+      <sc-for list="{{ railGroups }}" as="g" hint-placeholder-count="3">
+        <div>
+          <div style="position:sticky;top:0;z-index:2;background:var(--bg-raised);padding:12px 18px 8px;font:500 11px var(--mono);letter-spacing:.16em;color:var(--accent-dim);border-bottom:1px solid var(--hair)">{{ g.label }}</div>
+          <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3">
+            <button type="button" onClick="{{ r.open }}" style="display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:14px;align-items:start;width:100%;text-align:left;background:none;border:0;border-left:2px solid transparent;border-bottom:1px solid rgba(63,143,87,.18);padding:14px 18px;cursor:pointer;transition:border-color 120ms,background 120ms" style-hover="border-left-color:{{ r.color }};background:rgba(110,231,135,.035)">
+              <span style="font:500 17px var(--disp);letter-spacing:.03em;color:var(--cream)">{{ r.time }}</span>
+              <span style="min-width:0;display:block">
+                <span style="display:block;font:400 14px var(--mono);color:var(--cream);line-height:1.35">{{ r.title }}</span>
+                <span style="display:block;margin-top:5px;font:400 12px/1.5 var(--mono);color:var(--text-muted);text-wrap:pretty">{{ r.short }}</span>
+              </span>
+              <span style="display:flex;align-items:center;gap:7px;padding:4px 9px;border:1px solid {{ r.chipBorder }};color:{{ r.color }};font:500 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap">
+                <span style="width:7px;height:7px;background:{{ r.color }};display:block"></span>{{ r.cat }}
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-for>
+      <sc-if value="{{ railFiltered }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:44px 18px;text-align:center">
+          <p style="margin:0;font:400 13px var(--mono);color:var(--text-muted)">No events match these filters.</p>
+          <button type="button" onClick="{{ clearFilters }}" style="margin-top:14px;background:none;border:1px solid var(--hair);color:var(--accent);padding:9px 16px;font:500 12px var(--mono);letter-spacing:.09em;text-transform:uppercase;cursor:pointer" style-hover="border-color:var(--accent)">Clear filters</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ railNone }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:44px 18px;text-align:center">
+          <p style="margin:0;font:400 13px var(--mono);color:var(--text-muted)">Nothing scheduled yet.</p>
+          <sc-if value="{{ isExec }}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{ onAdd }}" style="margin-top:14px;background:var(--accent);color:#07130d;border:0;padding:10px 18px;font:600 12px var(--disp);letter-spacing:.08em;cursor:pointer">+ ADD EVENT</button>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </aside>
+</main>
+</div>
+</div>
+
+<sc-if value="{{ detailOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ onBackdrop }}" style="position:fixed;inset:0;z-index:60;background:rgba(4,9,7,.72);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:56px 20px;overflow-y:auto;animation:ecFade 180ms ease-out">
+    <div role="dialog" aria-modal="true" aria-label="Event detail" tabIndex="-1" ref="{{ modalRef }}" onKeyDown="{{ onModalKey }}" onClick="{{ stop }}" style="width:100%;max-width:780px;background:var(--bg-raised);border:1px solid var(--accent-dim);animation:ecPop 180ms ease-out;outline:none">
+
+      <sc-if value="{{ showDetail }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div style="padding:26px 30px 22px;border-bottom:1px solid var(--hair)">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px">
+              <span style="display:flex;align-items:center;gap:8px;padding:5px 11px;border:1px solid {{ d.chipBorder }};color:{{ d.color }};font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase">
+                <span style="width:7px;height:7px;background:{{ d.color }};display:block"></span>{{ d.cat }}
+              </span>
+              <div style="display:flex;align-items:center;gap:10px">
+                <sc-if value="{{ isExec }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ onEditEvent }}" style="background:none;border:1px solid var(--hair);color:var(--accent);padding:7px 14px;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="border-color:var(--accent)">Edit event</button>
+                </sc-if>
+                <button type="button" onClick="{{ onClose }}" aria-label="Close" style="width:32px;height:32px;background:none;border:1px solid var(--hair);color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="border-color:var(--accent);color:var(--accent)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5l14 14M19 5 5 19"></path></svg>
+                </button>
+              </div>
+            </div>
+            <h2 style="margin:18px 0 0;font:600 38px/1.08 var(--disp);letter-spacing:.01em;color:var(--cream);text-wrap:pretty">{{ d.title }}</h2>
+            <div style="display:flex;flex-wrap:wrap;gap:22px;margin-top:18px">
+              <span style="display:flex;align-items:center;gap:8px;font:400 12px var(--mono);color:var(--text-muted)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-dim)" stroke-width="1.7"><rect x="3" y="5" width="18" height="16"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>{{ d.dateLabel }}
+              </span>
+              <span style="display:flex;align-items:center;gap:8px;font:400 12px var(--mono);color:var(--text-muted)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-dim)" stroke-width="1.7"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path></svg>{{ d.timeLabel }}
+              </span>
+              <span style="display:flex;align-items:center;gap:8px;font:400 12px var(--mono);color:var(--text-muted)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-dim)" stroke-width="1.7"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>{{ d.loc }}
+              </span>
+            </div>
+          </div>
+
+          <div style="padding:24px 30px 6px">
+            <p style="margin:0;max-width:62ch;font:400 14px/1.75 var(--mono);color:var(--text);text-wrap:pretty">{{ d.desc }}</p>
+          </div>
+
+          <div style="padding:20px 30px 24px;display:grid;grid-template-columns:1fr 1fr;gap:22px">
+            <div>
+              <h3 style="margin:0 0 10px;font:500 10px var(--mono);letter-spacing:.16em;color:var(--accent-dim)">ACCESS &amp; SUSTAINABILITY</h3>
+              <p style="margin:0;font:400 13px/1.7 var(--mono);color:var(--text-muted);text-wrap:pretty">{{ d.access }}</p>
+            </div>
+            <div>
+              <h3 style="margin:0 0 10px;font:500 10px var(--mono);letter-spacing:.16em;color:var(--accent-dim)">CAPTAIN'S ROLE</h3>
+              <p style="margin:0;font:400 13px/1.7 var(--mono);color:var(--text-muted);text-wrap:pretty">{{ d.captain }}</p>
+            </div>
+          </div>
+
+          <sc-if value="{{ isExec }}" hint-placeholder-val="{{ false }}">
+            <div style="border-top:1px solid var(--hair);padding:22px 30px 26px">
+              <h3 style="margin:0 0 16px;font:500 11px var(--mono);letter-spacing:.18em;color:var(--accent-dim)">SCORING</h3>
+
+              <div style="display:grid;grid-template-columns:1fr 1.3fr .7fr .9fr .6fr 36px;gap:10px;padding:0 0 9px;border-bottom:1px solid var(--hair);font:500 10px var(--mono);letter-spacing:.12em;color:var(--text-muted)">
+                <span>RECIPIENT</span><span>SEGMENT</span><span>POINTS</span><span>AWARDED BY</span><span>WHEN</span><span></span>
+              </div>
+
+              <sc-for list="{{ d.scores }}" as="s" hint-placeholder-count="4">
+                <div style="border-bottom:1px solid rgba(63,143,87,.18)">
+                  <div style="display:grid;grid-template-columns:1fr 1.3fr .7fr .9fr .6fr 36px;gap:10px;align-items:center;padding:11px 0;opacity:{{ s.opacity }}">
+                    <span style="font:400 13px var(--mono);color:var(--cream);text-decoration:{{ s.deco }}">{{ s.team }}</span>
+                    <span style="font:400 12px var(--mono);color:var(--text);text-decoration:{{ s.deco }}">{{ s.segment }}</span>
+                    <span style="font:500 17px var(--disp);color:{{ s.pointsColor }};text-decoration:{{ s.deco }}">{{ s.pointsText }}</span>
+                    <span style="font:400 12px var(--mono);color:var(--text-muted)">{{ s.by }}</span>
+                    <span style="font:400 12px var(--mono);color:var(--text-muted)">{{ s.when }}</span>
+                    <span style="display:flex;justify-content:flex-end;position:relative">
+                      <sc-if value="{{ s.showMenuBtn }}" hint-placeholder-val="{{ true }}">
+                        <button type="button" onClick="{{ s.onMenu }}" aria-label="Score actions" style="width:28px;height:24px;background:none;border:1px solid transparent;color:var(--text-muted);cursor:pointer;font:600 14px var(--mono);line-height:1" style-hover="border-color:var(--hair);color:var(--accent)">···</button>
+                      </sc-if>
+                      <sc-if value="{{ s.revoked }}" hint-placeholder-val="{{ false }}">
+                        <span style="font:500 9px var(--mono);letter-spacing:.1em;color:var(--coral);border:1px solid rgba(255,123,84,.45);padding:3px 6px">REVOKED</span>
+                      </sc-if>
+                    </span>
+                  </div>
+                  <sc-if value="{{ s.menuOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:8px;padding:0 0 11px">
+                      <button type="button" onClick="{{ s.onEdit }}" style="background:none;border:1px solid var(--hair);color:var(--text);padding:6px 12px;font:400 11px var(--mono);cursor:pointer" style-hover="border-color:var(--accent);color:var(--accent)">Edit</button>
+                      <button type="button" onClick="{{ s.onAskDelete }}" style="background:none;border:1px solid rgba(255,123,84,.35);color:var(--coral);padding:6px 12px;font:400 11px var(--mono);cursor:pointer" style-hover="border-color:var(--coral)">Delete</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ s.editing }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:10px;align-items:center;padding:0 0 12px;flex-wrap:wrap">
+                      <input type="number" value="{{ d.editPoints }}" onChange="{{ d.setEditPoints }}" aria-label="Points" style="width:100px;background:var(--bg);border:1px solid var(--hair);padding:8px 10px;font:400 13px var(--mono)">
+                      <input type="text" value="{{ d.editDesc }}" onChange="{{ d.setEditDesc }}" aria-label="Description" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--hair);padding:8px 10px;font:400 13px var(--mono)">
+                      <button type="button" onClick="{{ d.saveEdit }}" style="background:var(--accent);color:#07130d;border:0;padding:8px 14px;font:600 11px var(--disp);letter-spacing:.08em;cursor:pointer">SAVE</button>
+                      <button type="button" onClick="{{ d.cancelEdit }}" style="background:none;border:0;color:var(--text-muted);padding:8px 6px;font:400 11px var(--mono);cursor:pointer;text-decoration:underline">Cancel</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ s.confirming }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:14px;align-items:center;padding:0 0 12px">
+                      <span style="font:400 12px var(--mono);color:var(--coral)">{{ s.confirmText }}</span>
+                      <button type="button" onClick="{{ s.onDelete }}" style="background:none;border:1px solid var(--coral);color:var(--coral);padding:6px 12px;font:500 11px var(--mono);letter-spacing:.08em;cursor:pointer">Remove</button>
+                      <button type="button" onClick="{{ s.onCancelDelete }}" style="background:none;border:0;color:var(--text-muted);padding:6px 2px;font:400 11px var(--mono);cursor:pointer;text-decoration:underline">Cancel</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+
+              <div style="margin-top:22px;background:var(--bg);border:1px solid var(--hair);padding:18px">
+                <h4 style="margin:0 0 14px;font:500 11px var(--mono);letter-spacing:.16em;color:var(--text-muted)">AWARD POINTS</h4>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                  <div>
+                    <label style="display:block;font:500 10px var(--mono);letter-spacing:.12em;color:var(--text-muted);margin-bottom:7px">RECIPIENT</label>
+                    <div style="display:flex;border:1px solid var(--hair)">
+                      <sc-for list="{{ d.teams }}" as="t" hint-placeholder-count="3">
+                        <button type="button" onClick="{{ t.onClick }}" aria-pressed="{{ t.active }}" style="flex:1;padding:9px 4px;background:{{ t.bg }};color:{{ t.fg }};border:0;font:500 11px var(--mono);letter-spacing:.06em;cursor:pointer">{{ t.name }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div>
+                    <label for="seg" style="display:block;font:500 10px var(--mono);letter-spacing:.12em;color:var(--text-muted);margin-bottom:7px">SEGMENT</label>
+                    <select id="seg" value="{{ d.awardSegment }}" onChange="{{ d.setSegment }}" style="width:100%;background:var(--bg-raised);border:1px solid var(--hair);padding:9px 10px;font:400 13px var(--mono)">
+                      <option>CS Games comp</option><option>Chicken Rush</option><option>Captains Challenge</option><option>Scunts</option><option>Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="pts" style="display:block;font:500 10px var(--mono);letter-spacing:.12em;color:var(--text-muted);margin-bottom:7px">POINTS</label>
+                    <input id="pts" type="number" value="{{ d.awardPoints }}" onChange="{{ d.setPoints }}" placeholder="e.g. 250 or -50" style="width:100%;background:var(--bg-raised);border:1px solid var(--hair);padding:9px 10px;font:400 13px var(--mono);box-sizing:border-box">
+                  </div>
+                  <div>
+                    <label for="adesc" style="display:block;font:500 10px var(--mono);letter-spacing:.12em;color:var(--text-muted);margin-bottom:7px">DESCRIPTION</label>
+                    <input id="adesc" type="text" value="{{ d.awardDesc }}" onChange="{{ d.setAwardDesc }}" placeholder="What are these points for?" style="width:100%;background:var(--bg-raised);border:1px solid var(--hair);padding:9px 10px;font:400 13px var(--mono);box-sizing:border-box">
+                  </div>
+                </div>
+                <sc-if value="{{ d.hasAwardErr }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin:12px 0 0;font:400 12px var(--mono);color:var(--coral)">{{ d.awardErr }}</p>
+                </sc-if>
+                <button type="button" onClick="{{ d.onAward }}" style="margin-top:16px;background:var(--accent);color:#07130d;border:0;padding:11px 20px;font:600 13px var(--disp);letter-spacing:.07em;cursor:pointer" style-hover="filter:brightness(1.12)">AWARD POINTS</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="border-top:1px solid var(--hair);padding:16px 30px 20px">
+            <button type="button" onClick="{{ d.openHistory }}" style="background:none;border:0;padding:0;font:400 11px var(--mono);color:var(--text-muted);cursor:pointer;text-decoration:underline;text-underline-offset:3px" style-hover="color:var(--accent)">{{ d.footLabel }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showHistory }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="padding:22px 30px;border-bottom:1px solid var(--hair);display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div style="display:flex;align-items:center;gap:14px">
+              <button type="button" onClick="{{ d.backToDetail }}" aria-label="Back to event" style="width:32px;height:32px;background:none;border:1px solid var(--hair);color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="border-color:var(--accent)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 5 8 12l7 7"></path></svg>
+              </button>
+              <div>
+                <div style="font:500 11px var(--mono);letter-spacing:.18em;color:var(--accent-dim)">HISTORY</div>
+                <div style="margin-top:4px;font:400 13px var(--mono);color:var(--cream)">{{ d.title }}</div>
+              </div>
+            </div>
+            <button type="button" onClick="{{ onClose }}" aria-label="Close" style="width:32px;height:32px;background:none;border:1px solid var(--hair);color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="border-color:var(--accent);color:var(--accent)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5l14 14M19 5 5 19"></path></svg>
+            </button>
+          </div>
+          <div style="padding:10px 30px 26px">
+            <sc-for list="{{ d.history }}" as="h" hint-placeholder-count="6">
+              <div style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px;padding:14px 0;border-bottom:1px solid rgba(63,143,87,.18)">
+                <span style="font:500 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:{{ h.verbColor }}">{{ h.verb }}</span>
+                <span style="min-width:0">
+                  <span style="display:block;font:400 13px var(--mono);color:var(--text)">{{ h.text }}</span>
+                  <sc-if value="{{ h.hasDiff }}" hint-placeholder-val="{{ false }}">
+                    <span style="display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:8px;font:400 12px var(--mono)">
+                      <span style="color:var(--text-muted)">{{ h.diffLabel }}</span>
+                      <span style="color:var(--text-muted);text-decoration:line-through">{{ h.diffFrom }}</span>
+                      <span style="color:var(--accent-dim)">-&gt;</span>
+                      <span style="color:var(--cream)">{{ h.diffTo }}</span>
+                    </span>
+                  </sc-if>
+                  <span style="display:block;margin-top:7px;font:400 11px var(--mono);color:var(--text-muted)">{{ h.actor }} · {{ h.when }}</span>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ formOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ onBackdrop }}" style="position:fixed;inset:0;z-index:70;background:rgba(4,9,7,.72);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:48px 20px;overflow-y:auto;animation:ecFade 180ms ease-out">
+    <div role="dialog" aria-modal="true" aria-label="Event form" tabIndex="-1" ref="{{ modalRef }}" onKeyDown="{{ onModalKey }}" onClick="{{ stop }}" style="width:100%;max-width:700px;background:var(--bg-raised);border:1px solid var(--accent-dim);animation:ecPop 180ms ease-out;outline:none">
+      <div style="padding:24px 30px;border-bottom:1px solid var(--hair);display:flex;align-items:center;justify-content:space-between">
+        <h2 style="margin:0;font:600 26px var(--disp);letter-spacing:.04em;color:var(--cream)">{{ f.heading }}</h2>
+        <button type="button" onClick="{{ onClose }}" aria-label="Close" style="width:32px;height:32px;background:none;border:1px solid var(--hair);color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="border-color:var(--accent);color:var(--accent)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5l14 14M19 5 5 19"></path></svg>
+        </button>
+      </div>
+      <div style="padding:24px 30px 8px;display:grid;gap:18px">
+        <div>
+          <label for="f-title" style="display:block;font:500 10px var(--mono);letter-spacing:.14em;color:var(--text-muted);margin-bottom:7px">TITLE</label>
+          <input id="f-title" type="text" value="{{ f.title }}" onChange="{{ f.setTitle }}" placeholder="Chicken Rush" style="width:100%;background:var(--bg);border:1px solid var(--hair);padding:11px 12px;font:400 14px var(--mono);box-sizing:border-box">
+          <sc-if value="{{ f.errTitleOn }}" hint-placeholder-val="{{ false }}"><p style="margin:8px 0 0;font:400 12px var(--mono);color:var(--coral)">{{ f.errTitle }}</p></sc-if>
+        </div>
+        <div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px">
+            <label for="f-short" style="font:500 10px var(--mono);letter-spacing:.14em;color:var(--text-muted)">SHORT DESCRIPTION</label>
+            <span style="font:400 11px var(--mono);color:{{ f.countColor }}">{{ f.count }}</span>
+          </div>
+          <input id="f-short" type="text" value="{{ f.short }}" onChange="{{ f.setShort }}" placeholder="One line, shown in the upcoming list" style="width:100%;background:var(--bg);border:1px solid var(--hair);padding:11px 12px;font:400 14px var(--mono);box-sizing:border-box">
+          <sc-if value="{{ f.errShortOn }}" hint-placeholder-val="{{ false }}"><p style="margin:8px 0 0;font:400 12px var(--mono);color:var(--coral)">{{ f.errShort }}</p></sc-if>
+        </div>
+        <div>
+          <label for="f-desc" style="display:block;font:500 10px var(--mono);letter-spacing:.14em;color:var(--text-muted);margin-bottom:7px">WHAT IT IS</label>
+          <textarea id="f-desc" rows="4" value="{{ f.desc }}" onChange="{{ f.setDesc }}" placeholder="Format, rules, what to bring." style="width:100%;background:var(--bg);border:1px solid var(--hair);padding:11px 12px;font:400 14px/1.6 var(--mono);box-sizing:border-box;resize:vertical"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+          <div>
+            <label for="f-acc" style="display:block;font:500 10px var(--mono);letter-spacing:.14em;color:var(--text-muted);margin-bottom:7px">ACCESS &amp; SUSTAINABILITY</label>
+            <textarea id="f-acc" rows="3" value="{{ f.access }}" onChange="{{ f.setAccess }}" placeholder="Step-free routes, quiet space, waste plan." style="width:100%;background:var(--bg);border:1px solid var(--hair);padding:11px 12px;font:400 13px/1.6 var(--mono);box-sizing:border-box;resize:vertical"></textarea>
+          </div>
+          <div>
+            <label for="f-cap" style="display:block;font:500 10px var(--mono);letter-spacing:.14em;color:var(--text-muted);margin-bottom:7px">CAPTAIN'S ROLE</label>
+            <textarea id="f-cap" rows="3" value="{{ f.captain }}" onChange="{{ f.setCaptain }}" placeholder="What the team captain has to do." style="width:100%;background:var(--bg);border:1px solid var(--hair);padding:11px 12px;font:400 13px/1.6 var(--mono);box-sizing:border-box;resize:vertical"></textarea>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+          <div>
+            <label style="display:block;font:500 10px var(--mono);letter-spacing:.14em;color:var(--text-muted);margin-bottom:7px">STARTS</label>
+            <div style="display:flex;gap:8px">
+              <input type="date" value="{{ f.sd }}" onChange="{{ f.setSd }}" aria-label="Start date" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--hair);padding:10px 11px;font:400 13px var(--mono)">
+              <input type="time" value="{{ f.st }}" onChange="{{ f.setSt }}" aria-label="Start time" style="width:110px;background:var(--bg);border:1px solid var(--hair);padding:10px 11px;font:400 13px var(--mono)">
+            </div>
+            <sc-if value="{{ f.errStartOn }}" hint-placeholder-val="{{ false }}"><p style="margin:8px 0 0;font:400 12px var(--mono);color:var(--coral)">{{ f.errStart }}</p></sc-if>
+          </div>
+          <div>
+            <label style="display:block;font:500 10px var(--mono);letter-spacing:.14em;color:var(--text-muted);margin-bottom:7px">ENDS</label>
+            <div style="display:flex;gap:8px">
+              <input type="date" value="{{ f.ed }}" onChange="{{ f.setEd }}" aria-label="End date" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--hair);padding:10px 11px;font:400 13px var(--mono)">
+              <input type="time" value="{{ f.et }}" onChange="{{ f.setEt }}" aria-label="End time" style="width:110px;background:var(--bg);border:1px solid var(--hair);padding:10px 11px;font:400 13px var(--mono)">
+            </div>
+            <sc-if value="{{ f.errEndOn }}" hint-placeholder-val="{{ false }}"><p style="margin:8px 0 0;font:400 12px var(--mono);color:var(--coral)">{{ f.errEnd }}</p></sc-if>
+          </div>
+        </div>
+        <div>
+          <label for="f-loc" style="display:block;font:500 10px var(--mono);letter-spacing:.14em;color:var(--text-muted);margin-bottom:7px">LOCATION</label>
+          <input id="f-loc" type="text" value="{{ f.loc }}" onChange="{{ f.setLoc }}" placeholder="Lower field, Trottier" style="width:100%;background:var(--bg);border:1px solid var(--hair);padding:11px 12px;font:400 14px var(--mono);box-sizing:border-box">
+          <sc-if value="{{ f.errLocOn }}" hint-placeholder-val="{{ false }}"><p style="margin:8px 0 0;font:400 12px var(--mono);color:var(--coral)">{{ f.errLoc }}</p></sc-if>
+        </div>
+        <div>
+          <label style="display:block;font:500 10px var(--mono);letter-spacing:.14em;color:var(--text-muted);margin-bottom:7px">CATEGORY</label>
+          <div style="display:flex;border:1px solid var(--hair)">
+            <sc-for list="{{ f.cats }}" as="c" hint-placeholder-count="4">
+              <button type="button" onClick="{{ c.onClick }}" aria-pressed="{{ c.active }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 6px;background:{{ c.bg }};color:{{ c.fg }};border:0;border-bottom:2px solid {{ c.under }};font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer">
+                <span style="width:8px;height:8px;background:{{ c.dot }};display:block"></span>{{ c.name }}
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="padding:20px 30px 26px;display:flex;align-items:center;gap:16px">
+        <button type="button" onClick="{{ f.onSave }}" style="background:var(--accent);color:#07130d;border:0;padding:13px 24px;font:600 14px var(--disp);letter-spacing:.07em;cursor:pointer" style-hover="filter:brightness(1.12)">{{ f.saveLabel }}</button>
+        <button type="button" onClick="{{ onClose }}" style="background:none;border:0;color:var(--text-muted);padding:12px 4px;font:400 13px var(--mono);cursor:pointer;text-decoration:underline;text-underline-offset:3px" style-hover="color:var(--text)">Cancel</button>
+        <div style="flex:1"></div>
+        <sc-if value="{{ f.canDelete }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ f.askDelete }}" style="background:none;border:0;color:var(--coral);padding:12px 4px;font:400 13px var(--mono);cursor:pointer;text-decoration:underline;text-underline-offset:3px">Delete event</button>
+        </sc-if>
+      </div>
+      <sc-if value="{{ f.confirming }}" hint-placeholder-val="{{ false }}">
+        <div style="margin:0 30px 26px;border:1px solid rgba(255,123,84,.4);padding:14px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <span style="font:400 13px var(--mono);color:var(--coral)">{{ f.confirmText }}</span>
+          <button type="button" onClick="{{ f.onDelete }}" style="background:none;border:1px solid var(--coral);color:var(--coral);padding:7px 14px;font:500 12px var(--mono);letter-spacing:.06em;cursor:pointer">Remove</button>
+          <button type="button" onClick="{{ f.cancelDelete }}" style="background:none;border:0;color:var(--text-muted);padding:7px 2px;font:400 12px var(--mono);cursor:pointer;text-decoration:underline">Cancel</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<div style="position:fixed;right:22px;bottom:22px;z-index:90;background:#141414;border:1px dashed #5b5b5b;padding:11px 13px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.5)">
+  <span style="font:500 9px var(--mono);letter-spacing:.16em;color:#8a8a8a">DEV · VIEW AS</span>
+  <div style="display:flex;border:1px solid #3d3d3d">
+    <button type="button" onClick="{{ setStudent }}" aria-pressed="{{ isStudent }}" style="padding:6px 12px;background:{{ stuBg }};color:{{ stuFg }};border:0;font:500 11px var(--mono);letter-spacing:.06em;cursor:pointer">Student</button>
+    <button type="button" onClick="{{ setExec }}" aria-pressed="{{ isExec }}" style="padding:6px 12px;background:{{ exBg }};color:{{ exFg }};border:0;font:500 11px var(--mono);letter-spacing:.06em;cursor:pointer">Exec</button>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showScanlines&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Schedule&quot;},&quot;showOngoing&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Schedule&quot;},&quot;defaultDay&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Day 1&quot;,&quot;Day 2&quot;,&quot;Day 3&quot;],&quot;default&quot;:&quot;Day 1&quot;,&quot;tsType&quot;:&quot;'Day 1' | 'Day 2' | 'Day 3'&quot;,&quot;section&quot;:&quot;Schedule&quot;}}">
+class Component extends DCLogic {
+  CAT = { Competition: '#ffd23f', Meals: '#ff7b54', Administration: '#4cc9f0', Custom: '#c77dff' };
+  CATS = ['Competition', 'Meals', 'Administration', 'Custom'];
+  TEAMS = ['Electrical', 'Computer', 'Software'];
+  WD = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  WDL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  MO = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  MOL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  DAYS = [25, 26, 27];
+  NOW = new Date(2026, 8, 25, 10, 15);
+  ME = 'Raphael Vermeil';
+  uid = 100;
+
+  state = {
+    role: 'student',
+    day: this.props.defaultDay === 'Day 2' ? 26 : (this.props.defaultDay === 'Day 3' ? 27 : 25),
+    filters: { Competition: true, Meals: true, Administration: true, Custom: true },
+    events: this.seed(),
+    seedV: 2,
+    openId: null,
+    tab: 'detail',
+    form: null,
+    errors: {},
+    formConfirm: false,
+    menuFor: null,
+    confirmScore: null,
+    editScore: null,
+    award: { team: 'Software', segment: 'CS Games comp', points: '', desc: '' },
+    awardErr: ''
+  };
+
+  seed() {
+    const mk = (id, title, short, desc, access, captain, cat, day, sh, sm, eh, em, loc, ongoing) => ({
+      id, title, short, desc, access, captain, cat, loc, ongoing: !!ongoing,
+      start: new Date(2026, 8, day, sh, sm),
+      end: new Date(2026, 8, day + (eh < sh ? 1 : 0), eh, em),
+      scores: [],
+      created: { by: 'Raphael Vermeil', at: new Date(2026, 7, 3, 14, 22) },
+      edited: null,
+      history: [{ id: id + '-h0', verb: 'created', actor: 'Raphael Vermeil', at: new Date(2026, 7, 3, 14, 22), text: 'Event created.', diff: null }]
+    });
+    const list = [
+      mk('scunts', 'Scunts', 'Running scavenger hunt, open the whole weekend.',
+        'A weekend-long scavenger hunt. Tasks are posted in the Games channel on Friday morning and stay open until the closing ceremonies. Submit photo or video proof with your team tag.',
+        'Every task can be completed without running, climbing or drinking. Tasks marked with a leaf score double when completed without single-use plastic.',
+        'Captains hold the submission link, decide which tasks the team attempts, and are the only ones who can post proof.',
+        'Custom', 25, 9, 0, 27, 0, 'Across campus', true),
+      mk('damn', 'Damn Things', 'Build-it challenges released in batches all weekend.',
+        'Small engineering build challenges released in batches. Judged on function first, style second. Materials are supplied at the Trottier build table.',
+        'Seated build stations are available at the front of the room. Leftover material goes back to the shared bin rather than the bin.',
+        'Captains collect materials, keep the build log, and hand in each finished thing for judging.',
+        'Custom', 25, 9, 0, 27, 0, 'Trottier build table', true),
+      mk('capchal', 'Captains Challenge', 'Captains only. Sets the tone and the first points of the weekend.',
+        'The three captains face off in a short relay of mental and physical tasks. Everyone else watches and heckles. Points carry into the overall standings.',
+        'Every task has a seated alternative. Water is served in reusable cups from the ECSESS bar.',
+        'This is the captains event. Captains compete in person and cannot substitute a teammate.',
+        'Competition', 25, 15, 0, 17, 0, 'McConnell Lobby'),
+      mk('opening', 'Opening ceremony', 'Rules, scoring and the segment lineup for the weekend.',
+        'The Games officially open. Execs walk through the scoring rules, the segment lineup and the conduct policy. Team chants happen at the end.',
+        'Step-free entry from the north door. Captioned slides, and a quiet room next door for the whole ceremony.',
+        'Captains are called up by name to collect the team banner and confirm the roster.',
+        'Administration', 25, 18, 0, 19, 30, 'FDA Auditorium'),
+      mk('park', 'Park Day', 'Outdoor games, food and the loudest cheering of the weekend.',
+        'An afternoon of lawn games in the park. Low stakes, high volume. Points are awarded per game rather than overall.',
+        'Paved paths to every station. Shade and seating on the west side. Bring your own bottle, the refill station is by the entrance.',
+        'Captains assign teammates to stations and report scores to the exec at the tent.',
+        'Custom', 26, 11, 0, 15, 0, 'Jeanne-Mance Park'),
+      mk('csgames', 'CS Games comp', 'Timed programming and design heats, judged live.',
+        'The CS Games qualifier runs as three timed heats. Teams of two work from a supplied brief and are scored on correctness, clarity and speed. Laptops required.',
+        'Height-adjustable desks at the front two rows. Briefs are provided in plain text as well as on the projector.',
+        'Captains submit the pairings before the first heat and hold the tiebreak vote.',
+        'Competition', 26, 12, 0, 16, 0, 'Trottier 0100'),
+      mk('chicken', 'Chicken Rush', 'Team relay across campus. Fastest team takes the segment.',
+        'A timed relay with a checkpoint at each engineering building. Teams move as a group and check in with the exec at each stop.',
+        'The full route is step-free and can be walked rather than run. Checkpoint snacks come in compostable packaging.',
+        'Captains keep the checkpoint card and decide the running order.',
+        'Competition', 26, 17, 0, 19, 0, 'Start: Macdonald steps'),
+      mk('boiler', 'Boiler Room', 'Late set in the basement. No points, all attendance.',
+        'The Saturday night party. Three DJ sets, one bar, no scoring. Bring ID.',
+        'Ear plugs at the door and a low-volume seated area at the back. Cups are reusable with a deposit.',
+        'Captains are on call as the sober contact for their team.',
+        'Custom', 26, 21, 0, 23, 30, 'McConnell Basement'),
+      mk('pancake', 'Pancake kegger', 'Pancakes from ten, standings from eleven.',
+        'Sunday starts with pancakes and the current standings on the projector. Nothing is scored, everything is discussed.',
+        'Gluten-free and vegan batter on the second griddle. Compost and recycling stations at both exits.',
+        'Captains pick up the printed standings sheet and any point disputes are raised here.',
+        'Meals', 27, 10, 0, 13, 0, 'Thomson House'),
+      mk('forge', 'Mini forge', 'Small-scale build sprint with supplied materials.',
+        'A ninety-minute build sprint. Teams get an identical kit and a single constraint revealed at the start.',
+        'Seated stations, tool guards on every station, and a mandatory eye-protection check. Kits are reclaimed and reused next year.',
+        'Captains collect the kit and sign the safety sheet for the team.',
+        'Competition', 27, 13, 0, 15, 0, 'Trottier build table'),
+      mk('ultimate', 'Ultimate Rallies', 'Round-robin ultimate on the lower field.',
+        'Three-way round robin, fifteen minutes a side. Standard rules, self-refereed, spirit score counts for a quarter of the points.',
+        'Sideline seating and shade. A non-contact substitute role is available for anyone who wants to play without the running.',
+        'Captains submit the lineup and give the spirit score for the other teams.',
+        'Competition', 27, 15, 0, 17, 0, 'Lower field'),
+      mk('boat', 'BOAT races and closing ceremonies', 'Final segment, then final standings and trophies.',
+        'The last segment of the weekend, followed immediately by the closing ceremonies. Standings are locked once the last race finishes.',
+        'Step-free viewing area along the near side. Non-alcoholic entries score the same. All cups are reusable.',
+        'Captains race first, then accept the trophy and read the team total on stage.',
+        'Competition', 27, 18, 0, 21, 0, 'FDA Auditorium')
+    ];
+    const c = list.find(e => e.id === 'csgames');
+    c.edited = { by: 'Raphael Vermeil', at: new Date(2026, 7, 3, 14, 22) };
+    c.scores = [
+      { id: 's1', team: 'Software', segment: 'CS Games comp', points: 250, by: 'R. Vermeil', at: new Date(2026, 8, 26, 14, 22), desc: 'Heat 1 first place', revoked: false },
+      { id: 's2', team: 'Computer', segment: 'CS Games comp', points: 180, by: 'R. Vermeil', at: new Date(2026, 8, 26, 14, 24), desc: 'Heat 1 second place', revoked: false },
+      { id: 's3', team: 'Electrical', segment: 'CS Games comp', points: -50, by: 'A. Nguyen', at: new Date(2026, 8, 26, 14, 31), desc: 'Late submission penalty', revoked: false },
+      { id: 's4', team: 'Software', segment: 'CS Games comp', points: 100, by: 'R. Vermeil', at: new Date(2026, 8, 26, 14, 5), desc: 'Entered against the wrong heat', revoked: true }
+    ];
+    c.history = [
+      { id: 'h1', verb: 'created', actor: 'Raphael Vermeil', at: new Date(2026, 7, 3, 14, 22), text: 'Event created.', diff: null },
+      { id: 'h2', verb: 'edited', actor: 'Raphael Vermeil', at: new Date(2026, 8, 20, 9, 12), text: 'Room changed after the booking moved.', diff: { label: 'Location', from: 'Trottier 1090', to: 'Trottier 0100' } },
+      { id: 'h3', verb: 'awarded', actor: 'R. Vermeil', at: new Date(2026, 8, 26, 14, 5), text: '+100 to Software — entered against the wrong heat.', diff: null },
+      { id: 'h4', verb: 'awarded', actor: 'R. Vermeil', at: new Date(2026, 8, 26, 14, 22), text: '+250 to Software — heat 1 first place.', diff: null },
+      { id: 'h5', verb: 'awarded', actor: 'R. Vermeil', at: new Date(2026, 8, 26, 14, 24), text: '+180 to Computer — heat 1 second place.', diff: null },
+      { id: 'h6', verb: 'awarded', actor: 'A. Nguyen', at: new Date(2026, 8, 26, 14, 31), text: '-50 to Electrical — late submission penalty.', diff: null },
+      { id: 'h7', verb: 'deleted', actor: 'A. Nguyen', at: new Date(2026, 8, 26, 14, 36), text: 'Revoked 100 points from Software.', diff: null }
+    ];
+    return list;
+  }
+
+  /* helpers */
+  pad(n) { return String(n).padStart(2, '0'); }
+  fmtT(d) { return this.pad(d.getHours()) + ':' + this.pad(d.getMinutes()); }
+  key(d) { return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
+  group(d) { return this.WD[d.getDay()] + ' ' + this.pad(d.getDate()) + ' ' + this.MO[d.getMonth()]; }
+  longDate(d) { return this.WDL[d.getDay()] + ' ' + d.getDate() + ' ' + this.MOL[d.getMonth()].slice(0, 3) + ' ' + d.getFullYear(); }
+  stamp(d) { return d.getDate() + ' ' + this.MOL[d.getMonth()].slice(0, 3) + ' ' + d.getFullYear() + ', ' + this.fmtT(d); }
+  same(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+  iso(d) { return d.getFullYear() + '-' + this.pad(d.getMonth() + 1) + '-' + this.pad(d.getDate()); }
+  parse(ds, ts) {
+    if (!ds || !ts) return null;
+    const a = ds.split('-').map(Number), b = ts.split(':').map(Number);
+    return new Date(a[0], a[1] - 1, a[2], b[0], b[1]);
+  }
+  visible() { return this.state.events.filter(e => this.state.filters[e.cat]); }
+  chip(c) { return 'rgba(' + parseInt(c.slice(1, 3), 16) + ',' + parseInt(c.slice(3, 5), 16) + ',' + parseInt(c.slice(5, 7), 16) + ',.4)'; }
+  fill(c) { return 'rgba(' + parseInt(c.slice(1, 3), 16) + ',' + parseInt(c.slice(3, 5), 16) + ',' + parseInt(c.slice(5, 7), 16) + ',.12)'; }
+
+  /* modal plumbing */
+  componentDidMount() {
+    if (this.state.seedV !== 2) this.setState({ events: this.seed(), seedV: 2, day: 25, openId: null, form: null });
+    this.esc = (e) => { if (e.key === 'Escape' && (this.state.openId || this.state.form)) this.close(); };
+    window.addEventListener('keydown', this.esc);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this.esc); }
+  componentDidUpdate() {
+    const was = !!this._wasOpen, is = !!(this.state.openId || this.state.form);
+    this._wasOpen = is;
+    if (!was && is && this.modal) this.modal.focus();
+    if (was && !is && this.trigger && this.trigger.focus) { this.trigger.focus(); this.trigger = null; }
+  }
+  setModal = (el) => { this.modal = el; };
+  onModalKey = (e) => {
+    if (e.key === 'Escape') { e.stopPropagation(); this.close(); return; }
+    if (e.key !== 'Tab' || !this.modal) return;
+    const nodes = Array.prototype.slice.call(this.modal.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select,textarea,[tabindex]:not([tabindex="-1"])'))
+      .filter(el => el.offsetWidth || el.offsetHeight);
+    if (!nodes.length) return;
+    const first = nodes[0], last = nodes[nodes.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  close = () => this.setState({ openId: null, form: null, errors: {}, tab: 'detail', menuFor: null, confirmScore: null, editScore: null, formConfirm: false, awardErr: '' });
+  openEvent(id) { this.trigger = document.activeElement; this.setState({ openId: id, tab: 'detail', menuFor: null, confirmScore: null, editScore: null, awardErr: '' }); }
+
+  openForm(ev) {
+    this.trigger = document.activeElement;
+    const f = ev ? {
+      mode: 'edit', id: ev.id, title: ev.title, short: ev.short, desc: ev.desc, access: ev.access, captain: ev.captain, loc: ev.loc, cat: ev.cat,
+      sd: this.iso(ev.start), st: this.fmtT(ev.start), ed: this.iso(ev.end), et: this.fmtT(ev.end)
+    } : { mode: 'create', id: null, title: '', short: '', desc: '', access: '', captain: '', loc: '', cat: 'Competition', sd: '2026-09-' + this.pad(this.state.day), st: '', ed: '2026-09-' + this.pad(this.state.day), et: '' };
+    this.setState({ form: f, errors: {}, formConfirm: false });
+  }
+  setF(k, v) { this.setState(s => ({ form: Object.assign({}, s.form, { [k]: v }) })); }
+
+  saveForm = () => {
+    const f = this.state.form, er = {};
+    if (!f.title.trim()) er.title = 'Add a title so people know what this is.';
+    if (!f.short.trim()) er.short = 'Add a one-line description — it appears in the upcoming list.';
+    else if (f.short.length > 80) er.short = 'Trim this to 80 characters or fewer.';
+    if (!f.sd || !f.st) er.start = 'Set a start date and time.';
+    if (!f.ed || !f.et) er.end = 'Set an end date and time.';
+    if (!f.loc.trim()) er.loc = 'Add a location, or write Online.';
+    const s = this.parse(f.sd, f.st), e = this.parse(f.ed, f.et);
+    if (s && e && e <= s) er.end = 'End time must be after the start time.';
+    if (Object.keys(er).length) { this.setState({ errors: er }); return; }
+    const now = this.NOW;
+    if (f.mode === 'create') {
+      const ev = {
+        id: 'n' + (++this.uid), title: f.title.trim(), short: f.short.trim(), desc: f.desc.trim() || f.short.trim(),
+        access: f.access.trim() || 'No access or sustainability notes added yet.',
+        captain: f.captain.trim() || 'No captain duties for this event.',
+        cat: f.cat, loc: f.loc.trim(), start: s, end: e, scores: [], ongoing: false,
+        created: { by: this.ME, at: now }, edited: null,
+        history: [{ id: 'nh' + this.uid, verb: 'created', actor: this.ME, at: now, text: 'Event created.', diff: null }]
+      };
+      this.setState(st => ({ events: st.events.concat([ev]), form: null, errors: {}, day: s.getDate() }));
+    } else {
+      this.setState(st => ({
+        events: st.events.map(ev => {
+          if (ev.id !== f.id) return ev;
+          const h = ev.history.slice();
+          if (ev.title !== f.title.trim()) h.push({ id: 'e' + (++this.uid), verb: 'edited', actor: this.ME, at: now, text: 'Title updated.', diff: { label: 'Title', from: ev.title, to: f.title.trim() } });
+          if (ev.loc !== f.loc.trim()) h.push({ id: 'e' + (++this.uid), verb: 'edited', actor: this.ME, at: now, text: 'Location updated.', diff: { label: 'Location', from: ev.loc, to: f.loc.trim() } });
+          if (ev.access !== f.access.trim()) h.push({ id: 'e' + (++this.uid), verb: 'edited', actor: this.ME, at: now, text: 'Access and sustainability note updated.', diff: { label: 'Notice', from: ev.access, to: f.access.trim() } });
+          if (!this.same(ev.start, s) || this.fmtT(ev.start) !== f.st) h.push({ id: 'e' + (++this.uid), verb: 'edited', actor: this.ME, at: now, text: 'Start time updated.', diff: { label: 'Starts', from: this.stamp(ev.start), to: this.stamp(s) } });
+          return Object.assign({}, ev, { title: f.title.trim(), short: f.short.trim(), desc: f.desc.trim() || f.short.trim(), access: f.access.trim(), captain: f.captain.trim(), cat: f.cat, loc: f.loc.trim(), start: s, end: e, edited: { by: this.ME, at: now }, history: h });
+        }), form: null, errors: {}
+      }));
+    }
+  };
+
+  deleteEvent = () => {
+    const id = this.state.form.id;
+    this.setState(s => ({ events: s.events.filter(e => e.id !== id), form: null, openId: null, formConfirm: false }));
+  };
+
+  award = () => {
+    const a = this.state.award, id = this.state.openId;
+    const n = parseInt(a.points, 10);
+    if (a.points === '' || isNaN(n)) { this.setState({ awardErr: 'Enter a point value — negatives are allowed for penalties.' }); return; }
+    if (!a.desc.trim()) { this.setState({ awardErr: 'Say what the points are for so the log stays readable.' }); return; }
+    const at = this.NOW;
+    this.setState(s => ({
+      awardErr: '',
+      award: { team: a.team, segment: a.segment, points: '', desc: '' },
+      events: s.events.map(e => e.id !== id ? e : Object.assign({}, e, {
+        scores: e.scores.concat([{ id: 'x' + (++this.uid), team: a.team, segment: a.segment, points: n, by: 'R. Vermeil', at, desc: a.desc.trim(), revoked: false }]),
+        history: e.history.concat([{ id: 'xh' + this.uid, verb: 'awarded', actor: 'R. Vermeil', at, text: (n > 0 ? '+' : '') + n + ' to ' + a.team + ' — ' + a.desc.trim().toLowerCase() + '.', diff: null }])
+      }))
+    }));
+  };
+
+  revoke(sid) {
+    const id = this.state.openId;
+    this.setState(s => ({
+      confirmScore: null, menuFor: null,
+      events: s.events.map(e => {
+        if (e.id !== id) return e;
+        const sc = e.scores.find(x => x.id === sid);
+        return Object.assign({}, e, {
+          scores: e.scores.map(x => x.id === sid ? Object.assign({}, x, { revoked: true }) : x),
+          history: e.history.concat([{ id: 'r' + (++this.uid), verb: 'deleted', actor: this.ME, at: this.NOW, text: 'Revoked ' + Math.abs(sc.points) + ' points from ' + sc.team + '.', diff: null }])
+        });
+      })
+    }));
+  }
+
+  saveScoreEdit = () => {
+    const ed = this.state.editScore, id = this.state.openId;
+    const n = parseInt(ed.points, 10);
+    if (isNaN(n)) { this.setState({ editScore: Object.assign({}, ed) }); return; }
+    this.setState(s => ({
+      editScore: null,
+      events: s.events.map(e => {
+        if (e.id !== id) return e;
+        const old = e.scores.find(x => x.id === ed.id);
+        const h = e.history.slice();
+        if (old.points !== n) h.push({ id: 'se' + (++this.uid), verb: 'edited', actor: this.ME, at: this.NOW, text: 'Score for ' + old.team + ' corrected.', diff: { label: 'Points', from: String(old.points), to: String(n) } });
+        if (old.desc !== ed.desc) h.push({ id: 'sd' + (++this.uid), verb: 'edited', actor: this.ME, at: this.NOW, text: 'Score note updated.', diff: { label: 'Note', from: old.desc, to: ed.desc } });
+        return Object.assign({}, e, { scores: e.scores.map(x => x.id === ed.id ? Object.assign({}, x, { points: n, desc: ed.desc }) : x), history: h });
+      })
+    }));
+  };
+
+  renderVals() {
+    const S = this.state, isExec = S.role === 'exec';
+    const vis = this.visible();
+    const V = {
+      scanlines: this.props.showScanlines !== false,
+      showOngoing: this.props.showOngoing !== false,
+      isExec, isStudent: !isExec,
+      onAdd: () => this.openForm(null),
+      setStudent: () => this.setState({ role: 'student', form: null, tab: 'detail' }),
+      setExec: () => this.setState({ role: 'exec' }),
+      stuBg: !isExec ? 'var(--accent)' : 'transparent', stuFg: !isExec ? '#07130d' : '#9a9a9a',
+      exBg: isExec ? 'var(--accent)' : 'transparent', exFg: isExec ? '#07130d' : '#9a9a9a',
+      modalRef: this.setModal, onModalKey: this.onModalKey, onClose: this.close,
+      onBackdrop: this.close, stop: (e) => e.stopPropagation(),
+      chips: this.CATS.map(name => {
+        const c = this.CAT[name], on = S.filters[name];
+        return {
+          key: name, name, active: on, dot: on ? c : 'var(--text-muted)',
+          bg: on ? this.fill(c) : 'transparent',
+          border: on ? this.chip(c) : 'rgba(127,148,130,.3)',
+          fg: on ? c : 'var(--text-muted)',
+          toggle: () => this.setState(s => ({ filters: Object.assign({}, s.filters, { [name]: !s.filters[name] }) }))
+        };
+      }),
+      clearFilters: () => this.setState({ filters: { Competition: true, Meals: true, Administration: true, Custom: true } })
+    };
+
+    /* ongoing strip */
+    V.ongoing = vis.filter(e => e.ongoing).map(e => ({
+      key: e.id, title: e.title, short: e.short, color: this.CAT[e.cat], open: () => this.openEvent(e.id)
+    }));
+
+    /* day tabs */
+    const scheduled = vis.filter(e => !e.ongoing);
+    V.dayTabs = this.DAYS.map((n, i) => {
+      const d = new Date(2026, 8, n);
+      const count = scheduled.filter(e => this.same(e.start, d)).length;
+      const on = S.day === n;
+      return {
+        key: 'd' + n, active: on,
+        kicker: 'DAY ' + (i + 1),
+        kickerColor: on ? 'var(--accent)' : 'var(--text-muted)',
+        label: this.WD[d.getDay()] + ' ' + n,
+        titleColor: on ? 'var(--cream)' : 'var(--text-muted)',
+        count: count + (count === 1 ? ' event' : ' events'),
+        bg: on ? 'var(--bg)' : 'transparent',
+        under: on ? 'var(--accent)' : 'transparent',
+        onClick: () => this.setState({ day: n })
+      };
+    });
+
+    const dayDate = new Date(2026, 8, S.day);
+    const rows = scheduled.filter(e => this.same(e.start, dayDate)).sort((a, b) => a.start - b.start);
+    V.dayRows = rows.map(e => ({
+      key: e.id, time: this.fmtT(e.start), endTime: 'until ' + this.fmtT(e.end),
+      title: e.title, short: e.short, loc: e.loc, cat: e.cat,
+      color: this.CAT[e.cat], chipBorder: this.chip(this.CAT[e.cat]),
+      open: () => this.openEvent(e.id)
+    }));
+    V.dayEmpty = rows.length === 0;
+
+    /* upcoming rail */
+    const up = scheduled.filter(e => e.end >= this.NOW).sort((a, b) => a.start - b.start);
+    const groups = [];
+    let last = null;
+    up.forEach(e => {
+      const k = this.key(e.start);
+      if (!last || last.key !== k) { last = { key: k, label: this.group(e.start), rows: [] }; groups.push(last); }
+      last.rows.push({
+        key: e.id, time: this.fmtT(e.start), title: e.title, short: e.short, cat: e.cat,
+        color: this.CAT[e.cat], chipBorder: this.chip(this.CAT[e.cat]),
+        open: () => this.openEvent(e.id)
+      });
+    });
+    V.railGroups = groups;
+    V.railCount = up.length + (up.length === 1 ? ' EVENT' : ' EVENTS');
+    const anyUpcoming = S.events.some(e => !e.ongoing && e.end >= this.NOW);
+    V.railFiltered = up.length === 0 && anyUpcoming;
+    V.railNone = up.length === 0 && !anyUpcoming;
+
+    /* detail modal */
+    const ev = S.openId ? S.events.find(e => e.id === S.openId) : null;
+    V.detailOpen = !!ev;
+    V.showDetail = !!ev && S.tab === 'detail';
+    V.showHistory = !!ev && S.tab === 'history';
+    if (ev) {
+      const col = this.CAT[ev.cat];
+      const ed = S.editScore;
+      V.onEditEvent = () => this.openForm(ev);
+      V.d = {
+        title: ev.title, cat: ev.cat, color: col, chipBorder: this.chip(col),
+        dateLabel: ev.ongoing ? 'Fri 25 – Sun 27 Sep 2026' : this.longDate(ev.start),
+        timeLabel: ev.ongoing ? 'Open all weekend' : this.fmtT(ev.start) + ' – ' + this.fmtT(ev.end),
+        loc: ev.loc, desc: ev.desc, access: ev.access, captain: ev.captain,
+        footLabel: ev.edited
+          ? 'Last edited by ' + ev.edited.by + ' · ' + this.stamp(ev.edited.at)
+          : 'Created by ' + ev.created.by + ' · ' + this.stamp(ev.created.at),
+        openHistory: () => this.setState({ tab: 'history' }),
+        backToDetail: () => this.setState({ tab: 'detail' }),
+        scores: ev.scores.map(s => ({
+          key: s.id, team: s.team, segment: s.segment,
+          pointsText: (s.points > 0 ? '+' : '') + s.points,
+          pointsColor: s.points < 0 ? 'var(--coral)' : 'var(--accent)',
+          by: s.by, when: this.fmtT(s.at),
+          opacity: s.revoked ? '0.5' : '1',
+          deco: s.revoked ? 'line-through' : 'none',
+          revoked: s.revoked, showMenuBtn: !s.revoked,
+          menuOpen: S.menuFor === s.id && S.confirmScore !== s.id && !(ed && ed.id === s.id),
+          editing: !!(ed && ed.id === s.id),
+          confirming: S.confirmScore === s.id,
+          confirmText: 'Remove ' + s.points + ' points from ' + s.team + '?',
+          onMenu: () => this.setState({ menuFor: S.menuFor === s.id ? null : s.id }),
+          onEdit: () => this.setState({ editScore: { id: s.id, points: String(s.points), desc: s.desc }, menuFor: null }),
+          onAskDelete: () => this.setState({ confirmScore: s.id, menuFor: null }),
+          onCancelDelete: () => this.setState({ confirmScore: null }),
+          onDelete: () => this.revoke(s.id)
+        })),
+        editPoints: ed ? ed.points : '',
+        editDesc: ed ? ed.desc : '',
+        setEditPoints: (e) => { const v = e.target.value; this.setState(s => ({ editScore: Object.assign({}, s.editScore, { points: v }) })); },
+        setEditDesc: (e) => { const v = e.target.value; this.setState(s => ({ editScore: Object.assign({}, s.editScore, { desc: v }) })); },
+        saveEdit: this.saveScoreEdit,
+        cancelEdit: () => this.setState({ editScore: null }),
+        teams: this.TEAMS.map(t => ({
+          key: t, name: t, active: S.award.team === t,
+          bg: S.award.team === t ? 'var(--accent)' : 'transparent',
+          fg: S.award.team === t ? '#07130d' : 'var(--text-muted)',
+          onClick: () => this.setState(s => ({ award: Object.assign({}, s.award, { team: t }) }))
+        })),
+        awardSegment: S.award.segment, awardPoints: S.award.points, awardDesc: S.award.desc,
+        setSegment: (e) => { const v = e.target.value; this.setState(s => ({ award: Object.assign({}, s.award, { segment: v }) })); },
+        setPoints: (e) => { const v = e.target.value; this.setState(s => ({ award: Object.assign({}, s.award, { points: v }) })); },
+        setAwardDesc: (e) => { const v = e.target.value; this.setState(s => ({ award: Object.assign({}, s.award, { desc: v }) })); },
+        hasAwardErr: !!S.awardErr, awardErr: S.awardErr, onAward: this.award,
+        history: ev.history.slice().reverse().map(h => ({
+          key: h.id, verb: h.verb, text: h.text, actor: h.actor, when: this.stamp(h.at),
+          verbColor: h.verb === 'deleted' ? 'var(--coral)' : (h.verb === 'awarded' ? 'var(--accent)' : 'var(--accent-dim)'),
+          hasDiff: !!h.diff,
+          diffLabel: h.diff ? h.diff.label : '',
+          diffFrom: h.diff ? h.diff.from : '',
+          diffTo: h.diff ? h.diff.to : ''
+        }))
+      };
+    }
+
+    /* form modal */
+    const f = S.form;
+    V.formOpen = !!f;
+    if (f) {
+      const er = S.errors;
+      V.f = {
+        heading: f.mode === 'create' ? 'NEW EVENT' : 'EDIT EVENT',
+        saveLabel: f.mode === 'create' ? 'SAVE EVENT' : 'SAVE CHANGES',
+        title: f.title, short: f.short, desc: f.desc, access: f.access, captain: f.captain,
+        loc: f.loc, sd: f.sd, st: f.st, ed: f.ed, et: f.et,
+        count: f.short.length + ' / 80',
+        countColor: f.short.length > 80 ? 'var(--coral)' : 'var(--text-muted)',
+        setTitle: (e) => this.setF('title', e.target.value),
+        setShort: (e) => this.setF('short', e.target.value),
+        setDesc: (e) => this.setF('desc', e.target.value),
+        setAccess: (e) => this.setF('access', e.target.value),
+        setCaptain: (e) => this.setF('captain', e.target.value),
+        setLoc: (e) => this.setF('loc', e.target.value),
+        setSd: (e) => this.setF('sd', e.target.value),
+        setSt: (e) => this.setF('st', e.target.value),
+        setEd: (e) => this.setF('ed', e.target.value),
+        setEt: (e) => this.setF('et', e.target.value),
+        errTitleOn: !!er.title, errTitle: er.title || '',
+        errShortOn: !!er.short, errShort: er.short || '',
+        errStartOn: !!er.start, errStart: er.start || '',
+        errEndOn: !!er.end, errEnd: er.end || '',
+        errLocOn: !!er.loc, errLoc: er.loc || '',
+        cats: this.CATS.map(name => {
+          const c = this.CAT[name], on = f.cat === name;
+          return {
+            key: name, name, dot: c, active: on,
+            bg: on ? this.fill(c) : 'transparent',
+            fg: on ? c : 'var(--text-muted)',
+            under: on ? c : 'transparent',
+            onClick: () => this.setF('cat', name)
+          };
+        }),
+        onSave: this.saveForm,
+        canDelete: f.mode === 'edit',
+        confirming: S.formConfirm,
+        confirmText: 'Remove "' + f.title + '" and its score entries?',
+        askDelete: () => this.setState({ formConfirm: true }),
+        cancelDelete: () => this.setState({ formConfirm: false }),
+        onDelete: this.deleteEvent
+      };
+    }
+    return V;
+  }
+}
+</script>
+</body>
+</html>

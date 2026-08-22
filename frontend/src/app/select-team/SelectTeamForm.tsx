@@ -4,12 +4,13 @@ import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import api from "@/lib/api";
-import { Zap, Cpu, CodeXml } from "@/components/icons";
+import { Zap, Cpu, CodeXml, Users } from "@/components/icons";
 
 const TEAMS = [
   { slug: "electrical", label: "Electrical", sub: "U1–U3 · EE", Icon: Zap },
   { slug: "computer", label: "Computer", sub: "U1–U3 · CE", Icon: Cpu },
   { slug: "software", label: "Software", sub: "U1–U3 · SE", Icon: CodeXml },
+  { slug: "oldPatrol", label: "Old Patrol", sub: "U4+ · Alumni", Icon: Users },
 ];
 
 export default function SelectTeamForm() {
@@ -47,7 +48,7 @@ export default function SelectTeamForm() {
 
   return (
     <div className="flex flex-col items-center gap-5">
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {TEAMS.map((t) => (
           <button
             key={t.slug}
