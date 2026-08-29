@@ -33,6 +33,7 @@ yarn-error.log*
 # Agent skills (npx skills) — materialized skill content, restore via
 # `npx skills experimental_install` from the committed skills-lock.json
 .agents/
+.claude/
 
 # Graphify output & machine-specific Claude hook config
 # (commit .claude/settings.example.json; each dev runs `graphify claude install`)
