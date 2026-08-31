@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { Fragment, type CSSProperties } from "react";
 import {
   type CrewId,
   type TeamMember,
@@ -9,8 +9,17 @@ import {
   firstName,
 } from "@/lib/team";
 
-export const SCENE_WIDTH = 1436;
+// SCENE_WIDTH is grown well past the original 1436-wide composition so that
+// ScaledScene — which always stretches this scene to fill the container's
+// full width — renders that composition noticeably smaller, without ever
+// leaving blank letterboxing at the sides. Every hand-placed x-position
+// (decor, fireflies, crew clusters) is stretched by DECOR_STRETCH_X so the
+// whole picture spreads out to use the new width, rather than staying
+// bunched in the original 1436px-wide area with dead space on the sides.
+export const SCENE_WIDTH = 1916;
 export const SCENE_HEIGHT = 786;
+const ORIGINAL_CONTENT_WIDTH = 1436;
+const DECOR_STRETCH_X = SCENE_WIDTH / ORIGINAL_CONTENT_WIDTH;
 
 export interface SunState {
   // Percent-of-scene position. `animated` drives the CSS ecSun drift
@@ -514,6 +523,43 @@ const FIREFLIES: [number, number, string][] = [
   [1268, 322, "#3e7a45"],
 ];
 
+// [x, y, color] — small flowers. Authored directly in final SCENE_WIDTH
+// coordinates (no DECOR_STRETCH_X needed). Concentrated in the lower grass
+// band, which was otherwise mostly empty, with a lighter sprinkle up top so
+// the rest of the scenery gets a bit more too.
+const FLOWERS: [number, number, string][] = [
+  [120, 630, "#ff7b54"],
+  [380, 700, "#ffd166"],
+  [560, 660, "#e9f5cd"],
+  [760, 730, "#7fd1ff"],
+  [960, 680, "#b39cff"],
+  [1150, 650, "#ff7b54"],
+  [1330, 720, "#ffd166"],
+  [1690, 740, "#7fd1ff"],
+  [1840, 660, "#b39cff"],
+  [260, 380, "#ffd166"],
+  [140, 420, "#ff7b54"],
+  [1080, 360, "#e9f5cd"],
+  [1360, 390, "#7fd1ff"],
+  [1750, 350, "#e9f5cd"],
+  [620, 400, "#ffd166"],
+  [1650, 380, "#7fd1ff"],
+];
+
+// [x, y] — small rocks, same distribution idea as FLOWERS.
+const ROCKS: [number, number][] = [
+  [220, 720],
+  [500, 680],
+  [840, 750],
+  [1080, 700],
+  [1260, 660],
+  [1600, 720],
+  [420, 360],
+  [1500, 340],
+  [1820, 400],
+  [900, 420],
+];
+
 function Avatar({
   member,
   crew,
@@ -688,6 +734,18 @@ export default function CampScene({
   const groups = groupByCrew(members);
   const byId = Object.fromEntries(groups.map((g) => [g.crew.id, g.members]));
 
+  // The first 5 SCENE_DECOR entries are the dusk sky bands; the sun paints
+  // over those only, so everything else (mountains, buildings, ground,
+  // clusters) sits in front of it instead of the sun floating over them.
+  const skyDecor = SCENE_DECOR.slice(0, 5);
+  const groundAndAboveDecor = SCENE_DECOR.slice(5);
+  // Full-bleed layers (ground/road bands, all left:0+right:0) stretch to the
+  // new SCENE_WIDTH on their own. Everything else was hand-placed for the
+  // original 1436-wide composition, so its x-position is stretched by
+  // DECOR_STRETCH_X to spread it across the wider canvas instead.
+  const fullBleedDecor = groundAndAboveDecor.filter((s) => "right" in s);
+  const isolatedDecor = groundAndAboveDecor.filter((s) => !("right" in s));
+
   return (
     <div
       style={{
@@ -698,11 +756,12 @@ export default function CampScene({
         background: "#2a3d4f",
       }}
     >
-      {SCENE_DECOR.map((s, i) => (
+      {skyDecor.map((s, i) => (
         <Dec key={i} {...s} />
       ))}
 
-      {/* Sun */}
+      {/* Sun — behind the mountains/buildings/ground below, in front of only
+          the sky bands above. */}
       <Dec
         left={`${sun.leftPct}%`}
         top={`${sun.topPct}%`}
@@ -717,10 +776,22 @@ export default function CampScene({
         }
       />
 
+      {fullBleedDecor.map((s, i) => (
+        <Dec key={i} {...s} />
+      ))}
+
+      {isolatedDecor.map((s, i) => (
+        <Dec
+          key={i}
+          {...s}
+          left={typeof s.left === "number" ? s.left * DECOR_STRETCH_X : s.left}
+        />
+      ))}
+
       {FIREFLIES.map(([left, top, color], i) => (
         <Dec
           key={i}
-          left={left}
+          left={left * DECOR_STRETCH_X}
           top={top}
           width={5}
           height={2}
@@ -729,8 +800,42 @@ export default function CampScene({
         />
       ))}
 
+      {FLOWERS.map(([x, y, color], i) => (
+        <Fragment key={i}>
+          <Dec
+            left={x + 1}
+            top={y}
+            width={2}
+            height={12}
+            background="#2a6440"
+          />
+          <Dec
+            left={x}
+            top={y - 10}
+            width={4}
+            height={4}
+            borderRadius="50%"
+            background={color}
+            boxShadow={`-5px 0 0 0 ${color},5px 0 0 0 ${color},0 -5px 0 0 ${color},0 5px 0 0 ${color},0 0 0 2px rgba(42,31,16,.6)`}
+          />
+        </Fragment>
+      ))}
+
+      {ROCKS.map(([x, y], i) => (
+        <Dec
+          key={i}
+          left={x}
+          top={y}
+          width={i % 2 === 0 ? 22 : 16}
+          height={i % 2 === 0 ? 14 : 10}
+          borderRadius="10px 10px 6px 6px"
+          background="#5a5f5c"
+          boxShadow="inset -3px 3px 0 rgba(255,255,255,.08)"
+        />
+      ))}
+
       {/* CO-CHIEF — big tent */}
-      <div style={{ position: "absolute", left: 40, top: 356, width: 300 }}>
+      <div style={{ position: "absolute", left: 112, top: 356, width: 300 }}>
         <AvatarRow
           crew="co"
           members={byId.co}
@@ -846,7 +951,7 @@ export default function CampScene({
       </div>
 
       {/* COMMUNICATIONS — antenna */}
-      <div style={{ position: "absolute", left: 356, top: 314, width: 210 }}>
+      <div style={{ position: "absolute", left: 490, top: 314, width: 210 }}>
         <AvatarRow
           crew="comms"
           members={byId.comms}
@@ -967,7 +1072,7 @@ export default function CampScene({
       </div>
 
       {/* TECH DEV — campfire */}
-      <div style={{ position: "absolute", left: 266, top: 556, width: 250 }}>
+      <div style={{ position: "absolute", left: 212, top: 556, width: 250 }}>
         <AvatarRow
           crew="tech"
           members={byId.tech}
@@ -1066,7 +1171,7 @@ export default function CampScene({
       </div>
 
       {/* DAY EVENTS — pennant flag */}
-      <div style={{ position: "absolute", left: 846, top: 326, width: 264 }}>
+      <div style={{ position: "absolute", left: 1133, top: 326, width: 264 }}>
         <AvatarRow
           crew="day"
           members={byId.day}
@@ -1109,7 +1214,7 @@ export default function CampScene({
       </div>
 
       {/* NIGHT EVENTS — lantern string */}
-      <div style={{ position: "absolute", left: 1128, top: 336, width: 240 }}>
+      <div style={{ position: "absolute", left: 1481, top: 336, width: 240 }}>
         <Dec
           left={14}
           top={4}
@@ -1176,7 +1281,7 @@ export default function CampScene({
       </div>
 
       {/* GENERAL — s'mores sticks over the fire ring, x3 */}
-      <div style={{ position: "absolute", left: 520, top: 436, width: 340 }}>
+      <div style={{ position: "absolute", left: 758, top: 436, width: 340 }}>
         {[0, 100, 200].map((off) => (
           <div key={off}>
             <Dec
@@ -1354,7 +1459,7 @@ export default function CampScene({
       </div>
 
       {/* INC & SUS & EQ — clothesline + recycling bin */}
-      <div style={{ position: "absolute", left: 1000, top: 596, width: 210 }}>
+      <div style={{ position: "absolute", left: 1424, top: 596, width: 210 }}>
         <AvatarRow
           crew="ise"
           members={byId.ise}
@@ -1401,7 +1506,10 @@ export default function CampScene({
           width={1}
           height={62}
           background="rgba(233,245,205,.5)"
-          style={{ transform: "rotate(-3deg)", transformOrigin: "top center" }}
+          style={{
+            transform: "rotate(-3deg)",
+            transformOrigin: "top center",
+          }}
         />
         <Dec
           left={176}
