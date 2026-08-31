@@ -119,6 +119,17 @@ export const Briefcase = (p: SVGProps<SVGSVGElement>) => (
     <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
   </svg>
 );
+export const Play = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <path d="M7 4.5v15l13-7.5-13-7.5Z" />
+  </svg>
+);
+export const Pause = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <rect x="6" y="4" width="4.5" height="16" rx="1" />
+    <rect x="13.5" y="4" width="4.5" height="16" rx="1" />
+  </svg>
+);
 export const Cpu = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}>
     <rect width="16" height="16" x="4" y="4" rx="2" />

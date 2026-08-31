@@ -140,6 +140,60 @@ a:hover {
   }
 }
 
+/* Meet the team — camp scene. Avatar bob and the sun's drift across the sky. */
+@keyframes ecBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes ecSun {
+  0%,
+  7% {
+    transform: translate(-1010px, 250px);
+  }
+  11% {
+    transform: translate(-950px, 120px);
+  }
+  16% {
+    transform: translate(-880px, 52px);
+  }
+  24% {
+    transform: translate(-760px, 4px);
+  }
+  33% {
+    transform: translate(-620px, -22px);
+  }
+  42% {
+    transform: translate(-460px, -36px);
+  }
+  50% {
+    transform: translate(-300px, -40px);
+  }
+  58% {
+    transform: translate(-140px, -36px);
+  }
+  67% {
+    transform: translate(20px, -22px);
+  }
+  76% {
+    transform: translate(160px, 4px);
+  }
+  84% {
+    transform: translate(280px, 52px);
+  }
+  89% {
+    transform: translate(350px, 120px);
+  }
+  93%,
+  100% {
+    transform: translate(410px, 250px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

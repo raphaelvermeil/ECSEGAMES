@@ -52,7 +52,7 @@ export const NAV_LINKS: NavLink[] = [
   {
     href: "/meet-the-team",
     label: "Meet the team",
-    description: "Coming soon.",
+    description: "The crews behind ECSE Games.",
     icon: Users,
   },
 ];
