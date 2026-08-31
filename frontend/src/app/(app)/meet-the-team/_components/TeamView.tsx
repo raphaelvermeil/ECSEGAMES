@@ -31,25 +31,14 @@ export default function TeamView({ members }: { members: TeamMember[] }) {
         subtitle={`${members.length} coords · ${CREWS.length} crews · tap a head to open their LinkedIn`}
       />
 
-      {/* flex-1 absorbs any leftover height so the detail panel below always
-          sits flush against the bottom of the viewport instead of leaving a
-          gap, no matter how tall the screen is.
-
-          On tall viewports that leftover shows above and below the scene (the
-          scene is scaled by width, so its height is fixed by its aspect
-          ratio). items-center splits it evenly, which puts this gradient's
-          50% line behind the opaque scene — so the band above paints the
-          scene's own top row and the band below its own bottom row, reading
-          as more sky and more grass rather than as empty bars. Keep these two
-          hex values in sync with the first and last full-bleed entries in
-          CampScene's SCENE_DECOR. */}
-      <div
-        className="hidden flex-1 items-center lg:flex"
-        style={{
-          background:
-            "linear-gradient(#233b52 0%, #233b52 50%, #1f4831 50%, #1f4831 100%)",
-        }}
-      >
+      {/* grow/shrink/basis-0/min-h-0 (instead of flex-1's percentage basis)
+          hands ScaledScene the exact leftover box — see ScaledScene for why
+          a plain flex-1 forces this taller than that box on some
+          resolutions. ScaledScene fits itself to whichever dimension of that
+          box is tighter and tints any slack on the other axis, so the detail
+          panel below always sits flush against the bottom of the viewport
+          and never overlaps the scene. */}
+      <div className="hidden grow shrink basis-0 min-h-0 lg:flex">
         <ScaledScene>
           <CampScene
             members={members}
