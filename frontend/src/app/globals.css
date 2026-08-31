@@ -150,45 +150,51 @@ a:hover {
     transform: translateY(-6px);
   }
 }
+/* The sun dips below the horizon (dwells at the +250px/edge positions) only
+   briefly — 0%-1.26% and 98.74%-100% — since that's the "sun is gone"
+   stretch; the visible arc between those points is the original keyframe
+   shape, just rescaled to fill the rest of the timeline so its on-screen
+   speed matches before. Pair with TeamView's shortened SUN_PERIOD_SECONDS,
+   which shrinks total dwell time to ~2s without slowing the visible arc. */
 @keyframes ecSun {
   0%,
-  7% {
+  1.26% {
     transform: translate(-1010px, 250px);
   }
-  11% {
+  5.79% {
     transform: translate(-950px, 120px);
   }
-  16% {
+  11.47% {
     transform: translate(-880px, 52px);
   }
-  24% {
+  20.54% {
     transform: translate(-760px, 4px);
   }
-  33% {
+  30.73% {
     transform: translate(-620px, -22px);
   }
-  42% {
+  40.94% {
     transform: translate(-460px, -36px);
   }
   50% {
     transform: translate(-300px, -40px);
   }
-  58% {
+  59.07% {
     transform: translate(-140px, -36px);
   }
-  67% {
+  69.28% {
     transform: translate(20px, -22px);
   }
-  76% {
+  79.47% {
     transform: translate(160px, 4px);
   }
-  84% {
+  88.55% {
     transform: translate(280px, 52px);
   }
-  89% {
+  94.21% {
     transform: translate(350px, 120px);
   }
-  93%,
+  98.74%,
   100% {
     transform: translate(410px, 250px);
   }
