@@ -588,7 +588,7 @@ function Avatar({
       onClick={() => onSelect(member.id)}
       aria-pressed={selected}
       title={`${member.name} — view profile`}
-      className="transition-transform duration-150 hover:-translate-y-1.5"
+      className="outline-none transition-transform duration-150 hover:-translate-y-1.5"
       style={{
         position: "relative",
         top: dy,
