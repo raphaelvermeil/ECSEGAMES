@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { TeamMember } from "@/lib/team";
 import { crewFor, initials } from "@/lib/team";
 
@@ -10,7 +11,7 @@ export default function TeamDetailPanel({ member }: { member: TeamMember }) {
 
   const avatar = (size: number, text: number, ring: number) => (
     <div
-      className="flex flex-none items-center justify-center rounded-full font-mono font-semibold"
+      className="relative flex flex-none items-center justify-center overflow-hidden rounded-full font-mono font-semibold"
       style={{
         height: size,
         width: size,
@@ -20,7 +21,17 @@ export default function TeamDetailPanel({ member }: { member: TeamMember }) {
         color: crew.color,
       }}
     >
-      {initials(member.name)}
+      {member.photoPath ? (
+        <Image
+          src={member.photoPath}
+          alt=""
+          fill
+          sizes={`${size}px`}
+          style={{ objectFit: "cover" }}
+        />
+      ) : (
+        initials(member.name)
+      )}
     </div>
   );
 
@@ -33,7 +44,7 @@ export default function TeamDetailPanel({ member }: { member: TeamMember }) {
     </div>
   );
 
-  const linkedIn = (
+  const linkedIn = member.linkedinUrl && (
     <a
       href={member.linkedinUrl}
       target="_blank"
@@ -72,21 +83,25 @@ export default function TeamDetailPanel({ member }: { member: TeamMember }) {
             </div>
           </div>
         </div>
-        <p className="line-clamp-2 text-pretty font-mono text-[12px] leading-[1.6] text-sched-text-muted">
-          {member.blurb}
-        </p>
+        {member.blurb && (
+          <p className="line-clamp-2 text-pretty font-mono text-[12px] leading-[1.6] text-sched-text-muted">
+            {member.blurb}
+          </p>
+        )}
         {linkedIn}
       </div>
 
       {/* Desktop: unchanged three-column band. */}
       <div className="hidden flex-none flex-col items-center justify-center gap-[9px] bg-sched-bg-raised lg:flex lg:w-[170px]">
         {avatar(104, 28, 3)}
-        <div
-          className="font-mono text-[9px] tracking-[0.1em]"
-          style={{ color: "#5d7063" }}
-        >
-          HEADSHOT SLOT
-        </div>
+        {!member.photoPath && (
+          <div
+            className="font-mono text-[9px] tracking-[0.1em]"
+            style={{ color: "#5d7063" }}
+          >
+            HEADSHOT SLOT
+          </div>
+        )}
       </div>
 
       <div className="hidden flex-1 flex-col gap-[9px] text-left lg:flex lg:px-[26px] lg:py-[22px]">
@@ -97,9 +112,11 @@ export default function TeamDetailPanel({ member }: { member: TeamMember }) {
         <div className="font-mono text-[13px] text-sched-accent">
           {member.program}
         </div>
-        <p className="max-w-[720px] text-pretty font-mono text-[13px] leading-[1.7] text-sched-text-muted">
-          {member.blurb}
-        </p>
+        {member.blurb && (
+          <p className="max-w-[720px] text-pretty font-mono text-[13px] leading-[1.7] text-sched-text-muted">
+            {member.blurb}
+          </p>
+        )}
       </div>
 
       <div className="hidden flex-none items-end lg:flex lg:w-[240px] lg:p-[22px]">

@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, type CSSProperties } from "react";
+import Image from "next/image";
 import {
   type CrewId,
   type TeamMember,
@@ -624,27 +625,39 @@ function Avatar({
           animationDelay: delay,
         }}
       >
-        {initials(member.name)}
-        <span
-          style={{
-            position: "absolute",
-            right: -6,
-            top: -4,
-            width: 20,
-            height: 20,
-            background: "#0a66c2",
-            border: `2px solid ${ring}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 600,
-            fontSize: 9,
-            color: "#fff",
-          }}
-        >
-          in
-        </span>
+        {member.photoPath ? (
+          <Image
+            src={member.photoPath}
+            alt=""
+            fill
+            sizes="66px"
+            style={{ objectFit: "cover", borderRadius: "50%" }}
+          />
+        ) : (
+          initials(member.name)
+        )}
+        {member.linkedinUrl && (
+          <span
+            style={{
+              position: "absolute",
+              right: -6,
+              top: -4,
+              width: 20,
+              height: 20,
+              background: "#0a66c2",
+              border: `2px solid ${ring}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: "var(--font-mono)",
+              fontWeight: 600,
+              fontSize: 9,
+              color: "#fff",
+            }}
+          >
+            in
+          </span>
+        )}
       </span>
       <span
         style={{

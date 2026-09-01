@@ -1,0 +1,128 @@
+[
+  {
+    "id": "alicia-durcheva",
+    "name": "Alicia Durcheva",
+    "program": "U1 Software",
+    "crew": "co",
+    "linkedin": "https://www.linkedin.com/in/alicia-durcheva/",
+    "photo": "/coords/alicia-durcheva.jpg",
+    "blurb": null
+  },
+  {
+    "id": "amir-saadati",
+    "name": "Amir Saadati",
+    "program": "U3 Computer Eng",
+    "crew": "day",
+    "linkedin": "https://www.linkedin.com/in/amir-saadati-80826a34a/",
+    "photo": "/coords/amir-saadati.png",
+    "blurb": null
+  },
+  {
+    "id": "arold-bonkoungou",
+    "name": "Arold Bonkoungou",
+    "program": "U2 Computer Eng",
+    "crew": "gen",
+    "linkedin": "https://www.linkedin.com/in/arold-bonkoungou/",
+    "photo": "/coords/arold-bonkoungou.png",
+    "blurb": null
+  },
+  {
+    "id": "aurelia-stearns",
+    "name": "Aurelia Stearns",
+    "program": "U2 Mechanical",
+    "crew": "comms",
+    "linkedin": "https://www.linkedin.com/in/aurelia-stearns-engineer/",
+    "photo": "/coords/aurelia-stearns.jpg",
+    "blurb": null
+  },
+  {
+    "id": "bilar-mokhtari",
+    "name": "Bilar Mokhtari",
+    "program": "U4 Software",
+    "crew": "co",
+    "linkedin": "https://www.linkedin.com/in/bilar-mokhtari/",
+    "photo": "/coords/bilar-mokhtari.jpg",
+    "blurb": null
+  },
+  {
+    "id": "eli-shiller",
+    "name": "Eli Shiller",
+    "program": "U2 Electrical Eng",
+    "crew": "gen",
+    "linkedin": null,
+    "photo": null,
+    "blurb": null
+  },
+  {
+    "id": "layla-agamy",
+    "name": "Layla Agamy",
+    "program": "U2 Electrical Eng",
+    "crew": "co",
+    "linkedin": "https://www.linkedin.com/in/layla-agamy-56a77933a/",
+    "photo": "/coords/layla-agamy.jpg",
+    "blurb": null
+  },
+  {
+    "id": "melissa-qian",
+    "name": "Melissa Qian",
+    "program": "Software Eng",
+    "crew": "night",
+    "linkedin": "https://www.linkedin.com/in/melissa-qian-14780024b/",
+    "photo": "/coords/melissa-qian.jpg",
+    "blurb": null
+  },
+  {
+    "id": "raphael-vermeil",
+    "name": "Raphael Vermeil",
+    "program": "U2 Software Eng",
+    "crew": "tech",
+    "linkedin": "https://www.linkedin.com/in/raphael-vermeil-22a083384/",
+    "photo": "/coords/raphael-vermeil.jpg",
+    "blurb": null
+  },
+  {
+    "id": "sean-felius",
+    "name": "Sean Felius",
+    "program": "U2 Software Eng",
+    "crew": "night",
+    "linkedin": "https://www.linkedin.com/in/seanfelius/",
+    "photo": "/coords/sean-felius.jpg",
+    "blurb": null
+  },
+  {
+    "id": "stella-vandewater",
+    "name": "Stella VandeWater",
+    "program": "U2 Computer Eng",
+    "crew": "day",
+    "linkedin": "https://www.linkedin.com/in/stellavw/",
+    "photo": "/coords/stella-vandewater.jpg",
+    "blurb": null
+  },
+  {
+    "id": "timothe-roma",
+    "name": "Timothe Roma",
+    "program": "U4 Software Eng",
+    "crew": "tech",
+    "linkedin": "https://www.linkedin.com/in/tim-roma/",
+    "photo": "/coords/timothe-roma.jpg",
+    "blurb": null
+  },
+  {
+    "id": "zhisong-li",
+    "name": "Zhisong Li",
+    "program": "U4 Electrical Eng",
+    "crew": "gen",
+    "linkedin": "https://www.linkedin.com/in/zhisong-li-70b2b72b1/",
+    "photo": "/coords/zhisong-li.jpg",
+    "blurb": null
+  },
+  {
+    "id": "sean-zini",
+    "name": "Sean Zini",
+    "program": "U2 Software Eng",
+    "crew": "ise",
+    "linkedin": "https://www.linkedin.com/in/sean-zini/",
+    "photo": "/coords/sean-zini.jpg",
+    "blurb": null
+  }
+]

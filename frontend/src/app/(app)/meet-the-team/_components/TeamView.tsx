@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CREWS, type TeamMember } from "@/lib/team";
+import type { TeamMember } from "@/lib/team";
 import CampScene from "./CampScene";
 import CampSceneMobile from "./CampSceneMobile";
 import ScaledScene from "./ScaledScene";
