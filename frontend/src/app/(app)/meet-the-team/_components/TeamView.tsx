@@ -6,7 +6,7 @@ import CampScene from "./CampScene";
 import CampSceneMobile from "./CampSceneMobile";
 import ScaledScene from "./ScaledScene";
 import TeamBanner from "./TeamBanner";
-import TeamDetailPanel from "./TeamDetailPanel";
+import TeamMemberModal from "./TeamMemberModal";
 
 // The old 90s period spent ~12.6s of every cycle with the sun dwelling below
 // the horizon (invisible). ecSun's keyframes now confine that dwell to
@@ -25,12 +25,11 @@ const SUN_PERIOD_SECONDS = 79.4;
 // in magnifies the scene and scrolls rather than squeezing the scene box down
 // to a sliver. Zoomed out, the 100vh term wins and the scene expands to fill.
 export default function TeamView({ members }: { members: TeamMember[] }) {
-  const [selectedId, setSelectedId] = useState(members[0]?.id ?? null);
-  const selected = members.find((m) => m.id === selectedId) ?? members[0];
+  // No one is selected until a head is clicked — TeamMemberModal renders
+  // nothing while this is null, so nothing pops up on load.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = members.find((m) => m.id === selectedId) ?? null;
 
-  // The column's own background matches TeamDetailPanel's, so if the page ever
-  // ends up a hair taller than the panel reaches, the sliver below it blends
-  // into the panel instead of showing the shell's near-black.
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-[#0f1512] lg:h-auto lg:overflow-visible lg:min-h-[max(calc(100vh-72px),calc(var(--app-floor-h,72px)-72px))]">
       <TeamBanner
@@ -41,14 +40,14 @@ export default function TeamView({ members }: { members: TeamMember[] }) {
           hands ScaledScene the exact leftover box — see ScaledScene for why
           a plain flex-1 forces this taller than that box on some
           resolutions. ScaledScene fits itself to whichever dimension of that
-          box is tighter and tints any slack on the other axis, so the detail
-          panel below always sits flush against the bottom of the viewport
-          and never overlaps the scene. */}
+          box is tighter and tints any slack on the other axis, so the scene
+          fills the viewport all the way to the bottom now that there's no
+          footer sharing the space. */}
       <div className="hidden grow shrink basis-0 min-h-0 lg:flex">
         <ScaledScene>
           <CampScene
             members={members}
-            selectedId={selected?.id ?? null}
+            selectedId={selectedId}
             onSelect={setSelectedId}
             sun={{
               leftPct: 70,
@@ -60,17 +59,17 @@ export default function TeamView({ members }: { members: TeamMember[] }) {
         </ScaledScene>
       </div>
 
-      {/* Takes whatever height the banner above and the detail panel below
-          leave over, so the phone layout is exactly one screen tall. */}
+      {/* Takes whatever height the banner above leaves over, so the phone
+          layout is exactly one screen tall. */}
       <div className="grow shrink basis-0 min-h-0 bg-sched-bg lg:hidden">
         <CampSceneMobile
           members={members}
-          selectedId={selected?.id ?? null}
+          selectedId={selectedId}
           onSelect={setSelectedId}
         />
       </div>
 
-      {selected && <TeamDetailPanel member={selected} />}
+      <TeamMemberModal member={selected} onClose={() => setSelectedId(null)} />
     </div>
   );
 }
