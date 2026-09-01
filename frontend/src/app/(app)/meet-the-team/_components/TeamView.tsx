@@ -34,7 +34,7 @@ export default function TeamView({ members }: { members: TeamMember[] }) {
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-[#0f1512] lg:h-auto lg:overflow-visible lg:min-h-[max(calc(100vh-72px),calc(var(--app-floor-h,72px)-72px))]">
       <TeamBanner
-        subtitle={`${members.length} coords · ${CREWS.length} crews · tap a head to open their LinkedIn`}
+        subtitle={`${members.length} coords · tap a head to learn more`}
       />
 
       {/* grow/shrink/basis-0/min-h-0 (instead of flex-1's percentage basis)
