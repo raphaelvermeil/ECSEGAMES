@@ -1,12 +1,28 @@
 @import "tailwindcss";
 
-/* Scrollbars are hidden app-wide — every scrollable element still scrolls
-   normally (wheel/trackpad/touch/keyboard), just without the visible
-   scrollbar chrome. */
-* {
+/* `lg:` is the only breakpoint in the app, so it alone decides desktop vs
+   phone layout. A width-only breakpoint can't tell "small window" from
+   "zoomed in" — browser zoom shrinks the CSS viewport, so zooming past ~150%
+   on a laptop used to drop the whole app into phone mode. Matching a fine
+   pointer as well keeps any mouse/trackpad device on the desktop layout at
+   every zoom level; touch devices still fall back to width alone.
+   Trade-off: a genuinely narrow window on a desktop now stays desktop —
+   use DevTools device emulation (it reports a coarse pointer) to preview
+   the phone layout. */
+@custom-variant lg {
+  @media (min-width: 64rem), (hover: hover) and (pointer: fine) {
+    @slot;
+  }
+}
+
+/* Scrollbars are hidden on every element except the document itself — inner
+   scrollers still scroll normally (wheel/trackpad/touch/keyboard) without the
+   visible chrome, but the page-level scrollbar is kept so that a zoomed-in
+   page visibly advertises that there is more of it to reach. */
+*:not(html) {
   scrollbar-width: none; /* Firefox */
 }
-*::-webkit-scrollbar {
+*:not(html)::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Edge */
 }
 
