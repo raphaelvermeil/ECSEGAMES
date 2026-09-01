@@ -6,14 +6,17 @@ import type { TeamMember } from "@/lib/team";
 import CampScene, { SCENE_HEIGHT, SCENE_WIDTH } from "./CampScene";
 
 // The camp scene is a hand-placed 1436x786 canvas — too wide to fit a phone
-// screen at full size, so on mobile it's scaled down to a fixed strip height
-// and panned horizontally instead. The pan is driven by the same clock as
-// the sun's left/right sweep, so the visible slice tracks wherever the sun
-// currently is (letting the sun cross the whole scene once per cycle rather
-// than mostly sitting off-screen the way the desktop's huge drift path does).
-const MOBILE_SCENE_HEIGHT = 320;
-const SCALE = MOBILE_SCENE_HEIGHT / SCENE_HEIGHT;
-const SCALED_WIDTH = SCENE_WIDTH * SCALE;
+// screen at full size, so on mobile it's scaled down to a strip and panned
+// horizontally instead. The pan is driven by the same clock as the sun's
+// left/right sweep, so the visible slice tracks wherever the sun currently is
+// (letting the sun cross the whole scene once per cycle rather than mostly
+// sitting off-screen the way the desktop's huge drift path does).
+//
+// The strip's height is measured rather than fixed: it takes whatever the
+// banner and detail panel leave over in TeamView's h-dvh column, which is what
+// makes the phone layout add up to exactly one screen on any handset. Only
+// used as the pre-measurement fallback.
+const FALLBACK_SCENE_HEIGHT = 320;
 const PAN_PERIOD_MS = 42000;
 const SUN_LEFT_MIN = 4;
 const SUN_LEFT_MAX = 96;
@@ -52,18 +55,33 @@ export default function CampSceneMobile({
   });
   const [progress, setProgress] = useState(0);
   const [thumbWidthPct, setThumbWidthPct] = useState(100);
+  const [sceneHeight, setSceneHeight] = useState(FALLBACK_SCENE_HEIGHT);
 
+  const scale = sceneHeight / SCENE_HEIGHT;
+  const scaledWidth = SCENE_WIDTH * scale;
+
+  // The strip's height comes from the flex row it sits in, so observing the
+  // container can't loop: the content we size from it never feeds back into it.
   useEffect(() => {
-    function measure() {
-      const el = containerRef.current;
-      if (!el) return;
-      maxScrollRef.current = Math.max(0, el.scrollWidth - el.clientWidth);
-      setThumbWidthPct(Math.min(100, (el.clientWidth / el.scrollWidth) * 100));
-    }
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { height } = entry.contentRect;
+      if (height > 0) setSceneHeight(height);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
+
+  // Re-measure the pan extent after the scaled content has actually been laid
+  // out at the new size — scrollWidth is still the old value during the render
+  // that changes the scale.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || el.scrollWidth === 0) return;
+    maxScrollRef.current = Math.max(0, el.scrollWidth - el.clientWidth);
+    setThumbWidthPct(Math.min(100, (el.clientWidth / el.scrollWidth) * 100));
+  }, [scaledWidth, sceneHeight]);
 
   function applyProgress(t: number) {
     const el = containerRef.current;
@@ -123,18 +141,17 @@ export default function CampSceneMobile({
   }
 
   return (
-    <div>
+    <div className="flex h-full min-h-0 flex-col">
       <div
         ref={containerRef}
         onPointerDown={pauseForManualInteraction}
         onWheel={pauseForManualInteraction}
-        className="overflow-x-auto overflow-y-hidden"
-        style={{ height: MOBILE_SCENE_HEIGHT }}
+        className="min-h-0 grow shrink basis-0 overflow-x-auto overflow-y-hidden"
       >
         <div
           style={{
-            width: SCALED_WIDTH,
-            height: MOBILE_SCENE_HEIGHT,
+            width: scaledWidth,
+            height: sceneHeight,
             position: "relative",
             overflow: "hidden",
           }}
@@ -143,7 +160,7 @@ export default function CampSceneMobile({
             style={{
               width: SCENE_WIDTH,
               height: SCENE_HEIGHT,
-              transform: `scale(${SCALE})`,
+              transform: `scale(${scale})`,
               transformOrigin: "top left",
             }}
           >
@@ -157,7 +174,7 @@ export default function CampSceneMobile({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 bg-sched-bg-raised px-4 py-2">
+      <div className="flex flex-none items-center gap-3 bg-sched-bg-raised px-4 py-2">
         <button
           type="button"
           onClick={togglePaused}

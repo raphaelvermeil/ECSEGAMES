@@ -13,7 +13,7 @@ export default function TeamBanner({ subtitle }: { subtitle: string }) {
       {/* Mobile only — the shared Navbar is hidden on this route below lg,
           so its logo/bell/account row lives here instead, same as
           ScheduleBanner. */}
-      <div className="flex items-center justify-between gap-3 bg-sched-chrome px-4 py-3 lg:hidden">
+      <div className="flex flex-none items-center justify-between gap-3 bg-sched-chrome px-4 py-3 lg:hidden">
         <div className="flex items-center gap-[9px]">
           <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-sched-accent-dim font-mono text-[10px] font-semibold tracking-[0.05em] text-sched-accent-dim">
             ECSE
@@ -45,7 +45,7 @@ export default function TeamBanner({ subtitle }: { subtitle: string }) {
       {/* Desktop drops the title band entirely so the scene gets the extra
           vertical room — the page title already lives in the nav's active
           tab up there. */}
-      <div className="relative flex items-center bg-sched-band px-5 pb-4 pt-5 lg:hidden">
+      <div className="relative flex flex-none items-center bg-sched-band px-5 pb-4 pt-5 lg:hidden">
         <div
           aria-hidden="true"
           className="absolute inset-0 opacity-[0.28]"

@@ -29,15 +29,19 @@ export default async function AppLayout({
     redirect("/select-team");
   }
 
+  // Heights are dvh, not vh: on mobile browsers 100vh includes the strip
+  // behind the collapsible URL bar, which would leave the shell taller than the
+  // visible screen and make the meet-the-team column (h-dvh) scroll by the
+  // difference. On desktop the two are identical.
   return (
-    <div className="min-h-screen bg-sched-frame-page">
+    <div className="min-h-dvh bg-sched-frame-page">
       {/* The only width clamp is the zoom floor ViewportFloor publishes: the
           shell may grow past the load-time viewport width but never shrink
           below it, so zooming in magnifies the layout and scrolls instead of
           rewrapping the nav and crushing the page. The 0px fallback keeps the
           class inert during SSR and first paint. Deliberately no max-width —
           zooming out should expand to fill. */}
-      <div className="mx-auto min-h-screen w-full overflow-hidden bg-sched-bg lg:min-w-[var(--app-floor-w,0px)]">
+      <div className="mx-auto min-h-dvh w-full overflow-hidden bg-sched-bg lg:min-w-[var(--app-floor-w,0px)]">
         <ViewportFloor />
         <Navbar />
         {children}
