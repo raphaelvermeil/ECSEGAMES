@@ -2,46 +2,74 @@
 
 import { useEffect } from "react";
 
-// Publishes the viewport size as a floor the desktop shell can grow past but
-// never shrink below (see the min-w/min-h consumers in layout.tsx and
-// TeamView.tsx). This is what makes browser zoom behave like a normal page:
-// the scene is sized to fit the viewport, and zoom shrinks the CSS viewport by
-// exactly the factor it magnifies by, so without a floor the two cancel out and
-// the scene stays the same physical size at every zoom level — zooming in only
-// grew the nav/footer text and squeezed the scene.
+// Must match the @custom-variant lg query in globals.css exactly — that's
+// what decides phone vs desktop layout everywhere else.
+const DESKTOP_QUERY = "(min-width: 64rem), (hover: hover) and (pointer: fine)";
+
+// Publishes two viewport measurements as CSS custom properties.
 //
-// Below the floor (zoomed in) the layout keeps its load-time CSS size, so the
-// browser magnifies it and the page scrolls. Above it (zoomed out) the normal
-// 100%/100vh rules win and the layout expands to fill.
+// --app-floor-w / --app-floor-h: the zoom floor. The desktop shell can grow
+// past the load-time viewport but never shrink below it, so zooming in
+// magnifies the layout and scrolls instead of rewrapping the nav and crushing
+// the page. Browser zoom changes window.devicePixelRatio; resizing a window
+// does not — that's the only reliable way to tell the two apart, so a zoom
+// keeps the floor and a real resize re-measures it.
 //
-// The floor is the user's own viewport at their own zoom, so it's inert at
-// rest — it can't reintroduce the old fixed min-w-[1380px] bug where a 1366px
-// laptop had hidden sideways scroll at 100%.
+// --app-vvh: the phone layout's exact height. Every height rule in the shell
+// and in TeamView reads this one value, so they cannot disagree and leave a
+// strip of shell background showing below the content.
+//
+// Measured from documentElement.clientHeight, which is the only one of the
+// three candidates that is the actual usable layout height:
+//   - visualViewport.height shrinks under pinch-zoom/page-scale while the
+//     rest of the layout doesn't (this is what left a black strip below the
+//     content), and
+//   - window.innerHeight includes scrollbar space, and balloons outright when
+//     a mobile browser zooms out to fit over-wide content (measured 3376 vs a
+//     true 844), which would make the page far too tall.
+// Floored, so a fractional measurement can't round up into a 1px overflow.
+// Consumers additionally clamp with CSS min(…, 100svh) so this can never
+// exceed the URL-bar-visible viewport no matter what it reports. Unset on
+// desktop so consumers fall back to 100svh.
 export default function ViewportFloor() {
   useEffect(() => {
     const root = document.documentElement;
+    const mql = window.matchMedia(DESKTOP_QUERY);
 
-    const measure = () => {
+    const measureFloor = () => {
       root.style.setProperty("--app-floor-w", `${window.innerWidth}px`);
       root.style.setProperty("--app-floor-h", `${window.innerHeight}px`);
     };
 
-    // Browser zoom changes devicePixelRatio; resizing a window does not. That
-    // is the only reliable way to tell the two apart, and it's the whole point:
-    // a zoom must keep the floor, a real resize must re-measure it.
+    const measureViewportHeight = () => {
+      if (mql.matches) {
+        root.style.removeProperty("--app-vvh");
+        return;
+      }
+      root.style.setProperty("--app-vvh", `${Math.floor(root.clientHeight)}px`);
+    };
+
     let dpr = window.devicePixelRatio;
 
     const onResize = () => {
+      // The phone height must track every resize, including the one a mobile
+      // browser fires when its URL bar collapses.
+      measureViewportHeight();
       if (window.devicePixelRatio !== dpr) {
         dpr = window.devicePixelRatio;
-        return;
+        return; // a zoom: keep the floor
       }
-      measure();
+      measureFloor();
     };
 
-    measure();
+    measureFloor();
+    measureViewportHeight();
+    mql.addEventListener("change", measureViewportHeight);
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      mql.removeEventListener("change", measureViewportHeight);
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
 
   return null;

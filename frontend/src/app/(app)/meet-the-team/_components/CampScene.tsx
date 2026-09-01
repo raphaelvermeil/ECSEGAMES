@@ -963,6 +963,65 @@ export default function CampScene({
         </div>
       </div>
 
+      {/* A little hand-painted "CLICK ME" trail sign, arrow-shaped and aimed
+          at Talia — the rightmost co-chief — rather than the leftmost. On the
+          mobile pan (CampSceneMobile), which starts each sweep showing the
+          scene from x=0, a fixed point further right stays inside the
+          scrolling window longer before it scrolls past, so aiming here
+          instead of at Alicia keeps the sign on screen longer. Planted in the
+          gap between the CO-CHIEF and COMMUNICATIONS clusters, arrow flipped
+          to point back left at her, tip short of touching her avatar. */}
+      <div
+        style={{
+          position: "absolute",
+          left: 422,
+          top: 396,
+          zIndex: 9,
+          transform: "rotate(-6deg)",
+        }}
+      >
+        <div style={{ display: "flex" }}>
+          <div
+            style={{
+              width: 0,
+              height: 0,
+              borderTop: "15px solid transparent",
+              borderBottom: "15px solid transparent",
+              borderRight: "14px solid #9d7f52",
+            }}
+          />
+          <div
+            style={{
+              width: 54,
+              height: 30,
+              background: "#9d7f52",
+              boxShadow: "inset 0 3px 0 #b8965f,inset 0 -3px 0 #6b5433",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              padding: "2px 4px",
+              fontFamily: "var(--font-display)",
+              fontWeight: 700,
+              fontSize: 8.5,
+              lineHeight: 1.1,
+              letterSpacing: "0.02em",
+              color: "#3a2a18",
+            }}
+          >
+            CLICK ME
+          </div>
+        </div>
+        <Dec
+          left={38}
+          top={30}
+          width={7}
+          height={26}
+          background="#4a3a26"
+          boxShadow="inset 2px 0 0 #63512f"
+        />
+      </div>
+
       {/* COMMUNICATIONS — antenna */}
       <div style={{ position: "absolute", left: 490, top: 314, width: 210 }}>
         <AvatarRow

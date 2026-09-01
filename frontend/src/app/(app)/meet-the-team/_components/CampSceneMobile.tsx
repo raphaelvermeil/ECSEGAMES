@@ -13,9 +13,9 @@ import CampScene, { SCENE_HEIGHT, SCENE_WIDTH } from "./CampScene";
 // sitting off-screen the way the desktop's huge drift path does).
 //
 // The strip's height is measured rather than fixed: it takes whatever the
-// banner and detail panel leave over in TeamView's h-dvh column, which is what
-// makes the phone layout add up to exactly one screen on any handset. Only
-// used as the pre-measurement fallback.
+// banner and controls bar below leave over in TeamView's h-svh column, which
+// is what makes the phone layout add up to exactly one screen on any handset.
+// Only used as the pre-measurement fallback.
 const FALLBACK_SCENE_HEIGHT = 320;
 const PAN_PERIOD_MS = 42000;
 const SUN_LEFT_MIN = 4;

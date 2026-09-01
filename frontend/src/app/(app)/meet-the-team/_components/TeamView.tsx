@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { TeamMember } from "@/lib/team";
 import CampScene from "./CampScene";
 import CampSceneMobile from "./CampSceneMobile";
@@ -30,8 +30,38 @@ export default function TeamView({ members }: { members: TeamMember[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = members.find((m) => m.id === selectedId) ?? null;
 
+  // The phone column below is `fixed inset-0`, so it already covers the
+  // viewport and nothing is out of reach — but the shell wrapping this page
+  // still carries a min-height, and if a browser resolves that even slightly
+  // taller than the visible area you can scroll a sliver of empty background.
+  // Locking the document closes that last gap. Desktop is left alone: it
+  // genuinely scrolls when zoomed in.
+  useEffect(() => {
+    const mql = window.matchMedia(
+      "(min-width: 64rem), (hover: hover) and (pointer: fine)",
+    );
+    const root = document.documentElement;
+    const apply = () => {
+      root.style.overflow = mql.matches ? "" : "hidden";
+    };
+    apply();
+    mql.addEventListener("change", apply);
+    return () => {
+      mql.removeEventListener("change", apply);
+      root.style.overflow = "";
+    };
+  }, []);
+
+  // On phones this column is `fixed inset-0`: the browser sizes it to exactly
+  // the viewport it believes in, and — the important part — a fixed element is
+  // out of flow, so it contributes nothing to the document's scroll height.
+  // That makes scrolling structurally impossible rather than merely arithmetic
+  // that has to come out exact, which is what kept going subtly wrong across
+  // dvh/svh/innerHeight/visualViewport. Desktop reverts to static flow via
+  // lg:, where the scene is meant to sit under the nav and the zoom floor
+  // governs height.
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-[#0f1512] lg:h-auto lg:overflow-visible lg:min-h-[max(calc(100vh-72px),calc(var(--app-floor-h,72px)-72px))]">
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-[#0f1512] lg:static lg:h-auto lg:overflow-visible lg:min-h-[max(calc(100vh-72px),calc(var(--app-floor-h,72px)-72px))]">
       <TeamBanner
         subtitle={`${members.length} coords · tap a head to learn more`}
       />
