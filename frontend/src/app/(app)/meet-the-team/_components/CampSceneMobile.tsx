@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { Pause, Play } from "@/components/icons";
 import type { TeamMember } from "@/lib/team";
 import CampScene, { SCENE_HEIGHT, SCENE_WIDTH } from "./CampScene";
@@ -31,15 +37,21 @@ function triangleWave(elapsedMs: number): number {
   return phase < 0.5 ? phase * 2 : 2 - phase * 2;
 }
 
-export default function CampSceneMobile({
-  members,
-  selectedId,
-  onSelect,
-}: {
-  members: TeamMember[];
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-}) {
+// Exposed so TeamView can force playback back on when the member modal
+// (a sibling, not a descendant of this component) closes — see resume()
+// below for why this reuses togglePaused rather than duplicating it.
+export interface CampSceneMobileHandle {
+  resume: () => void;
+}
+
+const CampSceneMobile = forwardRef<
+  CampSceneMobileHandle,
+  {
+    members: TeamMember[];
+    selectedId: string | null;
+    onSelect: (id: string) => void;
+  }
+>(function CampSceneMobile({ members, selectedId, onSelect }, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const maxScrollRef = useRef(0);
   const elapsedRef = useRef(0);
@@ -134,6 +146,16 @@ export default function CampSceneMobile({
     });
   }
 
+  // pausedRef (not the paused prop/state) is checked here because it's always
+  // current — reading `paused` directly would close over a stale value from
+  // whatever render last called resume(). Reuses togglePaused's un-pause
+  // branch rather than duplicating the elapsedRef bookkeeping.
+  useImperativeHandle(ref, () => ({
+    resume() {
+      if (pausedRef.current) togglePaused();
+    },
+  }));
+
   function seekFromClientX(clientX: number, trackEl: HTMLDivElement) {
     const rect = trackEl.getBoundingClientRect();
     const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
@@ -226,4 +248,6 @@ export default function CampSceneMobile({
       </div>
     </div>
   );
-}
+});
+
+export default CampSceneMobile;

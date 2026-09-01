@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TeamMember } from "@/lib/team";
 import CampScene from "./CampScene";
-import CampSceneMobile from "./CampSceneMobile";
+import CampSceneMobile, { type CampSceneMobileHandle } from "./CampSceneMobile";
 import ScaledScene from "./ScaledScene";
 import TeamBanner from "./TeamBanner";
 import TeamMemberModal from "./TeamMemberModal";
@@ -29,6 +29,7 @@ export default function TeamView({ members }: { members: TeamMember[] }) {
   // nothing while this is null, so nothing pops up on load.
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = members.find((m) => m.id === selectedId) ?? null;
+  const mobileSceneRef = useRef<CampSceneMobileHandle>(null);
 
   // The phone column below is `fixed inset-0`, so it already covers the
   // viewport and nothing is out of reach — but the shell wrapping this page
@@ -93,13 +94,24 @@ export default function TeamView({ members }: { members: TeamMember[] }) {
           layout is exactly one screen tall. */}
       <div className="grow shrink basis-0 min-h-0 bg-sched-bg lg:hidden">
         <CampSceneMobile
+          ref={mobileSceneRef}
           members={members}
           selectedId={selectedId}
           onSelect={setSelectedId}
         />
       </div>
 
-      <TeamMemberModal member={selected} onClose={() => setSelectedId(null)} />
+      <TeamMemberModal
+        member={selected}
+        onClose={() => {
+          setSelectedId(null);
+          // Opening the modal pauses the pan (tapping a head is a pointerdown
+          // on the pan's own scroll container, which counts as manual
+          // interaction) — resume it on close rather than leaving the scene
+          // frozen until the user finds the play button themselves.
+          mobileSceneRef.current?.resume();
+        }}
+      />
     </div>
   );
 }
