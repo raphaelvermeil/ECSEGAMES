@@ -32,7 +32,7 @@ export default function Navbar() {
               key={l.href}
               href={l.href}
               aria-current={active ? "page" : undefined}
-              className={`border px-[14px] py-[9px] text-sm font-medium text-sched-accent transition-colors ${
+              className={`whitespace-nowrap border px-[14px] py-[9px] text-sm font-medium text-sched-accent transition-colors ${
                 active
                   ? "border-sched-accent shadow-[0_3px_0_0_var(--color-sched-accent)]"
                   : "border-transparent hover:border-sched-accent-dim"

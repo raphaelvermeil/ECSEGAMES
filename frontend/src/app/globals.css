@@ -1,12 +1,28 @@
 @import "tailwindcss";
 
-/* Scrollbars are hidden app-wide — every scrollable element still scrolls
-   normally (wheel/trackpad/touch/keyboard), just without the visible
-   scrollbar chrome. */
-* {
+/* `lg:` is the only breakpoint in the app, so it alone decides desktop vs
+   phone layout. A width-only breakpoint can't tell "small window" from
+   "zoomed in" — browser zoom shrinks the CSS viewport, so zooming past ~150%
+   on a laptop used to drop the whole app into phone mode. Matching a fine
+   pointer as well keeps any mouse/trackpad device on the desktop layout at
+   every zoom level; touch devices still fall back to width alone.
+   Trade-off: a genuinely narrow window on a desktop now stays desktop —
+   use DevTools device emulation (it reports a coarse pointer) to preview
+   the phone layout. */
+@custom-variant lg {
+  @media (min-width: 64rem), (hover: hover) and (pointer: fine) {
+    @slot;
+  }
+}
+
+/* Scrollbars are hidden on every element except the document itself — inner
+   scrollers still scroll normally (wheel/trackpad/touch/keyboard) without the
+   visible chrome, but the page-level scrollbar is kept so that a zoomed-in
+   page visibly advertises that there is more of it to reach. */
+*:not(html) {
   scrollbar-width: none; /* Firefox */
 }
-*::-webkit-scrollbar {
+*:not(html)::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Edge */
 }
 
@@ -137,6 +153,66 @@ a:hover {
   }
   to {
     transform: none;
+  }
+}
+
+/* Meet the team — camp scene. Avatar bob and the sun's drift across the sky. */
+@keyframes ecBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+/* The sun dips below the horizon (dwells at the +250px/edge positions) only
+   briefly — 0%-1.26% and 98.74%-100% — since that's the "sun is gone"
+   stretch; the visible arc between those points is the original keyframe
+   shape, just rescaled to fill the rest of the timeline so its on-screen
+   speed matches before. Pair with TeamView's shortened SUN_PERIOD_SECONDS,
+   which shrinks total dwell time to ~2s without slowing the visible arc. */
+@keyframes ecSun {
+  0%,
+  1.26% {
+    transform: translate(-1010px, 250px);
+  }
+  5.79% {
+    transform: translate(-950px, 120px);
+  }
+  11.47% {
+    transform: translate(-880px, 52px);
+  }
+  20.54% {
+    transform: translate(-760px, 4px);
+  }
+  30.73% {
+    transform: translate(-620px, -22px);
+  }
+  40.94% {
+    transform: translate(-460px, -36px);
+  }
+  50% {
+    transform: translate(-300px, -40px);
+  }
+  59.07% {
+    transform: translate(-140px, -36px);
+  }
+  69.28% {
+    transform: translate(20px, -22px);
+  }
+  79.47% {
+    transform: translate(160px, 4px);
+  }
+  88.55% {
+    transform: translate(280px, 52px);
+  }
+  94.21% {
+    transform: translate(350px, 120px);
+  }
+  98.74%,
+  100% {
+    transform: translate(410px, 250px);
   }
 }
 
