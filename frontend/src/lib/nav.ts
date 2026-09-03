@@ -3,7 +3,6 @@ import {
   Briefcase,
   CalendarDays,
   CodeXml,
-  House,
   Trophy,
   Users,
 } from "@/components/icons";
@@ -18,13 +17,6 @@ export interface NavLink {
 }
 
 export const NAV_LINKS: NavLink[] = [
-  {
-    href: "/",
-    label: "Home",
-    exact: true,
-    description: "Coming soon.",
-    icon: House,
-  },
   {
     href: "/schedule",
     label: "Schedule",

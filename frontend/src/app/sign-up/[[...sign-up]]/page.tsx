@@ -1,19 +1,14 @@
 import { SignUp } from "@clerk/nextjs";
+import AuthShell from "@/components/AuthShell";
+import { AUTH_APPEARANCE } from "@/lib/authAppearance";
 
 export default function SignUpPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <SignUp
-        appearance={{
-          elements: {
-            // White Microsoft SSO button (covers block + icon variants).
-            socialButtonsBlockButton__microsoft:
-              "!bg-white !text-gray-800 hover:!bg-gray-50 !border !border-gray-300",
-            socialButtonsIconButton__microsoft:
-              "!bg-white hover:!bg-gray-50 !border !border-gray-300",
-          },
-        }}
-      />
-    </div>
+    <AuthShell
+      title="Join the Games"
+      subtitle="Sign up with your McGill email and pick your team."
+    >
+      <SignUp appearance={AUTH_APPEARANCE} />
+    </AuthShell>
   );
 }
