@@ -45,6 +45,27 @@ func (s *Store) ListByEvent(ctx context.Context, eventID primitive.ObjectID) ([]
 	return entries, nil
 }
 
+// ListAllActive returns every non-cleared score entry across all events,
+// oldest first. The leaderboard aggregates these into standings and the
+// score-over-time curve; cleared entries are excluded because clearing
+// returns an entry to not-yet-graded, so it no longer counts toward a
+// team's total. Matching on $ne true rather than false also picks up any
+// entry written before the cleared field existed.
+func (s *Store) ListAllActive(ctx context.Context) ([]ScoreEntry, error) {
+	opts := options.Find().SetSort(bson.D{{Key: "awardedAt", Value: 1}})
+	cur, err := s.coll.Find(ctx, bson.M{"cleared": bson.M{"$ne": true}}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	entries := []ScoreEntry{}
+	if err := cur.All(ctx, &entries); err != nil {
+		return nil, err
+	}
+	return entries, nil
+}
+
 // Get returns a single score entry by ID. Returns mongo.ErrNoDocuments if
 // it doesn't exist.
 func (s *Store) Get(ctx context.Context, id primitive.ObjectID) (*ScoreEntry, error) {

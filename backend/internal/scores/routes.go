@@ -30,12 +30,24 @@ func NewHandler(store *Store, auditStore *audit.Store) *Handler {
 	return &Handler{store: store, audit: auditStore}
 }
 
-// Mount registers score routes on r. The whole scoring surface — reads
-// included — is exec/admin only, matching the design: the live scoring
-// panel is exec-only, unlike the read-only event history. There is no
-// PATCH route: Create both awards and corrects a team's points (see
-// scoreRequest.validate), so a single write path covers both.
+// Mount registers score routes on r in two groups with different gates.
+//
+// The per-event scoring surface — reads included — stays exec/admin only,
+// matching the design: the live scoring panel is exec-only, unlike the
+// read-only event history. There is no PATCH route: Create both awards and
+// corrects a team's points (see scoreRequest.validate), so a single write
+// path covers both.
+//
+// /api/leaderboard is the deliberate exception: standings are a
+// student-facing tab, so it needs only RequireAuth. It is safe to open
+// because Leaderboard returns aggregates and bare timestamped awards —
+// never event identity, actor, or description (see Leaderboard).
 func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey string) {
+	r.Group(func(pr chi.Router) {
+		pr.Use(appmw.RequireAuth(clerkSecretKey))
+		pr.Get("/api/leaderboard", h.Leaderboard)
+	})
+
 	r.Group(func(pr chi.Router) {
 		pr.Use(appmw.RequireAuth(clerkSecretKey))
 		pr.Use(appmw.RequireRole(userRepo, models.RoleExec))
@@ -43,6 +55,54 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 		pr.Post("/api/events/{eventID}/scores", h.Create)
 		pr.Delete("/api/events/{eventID}/scores/{id}", h.Delete)
 	})
+}
+
+// LeaderboardPoint is one team's award at a point in time. The client
+// running-sums these in order to draw the score-over-time curve, so they
+// are sent oldest-first and carry no event identity.
+type LeaderboardPoint struct {
+	Team  models.Team `json:"team"`
+	Value int         `json:"value"`
+	At    time.Time   `json:"at"`
+}
+
+// Leaderboard is the standings payload: current total per team, plus the
+// awards that produced them. Totals holds only teams with at least one
+// active entry — a team that has not been graded yet is absent, and the
+// client renders it as zero from its own canonical team list.
+//
+// This is the one score shape any signed-in user may read, so it carries
+// no per-event attribution: no event ID, no awardedBy, no description.
+type Leaderboard struct {
+	Totals map[models.Team]int `json:"totals"`
+	Points []LeaderboardPoint  `json:"points"`
+}
+
+// Leaderboard returns standings across every event. Unlike the rest of
+// this package it is readable by any authenticated user (see Mount).
+func (h *Handler) Leaderboard(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	list, err := h.store.ListAllActive(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+
+	board := Leaderboard{
+		Totals: map[models.Team]int{},
+		Points: make([]LeaderboardPoint, 0, len(list)),
+	}
+	for _, e := range list {
+		board.Totals[e.Team] += e.Value
+		board.Points = append(board.Points, LeaderboardPoint{
+			Team:  e.Team,
+			Value: e.Value,
+			At:    e.AwardedAt,
+		})
+	}
+	writeJSON(w, http.StatusOK, board)
 }
 
 func eventIDParam(r *http.Request) (primitive.ObjectID, error) {
