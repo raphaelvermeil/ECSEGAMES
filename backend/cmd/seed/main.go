@@ -10,7 +10,10 @@ import (
 	"github.com/ecsegames/backend/internal/config"
 	"github.com/ecsegames/backend/internal/db"
 	"github.com/ecsegames/backend/internal/events"
+	"github.com/ecsegames/backend/internal/models"
+	"github.com/ecsegames/backend/internal/scores"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // seededBy marks every event this script creates, so re-running it replaces
@@ -20,7 +23,7 @@ const seededBy = "seed-script"
 func main() {
 	cfg := config.Load()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	database, err := db.Connect(ctx, cfg.MongoURI, cfg.MongoDB)
@@ -28,25 +31,140 @@ func main() {
 		log.Fatalf("mongo connect: %v", err)
 	}
 
+	// Report what belongs to somebody else before touching anything. This
+	// script only ever deletes its own tagged documents, but a real event
+	// scored by hand keeps its score entries while its event row is
+	// recreated below — so it is worth seeing the count.
+	realEvents, err := database.Collection("events").CountDocuments(ctx, bson.M{"createdBy": bson.M{"$ne": seededBy}})
+	if err != nil {
+		log.Fatalf("count real events: %v", err)
+	}
+	realScores, err := database.Collection("scoreEntries").CountDocuments(ctx, bson.M{"awardedBy": bson.M{"$ne": seededBy}})
+	if err != nil {
+		log.Fatalf("count real scores: %v", err)
+	}
+	log.Printf("leaving alone: %d event(s) and %d score entr(ies) not created by this script", realEvents, realScores)
+
 	if _, err := database.Collection("events").DeleteMany(ctx, bson.M{"createdBy": seededBy}); err != nil {
 		log.Fatalf("clear previous seed data: %v", err)
+	}
+	if _, err := database.Collection("scoreEntries").DeleteMany(ctx, bson.M{"awardedBy": seededBy}); err != nil {
+		log.Fatalf("clear previous seed scores: %v", err)
 	}
 
 	store := events.NewStore(database)
 	fake := fakeEvents()
 	now := time.Now().UTC()
+	eventIDs := map[string]primitive.ObjectID{}
 	for _, e := range fake {
 		e.CreatedBy = seededBy
 		e.LastEditedBy = seededBy
 		e.CreatedAt = now
 		e.LastEditedAt = now
-		if _, err := store.Create(ctx, e); err != nil {
+		created, err := store.Create(ctx, e)
+		if err != nil {
 			log.Fatalf("create event %q: %v", e.Title, err)
 		}
+		eventIDs[e.Title] = created.ID
 		log.Printf("created %q", e.Title)
 	}
 
-	log.Printf("seeded %d events", len(fake))
+	// Written straight to the collection rather than through scores.Store:
+	// Upsert stamps awardedAt with time.Now(), and the leaderboard plots
+	// awardedAt — so going through the store would pile the entire weekend
+	// onto a single instant and flatten the graph into one vertical jump.
+	docs := []any{}
+	awards := fakeAwards()
+	sunday := lastSunday(now)
+	for _, a := range awards {
+		id, ok := eventIDs[a.event]
+		if !ok {
+			log.Fatalf("award references unknown event %q", a.event)
+		}
+		for i, team := range seedTeams {
+			docs = append(docs, scores.ScoreEntry{
+				ID:           primitive.NewObjectID(),
+				EventID:      id,
+				Team:         team,
+				Value:        a.points[i],
+				Description:  "Seeded result",
+				AwardedBy:    seededBy,
+				AwardedAt:    a.awardAt(sunday),
+				LastEditedBy: seededBy,
+				LastEditedAt: a.awardAt(sunday),
+			})
+		}
+	}
+	if _, err := database.Collection("scoreEntries").InsertMany(ctx, docs); err != nil {
+		log.Fatalf("insert seed scores: %v", err)
+	}
+
+	log.Printf("seeded %d events and %d score entries across %d scored events (weekend of %s)",
+		len(fake), len(docs), len(awards), sunday.AddDate(0, 0, -2).Format("Jan 2"))
+}
+
+// seedTeams fixes the column order used by seedAward.points.
+var seedTeams = [4]models.Team{
+	models.TeamElectrical,
+	models.TeamComputer,
+	models.TeamSoftware,
+	models.TeamOldPatrol,
+}
+
+// seedAward is one event's results: points for all four teams, stamped at
+// the time that event finished.
+//
+// day/hour/min are relative to the Games weekend rather than absolute:
+// day is an offset from Sunday (-2 Friday, -1 Saturday, 0 Sunday), which
+// awardAt resolves against the most recent weekend. The events themselves
+// keep their fixed September dates — but the leaderboard plots awardedAt
+// on a shared x-axis, so pinning awards to a date months from the other
+// entries in the collection would squeeze every one of them into a sliver
+// at one edge of the chart and leave the rest of it empty.
+type seedAward struct {
+	event  string
+	day    int
+	hour   int
+	min    int
+	points [4]int // electrical, computer, software, oldPatrol
+}
+
+// lastSunday returns the most recent Sunday, midnight UTC. If today is
+// Sunday it steps back a week, so no award is ever stamped in the future.
+func lastSunday(now time.Time) time.Time {
+	d := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	for {
+		d = d.AddDate(0, 0, -1)
+		if d.Weekday() == time.Sunday {
+			return d
+		}
+	}
+}
+
+func (a seedAward) awardAt(sunday time.Time) time.Time {
+	return sunday.AddDate(0, 0, a.day).Add(
+		time.Duration(a.hour)*time.Hour + time.Duration(a.min)*time.Minute)
+}
+
+// fakeAwards is the weekend's scoring ledger, shaped so the leaderboard
+// graph actually shows something: the lead changes hands seven times, one
+// team takes a penalty (the only negative award, which puts a visible dip
+// in its curve), and second place finishes tied.
+//
+// Final: Software 315, Computer 295, Old Patrol 295, Electrical 245.
+func fakeAwards() []seedAward {
+	return []seedAward{
+		{"Captains Challenge", -2, 17, 0, [4]int{20, 15, 30, 10}},
+		{"Park Day", -1, 12, 30, [4]int{25, 40, 10, 30}},
+		{"CS Games comp", -1, 14, 0, [4]int{15, 20, 50, 5}},
+		{"Chicken Rush", -1, 18, 30, [4]int{45, 25, 5, 35}},
+		{"Boiler Room", -1, 22, 30, [4]int{20, 10, 15, 40}},
+		{"Scunts", 0, 9, 0, [4]int{30, 55, 45, 25}},
+		{"Damn Things", 0, 11, 0, [4]int{40, 20, 35, 15}},
+		{"Mini forge", 0, 14, 30, [4]int{10, 30, 25, 50}},
+		{"Ultimate Rallies", 0, 16, 30, [4]int{-10, 35, 40, 30}},
+		{"BOAT races and closing ceremonies", 0, 19, 30, [4]int{50, 45, 60, 55}},
+	}
 }
 
 // d builds a UTC timestamp on the fixed Games weekend (25-27 September 2026).
