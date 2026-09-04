@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	appmw "github.com/ecsegames/backend/internal/middleware"
@@ -43,12 +44,35 @@ func (h *Users) Me(w http.ResponseWriter, r *http.Request) {
 }
 
 type setTeamRequest struct {
-	Team models.Team `json:"team"`
+	Team  models.Team `json:"team"`
+	Name  string      `json:"name"`
+	Major string      `json:"major"`
+	Email string      `json:"email"`
 }
 
-// SetTeam joins the current user to a program team. The choice is set-once:
-// a user who already has a team gets 409 (changing teams needs exec approval,
-// which is out of scope for now).
+func (req setTeamRequest) validate() string {
+	if !models.IsValidTeam(req.Team) {
+		return "invalid team"
+	}
+	if strings.TrimSpace(req.Name) == "" {
+		return "name is required"
+	}
+	if strings.TrimSpace(req.Major) == "" {
+		return "major is required"
+	}
+	if strings.TrimSpace(req.Email) == "" {
+		return "email is required"
+	}
+	return ""
+}
+
+// SetTeam completes onboarding: joins the current user to a program team and
+// records the name/major/email collected on the same screen. The team is
+// set-once — a request for a *different* team than the one already on file
+// gets 409 (changing teams needs exec approval, which is out of scope for
+// now) — but resubmitting the same team is not a conflict, so a profile
+// that failed to save the first time can always be backfilled; see
+// Repository.SetTeam.
 func (h *Users) SetTeam(w http.ResponseWriter, r *http.Request) {
 	clerkID, ok := appmw.UserIDFromContext(r.Context())
 	if !ok {
@@ -61,10 +85,13 @@ func (h *Users) SetTeam(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
-	if !models.IsValidTeam(req.Team) {
-		http.Error(w, "invalid team", http.StatusBadRequest)
+	if msg := req.validate(); msg != "" {
+		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
+	name := strings.TrimSpace(req.Name)
+	major := strings.TrimSpace(req.Major)
+	email := strings.TrimSpace(req.Email)
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
@@ -74,23 +101,22 @@ func (h *Users) SetTeam(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
-	if u.Team != "" {
-		http.Error(w, "team already set", http.StatusConflict)
-		return
-	}
 
-	updated, err := h.repo.SetTeam(ctx, clerkID, req.Team)
+	updated, err := h.repo.SetTeam(ctx, clerkID, req.Team, name, major, email)
 	if err != nil {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
 	if !updated {
-		// Lost a race: the team was set between our read and write.
+		// The user already has a different team on file.
 		http.Error(w, "team already set", http.StatusConflict)
 		return
 	}
 
 	u.Team = req.Team
+	u.Name = name
+	u.Major = major
+	u.Email = email
 	writeJSON(w, http.StatusOK, u)
 }
 
