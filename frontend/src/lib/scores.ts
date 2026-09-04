@@ -13,18 +13,14 @@ export function teamLabel(team: Team): string {
 
 // A team's current points award for one event. A team has at most one
 // entry per event — awarding again overwrites value/description in place
-// (see ScoringPanel) rather than adding a row.
+// (see ScoringPanel) rather than adding a row. awardedAt is the entry's
+// latest submission time, not its original award time.
 export interface ScoreEntry {
   id: string;
   eventId: string;
   team: Team;
   value: number;
   description: string;
-  awardedBy: string;
   awardedAt: string;
-  lastEditedBy: string;
-  lastEditedAt: string;
   cleared: boolean;
-  clearedBy?: string;
-  clearedAt?: string;
 }

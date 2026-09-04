@@ -68,11 +68,11 @@ type LeaderboardPoint struct {
 
 // Leaderboard is the standings payload: current total per team, plus the
 // awards that produced them. Totals holds only teams with at least one
-// active entry — a team that has not been graded yet is absent, and the
-// client renders it as zero from its own canonical team list.
+// entry — a team that has not been graded yet is absent, and the client
+// renders it as zero from its own canonical team list.
 //
 // This is the one score shape any signed-in user may read, so it carries
-// no per-event attribution: no event ID, no awardedBy, no description.
+// no per-event attribution: no event ID, no description.
 type Leaderboard struct {
 	Totals map[models.Team]int `json:"totals"`
 	Points []LeaderboardPoint  `json:"points"`
@@ -178,8 +178,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := time.Now().UTC()
-	updated, err := h.store.Upsert(ctx, eventID, req.Team, req.Value, req.Description, clerkID)
+	updated, err := h.store.Upsert(ctx, eventID, req.Team, req.Value, req.Description)
 	if err != nil {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
@@ -194,7 +193,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			EntityID:   updated.ID,
 			Verb:       audit.VerbAwarded,
 			Actor:      clerkID,
-			At:         now,
 			Text:       fmt.Sprintf("Awarded %+d points to %s.", updated.Value, updated.Team),
 		}); err != nil {
 			log.Printf("scores: audit record failed: %v", err)
@@ -222,7 +220,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				EntityID:   updated.ID,
 				Verb:       audit.VerbEdited,
 				Actor:      clerkID,
-				At:         now,
 				Text:       fmt.Sprintf("Edited award for %s.", updated.Team),
 				Diffs:      diffs,
 			}); err != nil {
@@ -271,7 +268,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cleared, err := h.store.Clear(ctx, id, clerkID)
+	cleared, err := h.store.Clear(ctx, id)
 	if err == ErrAlreadyCleared {
 		http.Error(w, "already cleared", http.StatusConflict)
 		return
@@ -291,7 +288,6 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		EntityID:   id,
 		Verb:       audit.VerbDeleted,
 		Actor:      clerkID,
-		At:         time.Now().UTC(),
 		Text:       fmt.Sprintf("Cleared %+d points from %s.", cleared.Value, cleared.Team),
 	}); err != nil {
 		log.Printf("scores: audit record failed: %v", err)

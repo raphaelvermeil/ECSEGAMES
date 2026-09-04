@@ -18,10 +18,7 @@ export interface ScheduleEvent {
   endsAt: string;
   location: string;
   category: EventCategory;
-  createdBy: string;
   createdAt: string;
-  lastEditedBy: string;
-  lastEditedAt: string;
 }
 
 // Fetches every event for the Schedule tab (day tabs, the upcoming rail, and

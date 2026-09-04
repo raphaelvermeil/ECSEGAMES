@@ -15,17 +15,14 @@ import (
 )
 
 // ScoreEntry is the current points award for one team on one event.
+// AwardedAt is the time of the entry's latest submission: it advances on
+// every overwrite rather than being fixed at first award.
 type ScoreEntry struct {
-	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	EventID      primitive.ObjectID `bson:"eventId" json:"eventId"`
-	Team         models.Team        `bson:"team" json:"team"`
-	Value        int                `bson:"value" json:"value"`
-	Description  string             `bson:"description" json:"description"`
-	AwardedBy    string             `bson:"awardedBy" json:"awardedBy"`
-	AwardedAt    time.Time          `bson:"awardedAt" json:"awardedAt"`
-	LastEditedBy string             `bson:"lastEditedBy" json:"lastEditedBy"`
-	LastEditedAt time.Time          `bson:"lastEditedAt" json:"lastEditedAt"`
-	Cleared      bool               `bson:"cleared" json:"cleared"`
-	ClearedBy    string             `bson:"clearedBy,omitempty" json:"clearedBy,omitempty"`
-	ClearedAt    *time.Time         `bson:"clearedAt,omitempty" json:"clearedAt,omitempty"`
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	EventID     primitive.ObjectID `bson:"eventId" json:"eventId"`
+	Team        models.Team        `bson:"team" json:"team"`
+	Value       int                `bson:"value" json:"value"`
+	Description string             `bson:"description" json:"description"`
+	AwardedAt   time.Time          `bson:"awardedAt" json:"awardedAt"`
+	Cleared     bool               `bson:"cleared" json:"cleared"`
 }

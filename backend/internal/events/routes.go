@@ -189,10 +189,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		EndsAt:           req.EndsAt.UTC(),
 		Location:         req.Location,
 		Category:         req.Category,
-		CreatedBy:        clerkID,
 		CreatedAt:        now,
-		LastEditedBy:     clerkID,
-		LastEditedAt:     now,
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
@@ -244,7 +241,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := time.Now().UTC()
 	set := bson.M{
 		"title":            req.Title,
 		"shortDescription": req.ShortDescription,
@@ -255,8 +251,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		"endsAt":           req.EndsAt.UTC(),
 		"location":         req.Location,
 		"category":         req.Category,
-		"lastEditedBy":     clerkID,
-		"lastEditedAt":     now,
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
@@ -289,7 +283,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			EntityID:   id,
 			Verb:       audit.VerbEdited,
 			Actor:      clerkID,
-			At:         now,
 			Text:       "Event updated.",
 			Diffs:      diffs,
 		}); err != nil {

@@ -1,5 +1,7 @@
-// Command seed fills the events collection with a fixed batch of fake Games
-// events for local testing. Run with `go run ./cmd/seed`.
+// Command seed replaces the events and scoreEntries collections with a
+// fixed batch of fake Games data for local testing. Run with
+// `go run ./cmd/seed`. Users are left untouched — this script only ever
+// wipes and recreates events and their score entries.
 package main
 
 import (
@@ -16,10 +18,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// seededBy marks every event this script creates, so re-running it replaces
-// the previous batch instead of piling up duplicates.
-const seededBy = "seed-script"
-
 func main() {
 	cfg := config.Load()
 
@@ -31,25 +29,11 @@ func main() {
 		log.Fatalf("mongo connect: %v", err)
 	}
 
-	// Report what belongs to somebody else before touching anything. This
-	// script only ever deletes its own tagged documents, but a real event
-	// scored by hand keeps its score entries while its event row is
-	// recreated below — so it is worth seeing the count.
-	realEvents, err := database.Collection("events").CountDocuments(ctx, bson.M{"createdBy": bson.M{"$ne": seededBy}})
-	if err != nil {
-		log.Fatalf("count real events: %v", err)
+	if _, err := database.Collection("events").DeleteMany(ctx, bson.M{}); err != nil {
+		log.Fatalf("clear events: %v", err)
 	}
-	realScores, err := database.Collection("scoreEntries").CountDocuments(ctx, bson.M{"awardedBy": bson.M{"$ne": seededBy}})
-	if err != nil {
-		log.Fatalf("count real scores: %v", err)
-	}
-	log.Printf("leaving alone: %d event(s) and %d score entr(ies) not created by this script", realEvents, realScores)
-
-	if _, err := database.Collection("events").DeleteMany(ctx, bson.M{"createdBy": seededBy}); err != nil {
-		log.Fatalf("clear previous seed data: %v", err)
-	}
-	if _, err := database.Collection("scoreEntries").DeleteMany(ctx, bson.M{"awardedBy": seededBy}); err != nil {
-		log.Fatalf("clear previous seed scores: %v", err)
+	if _, err := database.Collection("scoreEntries").DeleteMany(ctx, bson.M{}); err != nil {
+		log.Fatalf("clear score entries: %v", err)
 	}
 
 	store := events.NewStore(database)
@@ -57,10 +41,7 @@ func main() {
 	now := time.Now().UTC()
 	eventIDs := map[string]primitive.ObjectID{}
 	for _, e := range fake {
-		e.CreatedBy = seededBy
-		e.LastEditedBy = seededBy
 		e.CreatedAt = now
-		e.LastEditedAt = now
 		created, err := store.Create(ctx, e)
 		if err != nil {
 			log.Fatalf("create event %q: %v", e.Title, err)
@@ -83,15 +64,12 @@ func main() {
 		}
 		for i, team := range seedTeams {
 			docs = append(docs, scores.ScoreEntry{
-				ID:           primitive.NewObjectID(),
-				EventID:      id,
-				Team:         team,
-				Value:        a.points[i],
-				Description:  "Seeded result",
-				AwardedBy:    seededBy,
-				AwardedAt:    a.awardAt(sunday),
-				LastEditedBy: seededBy,
-				LastEditedAt: a.awardAt(sunday),
+				ID:          primitive.NewObjectID(),
+				EventID:     id,
+				Team:        team,
+				Value:       a.points[i],
+				Description: "Seeded result",
+				AwardedAt:   a.awardAt(sunday),
 			})
 		}
 	}
