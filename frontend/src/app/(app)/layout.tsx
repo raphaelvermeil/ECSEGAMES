@@ -3,8 +3,10 @@ import { redirect } from "next/navigation";
 import Navbar from "./Navbar";
 import ViewportFloor from "./ViewportFloor";
 
-// Gate for all real features: the user must be signed in AND have joined a
-// program team. If they haven't joined one yet, send them to /select-team.
+// Gate for all real features: the user must be signed in AND have completed
+// onboarding (team + name + major). If any of that is missing — including a
+// team that was assigned before name/major existed, or a submission that
+// failed partway — send them back to /select-team to finish it.
 export default async function AppLayout({
   children,
 }: {
@@ -25,7 +27,7 @@ export default async function AppLayout({
     redirect("/select-team");
   }
   const user = await res.json();
-  if (!user.team) {
+  if (!user.team || !user.name || !user.major) {
     redirect("/select-team");
   }
 

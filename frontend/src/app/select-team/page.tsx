@@ -1,5 +1,4 @@
 import { auth } from "@clerk/nextjs/server";
-import Image from "next/image";
 import SelectTeamForm from "./SelectTeamForm";
 
 export default async function SelectTeamPage() {
@@ -10,14 +9,14 @@ export default async function SelectTeamPage() {
       style={{ background: "var(--gradient-hero)" }}
     >
       <div className="flex flex-col items-center gap-3 text-center">
-        <Image
-          src="/logo.png"
-          alt="ECSESS"
-          width={160}
-          height={40}
-          className="h-10 w-auto"
-          priority
-        />
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 flex-none items-center justify-center rounded-full border border-ecsess-400 font-mono text-xs font-semibold tracking-[0.05em] text-ecsess-150">
+            ECSE
+          </div>
+          <span className="font-display text-3xl font-semibold tracking-[0.2em] text-ecsess-50">
+            GAMES
+          </span>
+        </div>
         <h1 className="mt-2 text-5xl font-extrabold tracking-tight text-ecsess-50">
           Join your team
         </h1>

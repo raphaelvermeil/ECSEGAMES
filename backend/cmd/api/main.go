@@ -58,9 +58,9 @@ func main() {
 		userRepo := users.NewRepository(database)
 		auditStore := audit.NewStore(database)
 		eventStore := events.NewStore(database)
-		eventHandler := events.NewHandler(eventStore, auditStore)
+		eventHandler := events.NewHandler(eventStore, auditStore, userRepo)
 		scoreStore := scores.NewStore(database)
-		scoreHandler := scores.NewHandler(scoreStore, auditStore)
+		scoreHandler := scores.NewHandler(scoreStore, auditStore, userRepo)
 
 		// Authenticated user API. Users are created in Mongo lazily on their
 		// first request here, so no Clerk webhook is needed.

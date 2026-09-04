@@ -307,8 +307,7 @@ export default function ScoringPanel({
                         <div className="mb-[13px] font-mono text-xs leading-[1.6] text-sched-text">
                           {entry.description}
                           <div className="mt-[5px] font-mono text-[10px] text-sched-text-muted">
-                            {entry.lastEditedBy} ·{" "}
-                            {formatFooterTimestamp(entry.lastEditedAt)}
+                            {formatFooterTimestamp(entry.awardedAt)}
                           </div>
                         </div>
                       )}

@@ -48,15 +48,22 @@ func (r *Repository) GetOrCreate(ctx context.Context, clerkID string) (*models.U
 	return &u, nil
 }
 
-// SetTeam assigns the team only if the user hasn't joined one yet (set-once).
-// It reports whether the assignment happened; false means the user already had
-// a team, which the caller should treat as a conflict.
-func (r *Repository) SetTeam(ctx context.Context, clerkID string, team models.Team) (bool, error) {
-	// Match users with no team yet: empty string, explicit null, or the field
-	// missing entirely (older docs created before the team field existed —
-	// `$in [nil]` matches absent fields too).
-	filter := bson.M{"clerkId": clerkID, "team": bson.M{"$in": bson.A{"", nil}}}
-	update := bson.M{"$set": bson.M{"team": team}}
+// SetTeam completes onboarding: assigns the team and records the
+// name/major/email collected on the same screen. The team itself is
+// set-once, but resubmitting the *same* team is treated as an idempotent
+// profile update rather than a conflict — this is what lets a user whose
+// team was already on file (assigned before this profile info existed, or
+// left over from an earlier submission that failed) still get their
+// name/major/email recorded. Only a request for a genuinely different team
+// is rejected. Reports whether the write happened; false means the user
+// already has a different team, which the caller should treat as a
+// conflict.
+func (r *Repository) SetTeam(ctx context.Context, clerkID string, team models.Team, name, major, email string) (bool, error) {
+	// Match users with no team yet (empty string, explicit null, or the
+	// field missing entirely — older docs created before the team field
+	// existed) or whose team already equals the one being submitted.
+	filter := bson.M{"clerkId": clerkID, "team": bson.M{"$in": bson.A{"", nil, team}}}
+	update := bson.M{"$set": bson.M{"team": team, "name": name, "major": major, "email": email}}
 
 	res, err := r.coll.UpdateOne(ctx, filter, update)
 	if err != nil {

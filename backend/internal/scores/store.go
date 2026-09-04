@@ -49,8 +49,7 @@ func (s *Store) ListByEvent(ctx context.Context, eventID primitive.ObjectID) ([]
 // oldest first. The leaderboard aggregates these into standings and the
 // score-over-time curve; cleared entries are excluded because clearing
 // returns an entry to not-yet-graded, so it no longer counts toward a
-// team's total. Matching on $ne true rather than false also picks up any
-// entry written before the cleared field existed.
+// team's total.
 func (s *Store) ListAllActive(ctx context.Context) ([]ScoreEntry, error) {
 	opts := options.Find().SetSort(bson.D{{Key: "awardedAt", Value: 1}})
 	cur, err := s.coll.Find(ctx, bson.M{"cleared": bson.M{"$ne": true}}, opts)
@@ -88,26 +87,23 @@ func (s *Store) GetByTeam(ctx context.Context, eventID primitive.ObjectID, team 
 }
 
 // Upsert awards points to a team on an event. A team has at most one entry
-// per event: awarding again overwrites value/description in place (and
-// un-clears the entry, if it had been cleared) rather than adding a row.
-// awardedBy/awardedAt are set only on first insert, so attribution for the
-// original award is preserved across later overwrites.
-func (s *Store) Upsert(ctx context.Context, eventID primitive.ObjectID, team models.Team, value int, description, editedBy string) (*ScoreEntry, error) {
+// per event: awarding again overwrites the entry in place (and un-clears
+// it, if it had been cleared) rather than adding a row. awardedAt is
+// stamped with now on every call, since it tracks the entry's latest
+// submission rather than its original award.
+func (s *Store) Upsert(ctx context.Context, eventID primitive.ObjectID, team models.Team, value int, description string) (*ScoreEntry, error) {
 	now := time.Now().UTC()
 	filter := bson.M{"eventId": eventID, "team": team}
 	update := bson.M{
 		"$set": bson.M{
-			"value":        value,
-			"description":  description,
-			"lastEditedBy": editedBy,
-			"lastEditedAt": now,
-			"cleared":      false,
+			"value":       value,
+			"description": description,
+			"awardedAt":   now,
+			"cleared":     false,
 		},
 		"$setOnInsert": bson.M{
-			"eventId":   eventID,
-			"team":      team,
-			"awardedBy": editedBy,
-			"awardedAt": now,
+			"eventId": eventID,
+			"team":    team,
 		},
 	}
 	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
@@ -123,15 +119,10 @@ func (s *Store) Upsert(ctx context.Context, eventID primitive.ObjectID, team mod
 // storage (so its history survives) but is marked cleared. Returns
 // ErrAlreadyCleared if it already was, mongo.ErrNoDocuments if it doesn't
 // exist at all.
-func (s *Store) Clear(ctx context.Context, id primitive.ObjectID, clearedBy string) (*ScoreEntry, error) {
-	now := time.Now().UTC()
+func (s *Store) Clear(ctx context.Context, id primitive.ObjectID) (*ScoreEntry, error) {
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 	filter := bson.M{"_id": id, "cleared": false}
-	update := bson.M{"$set": bson.M{
-		"cleared":   true,
-		"clearedBy": clearedBy,
-		"clearedAt": now,
-	}}
+	update := bson.M{"$set": bson.M{"cleared": true}}
 
 	var e ScoreEntry
 	err := s.coll.FindOneAndUpdate(ctx, filter, update, opts).Decode(&e)

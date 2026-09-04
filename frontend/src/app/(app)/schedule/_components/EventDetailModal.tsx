@@ -93,10 +93,7 @@ export default function EventDetailModal({
   const timeLabel = ongoing
     ? "Open all weekend"
     : `${formatTime(start)} – ${formatTime(end)}`;
-  const neverEdited = event.lastEditedAt === event.createdAt;
-  const footLabel = neverEdited
-    ? `Created by ${event.createdBy} · ${formatFooterTimestamp(event.createdAt)}`
-    : `Last edited by ${event.lastEditedBy} · ${formatFooterTimestamp(event.lastEditedAt)}`;
+  const footLabel = `Created ${formatFooterTimestamp(event.createdAt)}`;
 
   return (
     <div

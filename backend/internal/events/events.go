@@ -41,12 +41,9 @@ type Event struct {
 	// sustainability info, and what the team captain needs to do.
 	Access       string    `bson:"access" json:"access"`
 	Captain      string    `bson:"captain" json:"captain"`
-	StartsAt     time.Time `bson:"startsAt" json:"startsAt"`
-	EndsAt       time.Time `bson:"endsAt" json:"endsAt"`
-	Location     string    `bson:"location" json:"location"`
-	Category     Category  `bson:"category" json:"category"`
-	CreatedBy    string    `bson:"createdBy" json:"createdBy"`
-	CreatedAt    time.Time `bson:"createdAt" json:"createdAt"`
-	LastEditedBy string    `bson:"lastEditedBy" json:"lastEditedBy"`
-	LastEditedAt time.Time `bson:"lastEditedAt" json:"lastEditedAt"`
+	StartsAt  time.Time `bson:"startsAt" json:"startsAt"`
+	EndsAt    time.Time `bson:"endsAt" json:"endsAt"`
+	Location  string    `bson:"location" json:"location"`
+	Category  Category  `bson:"category" json:"category"`
+	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
 }

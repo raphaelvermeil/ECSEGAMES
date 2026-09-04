@@ -21,11 +21,26 @@ import (
 type Handler struct {
 	store *Store
 	audit *audit.Store
+	users *users.Repository
 }
 
 // NewHandler builds the handler backed by the given event and audit stores.
-func NewHandler(store *Store, auditStore *audit.Store) *Handler {
-	return &Handler{store: store, audit: auditStore}
+// userRepo resolves an actor's display name for the audit trail.
+func NewHandler(store *Store, auditStore *audit.Store, userRepo *users.Repository) *Handler {
+	return &Handler{store: store, audit: auditStore, users: userRepo}
+}
+
+// actorName resolves clerkID to the name on their profile, for the audit
+// trail to show a person instead of a raw Clerk ID. It's snapshotted at
+// write time — like a diff's author, an entry keeps the name as it was
+// when the action happened, even if the person's profile changes later.
+// Falls back to the Clerk ID itself if no name is on file yet.
+func (h *Handler) actorName(ctx context.Context, clerkID string) string {
+	u, err := h.users.GetOrCreate(ctx, clerkID)
+	if err != nil || u.Name == "" {
+		return clerkID
+	}
+	return u.Name
 }
 
 // Mount registers event routes on r. Reads (including history) require a
@@ -189,10 +204,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		EndsAt:           req.EndsAt.UTC(),
 		Location:         req.Location,
 		Category:         req.Category,
-		CreatedBy:        clerkID,
 		CreatedAt:        now,
-		LastEditedBy:     clerkID,
-		LastEditedAt:     now,
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
@@ -209,7 +221,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		EntityType: audit.EntityEvent,
 		EntityID:   created.ID,
 		Verb:       audit.VerbCreated,
-		Actor:      clerkID,
+		Actor:      h.actorName(ctx, clerkID),
 		At:         now,
 		Text:       "Event created.",
 	}); err != nil {
@@ -244,7 +256,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := time.Now().UTC()
 	set := bson.M{
 		"title":            req.Title,
 		"shortDescription": req.ShortDescription,
@@ -255,8 +266,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		"endsAt":           req.EndsAt.UTC(),
 		"location":         req.Location,
 		"category":         req.Category,
-		"lastEditedBy":     clerkID,
-		"lastEditedAt":     now,
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
@@ -288,8 +297,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			EntityType: audit.EntityEvent,
 			EntityID:   id,
 			Verb:       audit.VerbEdited,
-			Actor:      clerkID,
-			At:         now,
+			Actor:      h.actorName(ctx, clerkID),
 			Text:       "Event updated.",
 			Diffs:      diffs,
 		}); err != nil {
@@ -353,7 +361,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		EntityType: audit.EntityEvent,
 		EntityID:   id,
 		Verb:       audit.VerbDeleted,
-		Actor:      clerkID,
+		Actor:      h.actorName(ctx, clerkID),
 		At:         time.Now().UTC(),
 		Text:       "Event deleted.",
 	}); err != nil {
