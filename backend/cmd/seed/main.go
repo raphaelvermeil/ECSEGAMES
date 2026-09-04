@@ -1,7 +1,12 @@
-// Command seed replaces the events and scoreEntries collections with a
-// fixed batch of fake Games data for local testing. Run with
-// `go run ./cmd/seed`. Users are left untouched — this script only ever
-// wipes and recreates events and their score entries.
+// Command seed replaces the events, scoreEntries and auditEntries
+// collections with a fixed batch of fake Games data for local testing. Run
+// with `go run ./cmd/seed`. Users are left untouched — this script only
+// ever wipes and recreates events and the records hanging off them.
+//
+// auditEntries has to go with the events: an audit entry points at its
+// event by ObjectID, and reseeding mints brand-new IDs, so any entry left
+// behind would reference an event that no longer exists and would never
+// surface in a history view again.
 package main
 
 import (
@@ -34,6 +39,9 @@ func main() {
 	}
 	if _, err := database.Collection("scoreEntries").DeleteMany(ctx, bson.M{}); err != nil {
 		log.Fatalf("clear score entries: %v", err)
+	}
+	if _, err := database.Collection("auditEntries").DeleteMany(ctx, bson.M{}); err != nil {
+		log.Fatalf("clear audit entries: %v", err)
 	}
 
 	store := events.NewStore(database)
