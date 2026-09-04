@@ -40,7 +40,12 @@ type Diff struct {
 	To    string `bson:"to" json:"to"`
 }
 
-// Entry is a single history row.
+// Entry is a single history row. Actor is the acting user's display name,
+// resolved from their profile and snapshotted at write time (see each
+// package's actorName helper) — not a stable Clerk ID, so it reads as a
+// person in the UI and won't retroactively change if their profile is
+// later edited. Falls back to the raw Clerk ID for a user with no name on
+// file yet.
 type Entry struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	EventID    primitive.ObjectID `bson:"eventId" json:"eventId"`

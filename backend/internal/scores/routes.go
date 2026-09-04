@@ -23,11 +23,26 @@ import (
 type Handler struct {
 	store *Store
 	audit *audit.Store
+	users *users.Repository
 }
 
 // NewHandler builds the handler backed by the given score and audit stores.
-func NewHandler(store *Store, auditStore *audit.Store) *Handler {
-	return &Handler{store: store, audit: auditStore}
+// userRepo resolves an actor's display name for the audit trail.
+func NewHandler(store *Store, auditStore *audit.Store, userRepo *users.Repository) *Handler {
+	return &Handler{store: store, audit: auditStore, users: userRepo}
+}
+
+// actorName resolves clerkID to the name on their profile, for the audit
+// trail to show a person instead of a raw Clerk ID. It's snapshotted at
+// write time — an entry keeps the name as it was when the action happened,
+// even if the person's profile changes later. Falls back to the Clerk ID
+// itself if no name is on file yet.
+func (h *Handler) actorName(ctx context.Context, clerkID string) string {
+	u, err := h.users.GetOrCreate(ctx, clerkID)
+	if err != nil || u.Name == "" {
+		return clerkID
+	}
+	return u.Name
 }
 
 // Mount registers score routes on r in two groups with different gates.
@@ -192,7 +207,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			EntityType: audit.EntityScoreEntry,
 			EntityID:   updated.ID,
 			Verb:       audit.VerbAwarded,
-			Actor:      clerkID,
+			Actor:      h.actorName(ctx, clerkID),
 			Text:       fmt.Sprintf("Awarded %+d points to %s.", updated.Value, updated.Team),
 		}); err != nil {
 			log.Printf("scores: audit record failed: %v", err)
@@ -219,7 +234,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				EntityType: audit.EntityScoreEntry,
 				EntityID:   updated.ID,
 				Verb:       audit.VerbEdited,
-				Actor:      clerkID,
+				Actor:      h.actorName(ctx, clerkID),
 				Text:       fmt.Sprintf("Edited award for %s.", updated.Team),
 				Diffs:      diffs,
 			}); err != nil {
@@ -287,7 +302,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		EntityType: audit.EntityScoreEntry,
 		EntityID:   id,
 		Verb:       audit.VerbDeleted,
-		Actor:      clerkID,
+		Actor:      h.actorName(ctx, clerkID),
 		Text:       fmt.Sprintf("Cleared %+d points from %s.", cleared.Value, cleared.Team),
 	}); err != nil {
 		log.Printf("scores: audit record failed: %v", err)
