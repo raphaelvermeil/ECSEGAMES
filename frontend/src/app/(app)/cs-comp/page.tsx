@@ -1,15 +1,16 @@
 import { auth } from "@clerk/nextjs/server";
-import MobilePageBanner from "@/components/MobilePageBanner";
+import CsCompView from "./_components/CsCompView";
 
 export default async function CsCompPage() {
   await auth.protect();
-  return (
-    <>
-      <MobilePageBanner title="CS comp" subtitle="Coming soon." />
-      <main className="hidden bg-ecsess-900 px-10 pb-11 pt-9 lg:block">
-        <h1 className="text-4xl font-extrabold text-ecsess-50">CS comp</h1>
-        <p className="mt-1.5 text-base text-ecsess-300">Coming soon.</p>
-      </main>
-    </>
-  );
+
+  const { getToken } = await auth();
+  const token = await getToken();
+  const meRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const user = await meRes.json();
+
+  return <CsCompView me={{ name: user.name, program: user.major }} />;
 }
