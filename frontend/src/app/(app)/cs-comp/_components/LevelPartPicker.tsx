@@ -39,6 +39,17 @@ export default function LevelPartPicker({
     return () => trigger?.focus?.();
   }, []);
 
+  // The backdrop has no scroll container of its own, so without this a
+  // wheel/trackpad scroll anywhere outside the panel falls through to the
+  // page behind the modal instead of doing nothing.
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, []);
+
   useEffect(() => {
     panelRef.current?.focus();
   }, [picker]);
