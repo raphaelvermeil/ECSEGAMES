@@ -218,6 +218,21 @@ export default function BattlePanel({
               </button>
             </div>
             <div className="relative flex h-[300px] items-center justify-center overflow-hidden bg-[#0d1712]">
+              <iframe
+                title="Your output"
+                srcDoc={previewCode}
+                sandbox=""
+                scrolling="no"
+                style={{
+                  width: 300,
+                  height: 200,
+                  border: 0,
+                  transform: "scale(1.5)",
+                }}
+              />
+              {/* Onion-skin overlay, not a difference blend — a faint outline
+                  of the target sitting on top of your real colors reads much
+                  more clearly than the two layers cancelling each other out. */}
               {diff && (
                 <iframe
                   aria-hidden="true"
@@ -231,24 +246,10 @@ export default function BattlePanel({
                     height: 200,
                     border: 0,
                     transform: "scale(1.5)",
+                    opacity: 0.4,
                   }}
                 />
               )}
-              <iframe
-                title="Your output"
-                srcDoc={previewCode}
-                sandbox=""
-                scrolling="no"
-                className="relative"
-                style={{
-                  width: 300,
-                  height: 200,
-                  border: 0,
-                  transform: "scale(1.5)",
-                  opacity: diff ? 0.55 : 1,
-                  mixBlendMode: diff ? "difference" : "normal",
-                }}
-              />
             </div>
           </div>
         </div>
