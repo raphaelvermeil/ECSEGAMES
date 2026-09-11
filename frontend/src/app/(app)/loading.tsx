@@ -1,4 +1,4 @@
-import { Bell } from "@/components/icons";
+import MobileChromeBar from "@/components/MobileChromeBar";
 
 // Shown while any (app) route renders on the server. One file for the whole
 // group rather than one per route: it nests inside (app)/layout.tsx, so the
@@ -22,36 +22,20 @@ export default function AppLoading() {
           unmounts with the outgoing one — so without a stand-in here the
           header disappears mid-navigation. The logo row is static, so it is
           rendered for real; only the title below is a placeholder. */}
-      <div className="lg:hidden">
-        <div className="flex items-center justify-between gap-3 bg-sched-chrome px-4 py-3">
-          <div className="flex items-center gap-[9px]">
-            <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-sched-accent-dim font-mono text-[10px] font-semibold tracking-[0.05em] text-sched-accent-dim">
-              ECSE
-            </div>
-            <span className="font-display text-[15px] font-semibold tracking-[0.2em] text-sched-cream">
-              GAMES
-            </span>
-          </div>
-          <div className="flex items-center gap-[6px]">
-            <span className="flex h-11 w-11 items-center justify-center text-sched-accent">
-              <Bell width={21} height={21} strokeWidth={1.6} />
-            </span>
-          </div>
-        </div>
+      <MobileChromeBar />
 
-        <div className="relative bg-sched-band px-5 pb-4 pt-5">
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 opacity-[0.28]"
-            style={{
-              background:
-                "repeating-linear-gradient(to bottom, rgba(0,0,0,.5) 0 1px, transparent 1px 3px)",
-            }}
-          />
-          <div className="relative animate-pulse">
-            <div className="h-[40px] w-52 bg-sched-hair" />
-            <div className="mt-[9px] h-3 w-32 bg-sched-row-line" />
-          </div>
+      <div className="relative bg-sched-band px-5 pb-4 pt-5 lg:hidden">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 opacity-[0.28]"
+          style={{
+            background:
+              "repeating-linear-gradient(to bottom, rgba(0,0,0,.5) 0 1px, transparent 1px 3px)",
+          }}
+        />
+        <div className="relative animate-pulse">
+          <div className="h-[40px] w-52 bg-sched-hair" />
+          <div className="mt-[9px] h-3 w-32 bg-sched-row-line" />
         </div>
       </div>
 

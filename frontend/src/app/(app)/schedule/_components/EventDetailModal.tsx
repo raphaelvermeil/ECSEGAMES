@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, Clock, Pin, X } from "@/components/icons";
 import type { ScheduleEvent } from "@/lib/events";
+import { useScrollLock, useThemeColor } from "@/lib/overlay";
 import {
   categoryColor,
   formatFooterTimestamp,
@@ -32,18 +33,37 @@ export default function EventDetailModal({
   const panelRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<"detail" | "history">("detail");
 
+  // Only the sheet scrolls while it is open; the schedule behind it holds
+  // its place. The tint is this overlay's rgba(4,9,7,.72) composited over
+  // the header it covers (--color-sched-chrome), so Safari's address bar
+  // stays the same shade as the top of the screen instead of reverting to
+  // the undimmed header colour.
+  useScrollLock();
+  useThemeColor("#0a0e0c");
+
   // Focus the panel on open, and hand focus back to whatever triggered it
   // (the calendar row/rail item) on close.
+  //
+  // preventScroll matters here. On a phone this is a bottom sheet that
+  // animates up from translateY(100%), so at the instant focus lands the
+  // panel is still entirely below the viewport — and a plain focus() makes
+  // the browser scroll its scrollable ancestors to reveal it, which parks
+  // the overlay at the panel's bottom. The result was a flash of the end of
+  // the description at the top of the screen before the animation finished
+  // and everything snapped back. The sheet is positioned by CSS; focus has
+  // no business moving it.
   useEffect(() => {
     const trigger = document.activeElement as HTMLElement | null;
-    panelRef.current?.focus();
+    panelRef.current?.focus({ preventScroll: true });
     return () => trigger?.focus?.();
   }, []);
 
   // Re-focus the panel whenever the detail/history content swaps out from
   // under the user, so keyboard/screen-reader users don't lose their place.
+  // Same reasoning on preventScroll — and note this also runs on mount, so
+  // without it the panel was being scrolled into view twice.
   useEffect(() => {
-    panelRef.current?.focus();
+    panelRef.current?.focus({ preventScroll: true });
   }, [tab]);
 
   useEffect(() => {
@@ -108,7 +128,16 @@ export default function EventDetailModal({
         aria-label="Event detail"
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="animate-sched-sheet w-full max-h-[88%] overflow-y-auto border-t border-sched-accent-dim bg-sched-bg-raised font-mono outline-none lg:animate-sched-pop lg:max-w-[780px] lg:max-h-none lg:overflow-visible lg:border"
+        // 88svh rather than 88%: a percentage max-height resolves against the
+        // overlay's own resolved height, and on iOS that settles a frame late
+        // while the URL bar animates. Until it does, the sheet is at its
+        // natural height — and because the overlay is `items-end`, anything
+        // taller than it gets pushed out of the *top*, which is what put the
+        // end of the description at the top of the screen for a frame. svh is
+        // the smallest-viewport unit, so it resolves immediately and doesn't
+        // move when the URL bar collapses; it's the same reason the shell uses
+        // svh rather than vh (see (app)/layout.tsx).
+        className="animate-sched-sheet max-h-[88svh] w-full overflow-y-auto overscroll-contain border-t border-sched-accent-dim bg-sched-bg-raised pb-[var(--app-safe-bottom)] font-mono outline-none lg:animate-sched-pop lg:max-h-none lg:max-w-[780px] lg:overflow-visible lg:border lg:pb-0"
       >
         <div
           aria-hidden="true"

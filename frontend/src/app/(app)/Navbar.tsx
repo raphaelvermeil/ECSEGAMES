@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { Show, SignInButton, UserButton } from "@clerk/nextjs";
 import { Bell } from "@/components/icons";
 import { NAV_LINKS } from "@/lib/nav";
 
@@ -68,23 +68,18 @@ export default function Navbar() {
           <Show when="signed-in">
             <UserButton />
           </Show>
+          {/* Sign in only. Clerk's own card carries the "Don't have an
+              account? Sign up" link, so a second button here would just
+              duplicate a route the modal already offers. */}
           <Show when="signed-out">
             <SignInButton mode="modal">
               <button
                 type="button"
-                className="whitespace-nowrap border border-sched-accent-dim px-[14px] py-[7px] text-sm font-medium text-sched-accent transition-colors hover:border-sched-accent"
+                className="whitespace-nowrap border border-sched-accent bg-sched-accent px-[14px] py-[7px] text-sm font-semibold text-sched-bg transition-colors hover:border-sched-cream hover:bg-sched-cream"
               >
                 Sign in
               </button>
             </SignInButton>
-            <SignUpButton mode="modal">
-              <button
-                type="button"
-                className="whitespace-nowrap border border-sched-accent bg-sched-accent px-[14px] py-[7px] text-sm font-semibold text-sched-bg transition-colors hover:bg-sched-cream hover:border-sched-cream"
-              >
-                Register
-              </button>
-            </SignUpButton>
           </Show>
         </div>
       </div>

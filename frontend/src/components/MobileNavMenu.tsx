@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SignInButton, SignUpButton, useAuth, useUser } from "@clerk/nextjs";
+import { SignInButton, useAuth, useUser } from "@clerk/nextjs";
 import { X } from "@/components/icons";
 import api from "@/lib/api";
 import { NAV_LINKS } from "@/lib/nav";
+import { useScrollLock, useThemeColor } from "@/lib/overlay";
 import { teamLabel, type Team } from "@/lib/scores";
 
 // Right-side slide-in drawer for mobile nav — the shared Navbar's link row
@@ -25,6 +26,19 @@ export default function MobileNavMenu({
   const { user } = useUser();
   const { getToken } = useAuth();
   const [team, setTeam] = useState<Team | null>(null);
+
+  // The drawer is always mounted and returns null when closed, so both of
+  // these take `open` rather than being called unconditionally.
+  //
+  // The tint is --color-sched-band, the drawer's own header, not the dimmed
+  // page behind it: the panel is 76% of the width and its green header is
+  // what actually meets the top edge, so that is what the address bar has to
+  // match. Sampling the rendered top strip gives #092a1f — the average of
+  // that green and the dark sliver left of the drawer — but Safari paints one
+  // flat colour, so matching the larger surface reads better than matching an
+  // average that matches neither.
+  useScrollLock(open);
+  useThemeColor(open ? "#093325" : null);
 
   useEffect(() => {
     // Signed-out visitors have no team to show, and /api/me would 401 —
@@ -71,7 +85,7 @@ export default function MobileNavMenu({
         aria-label="Navigation menu"
         className="animate-sched-slide absolute inset-y-0 right-0 flex w-[76%] max-w-xs flex-col border-l border-sched-accent-dim bg-sched-bg-raised"
       >
-        <div className="flex flex-none items-center justify-between gap-3 bg-sched-band py-4 pl-[18px] pr-2 pt-5">
+        <div className="flex flex-none items-center justify-between gap-3 bg-sched-band pb-4 pl-[18px] pr-2 pt-[calc(1.25rem+var(--app-safe-top))]">
           <div className="flex items-center gap-[9px]">
             <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-sched-accent-dim font-mono text-[10px] font-semibold tracking-[0.05em] text-sched-accent-dim">
               ECSE
@@ -90,7 +104,7 @@ export default function MobileNavMenu({
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto">
+        <nav className="flex-1 overflow-y-auto overscroll-contain">
           {NAV_LINKS.map((link) => {
             const active = link.exact
               ? pathname === link.href
@@ -139,7 +153,7 @@ export default function MobileNavMenu({
           })}
         </nav>
 
-        <div className="flex-none px-[18px] pb-10 pt-4 font-mono text-[10px] leading-[1.7] text-sched-text-muted">
+        <div className="flex-none px-[18px] pb-[calc(2.5rem+var(--app-safe-bottom))] pt-4 font-mono text-[10px] leading-[1.7] text-sched-text-muted">
           {user ? (
             <>
               Signed in as {user.fullName ?? user.username ?? "you"}
@@ -153,26 +167,18 @@ export default function MobileNavMenu({
           ) : (
             // Browsing works signed out; this is only needed to enter the CS
             // comp or to run an event as an exec.
+            // Sign in only — Clerk's card already links to sign-up for
+            // anyone who doesn't have an account yet.
             <div className="flex flex-col gap-2">
               <span>Sign in to join the CS comp.</span>
-              <div className="flex gap-2">
-                <SignInButton mode="modal">
-                  <button
-                    type="button"
-                    className="flex-1 border border-sched-accent-dim px-3 py-2 font-mono text-[11px] font-medium text-sched-accent"
-                  >
-                    Sign in
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button
-                    type="button"
-                    className="flex-1 border border-sched-accent bg-sched-accent px-3 py-2 font-mono text-[11px] font-semibold text-sched-bg"
-                  >
-                    Register
-                  </button>
-                </SignUpButton>
-              </div>
+              <SignInButton mode="modal">
+                <button
+                  type="button"
+                  className="w-full border border-sched-accent bg-sched-accent px-3 py-2 font-mono text-[11px] font-semibold text-sched-bg"
+                >
+                  Sign in
+                </button>
+              </SignInButton>
             </div>
           )}
         </div>

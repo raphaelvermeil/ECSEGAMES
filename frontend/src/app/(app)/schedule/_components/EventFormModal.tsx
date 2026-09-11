@@ -5,6 +5,7 @@ import { useAuth } from "@clerk/nextjs";
 import { X } from "@/components/icons";
 import api from "@/lib/api";
 import type { EventCategory, ScheduleEvent } from "@/lib/events";
+import { useScrollLock, useThemeColor } from "@/lib/overlay";
 import {
   CATEGORIES,
   SHORT_DESCRIPTION_MAX,
@@ -177,11 +178,18 @@ export default function EventFormModal({
     setFields((f) => ({ ...f, [key]: value }));
   }
 
+  // Full-screen and opaque below lg, so the top edge is the panel itself
+  // (--color-sched-bg-raised) rather than a dimmed blend of the page.
+  useScrollLock();
+  useThemeColor("#101a15");
+
   // Focus the panel on open, and hand focus back to whatever triggered it on
-  // close — same pattern as EventDetailModal.
+  // close — same pattern as EventDetailModal, including preventScroll: this
+  // panel animates in from translateY(100%) too, so focusing it without that
+  // flag scrolls the overlay to reveal a sheet that is still off-screen.
   useEffect(() => {
     const trigger = document.activeElement as HTMLElement | null;
-    panelRef.current?.focus();
+    panelRef.current?.focus({ preventScroll: true });
     return () => trigger?.focus?.();
   }, []);
 
@@ -293,7 +301,7 @@ export default function EventFormModal({
         onClick={(e) => e.stopPropagation()}
         className="animate-sched-sheet flex h-full w-full flex-col bg-sched-bg-raised font-mono outline-none lg:animate-sched-pop lg:h-auto lg:max-w-[700px] lg:border lg:border-sched-accent-dim"
       >
-        <div className="flex flex-none items-center justify-between border-b border-sched-hair px-5 py-6 lg:px-[30px]">
+        <div className="flex flex-none items-center justify-between border-b border-sched-hair px-5 pb-6 pt-[calc(1.5rem+var(--app-safe-top))] lg:px-[30px] lg:pt-6">
           <h2 className="font-display text-[22px] font-semibold tracking-[0.04em] text-sched-cream lg:text-[26px]">
             {mode === "create" ? "NEW EVENT" : "EDIT EVENT"}
           </h2>

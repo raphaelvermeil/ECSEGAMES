@@ -166,7 +166,11 @@ export default function ScheduleView({
               <div
                 role="tablist"
                 aria-label="Games days"
-                className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 grid border-b border-sched-hair bg-sched-chrome lg:hidden"
+                // Pins directly under ScheduleBanner's sticky chrome bar
+                // rather than at the true top of the screen, which is now
+                // behind the notch. --app-chrome-h is that bar's height;
+                // the inset is what the bar itself is padded by.
+                className="sticky top-[calc(var(--app-chrome-h)+var(--app-safe-top))] z-10 -mx-4 -mt-4 mb-4 grid border-b border-sched-hair bg-sched-chrome lg:hidden"
                 style={{
                   gridTemplateColumns: `repeat(${dayBuckets.length}, minmax(0, 1fr))`,
                 }}

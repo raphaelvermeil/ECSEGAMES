@@ -7,9 +7,9 @@ import { Show, SignInButton, UserButton } from "@clerk/nextjs";
 //
 // It exists because the pages these banners sit on — schedule, leaderboard,
 // sponsors, meet-the-team, home — are public now, so the avatar can't be
-// assumed. Register isn't offered here: the sign-in modal links to it, and
-// the phone header has no room for two buttons beside the bell and the
-// hamburger. The desktop Navbar has space and shows both.
+// assumed. Sign in is the only affordance anywhere in the app: Clerk's own
+// card carries the "Don't have an account? Sign up" link, so a separate
+// register button would just duplicate a route the modal already offers.
 //
 // <Show> renders null while Clerk boots, so the fixed h-11 keeps the header
 // row from jumping when the avatar or button appears.

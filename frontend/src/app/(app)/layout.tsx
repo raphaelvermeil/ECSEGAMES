@@ -15,11 +15,7 @@ import ViewportFloor from "./ViewportFloor";
 // would opt *every* route in the group back into per-request rendering,
 // however static its own content is. Signed-in vs signed-out UI is decided
 // in the browser instead — see Navbar's <Show> blocks.
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   // --app-vvh is the measured phone viewport height ViewportFloor publishes;
   // TeamView's own height rule reads the same variable, so the shell can't end
   // up taller than the page content and leave a strip of its own background
@@ -35,7 +31,15 @@ export default function AppLayout({
           rewrapping the nav and crushing the page. The 0px fallback keeps the
           class inert during SSR and first paint. Deliberately no max-width —
           zooming out should expand to fill. */}
-      <div className="mx-auto min-h-[min(var(--app-vvh,100svh),100svh)] w-full overflow-hidden bg-sched-bg lg:min-w-[var(--app-floor-w,0px)]">
+      {/* The clip is desktop-only on purpose. `overflow: hidden` makes this
+          div a scroll container, and a sticky descendant sticks to its
+          nearest scroll container rather than to the viewport — so while
+          this applied on phones, every sticky header in the app silently
+          scrolled away instead of pinning (measured: the schedule's chrome
+          bar sat at -500px after a 500px scroll). Phones have no horizontal
+          overflow to clip on any route, so dropping it below lg costs
+          nothing and is what makes the sticky headers work at all. */}
+      <div className="mx-auto min-h-[min(var(--app-vvh,100svh),100svh)] w-full bg-sched-bg lg:min-w-[var(--app-floor-w,0px)] lg:overflow-hidden">
         <ViewportFloor />
         <Navbar />
         {children}

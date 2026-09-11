@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { UserButton } from "@clerk/nextjs";
-import { Bell, Lock, Menu } from "@/components/icons";
+import { Lock } from "@/components/icons";
+import MobileChromeBar from "@/components/MobileChromeBar";
 import MobileNavMenu from "@/components/MobileNavMenu";
 
 type View = "teams" | "battle" | "mine";
@@ -34,34 +34,9 @@ export default function CsCompBanner({
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3 bg-sched-chrome px-4 py-3 lg:hidden">
-        <div className="flex items-center gap-[9px]">
-          <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-sched-accent-dim font-mono text-[10px] font-semibold tracking-[0.05em] text-sched-accent-dim">
-            ECSE
-          </div>
-          <span className="font-display text-[15px] font-semibold tracking-[0.2em] text-sched-cream">
-            GAMES
-          </span>
-        </div>
-        <div className="flex items-center gap-[6px]">
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="flex h-11 w-11 items-center justify-center text-sched-accent"
-          >
-            <Bell width={21} height={21} strokeWidth={1.6} />
-          </button>
-          <UserButton />
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open navigation menu"
-            className="flex h-11 w-11 items-center justify-center text-sched-text-muted"
-          >
-            <Menu width={22} height={22} strokeWidth={1.8} />
-          </button>
-        </div>
-      </div>
+      {/* The shared Navbar is hidden below lg, so this is the header on
+          a phone — one component for every page, see MobileChromeBar. */}
+      <MobileChromeBar onOpenMenu={() => setMenuOpen(true)} />
 
       <div className="relative px-5 pb-0 pt-5 lg:px-[60px] lg:pt-[30px]">
         <div className="absolute inset-0 bg-sched-band" aria-hidden="true" />

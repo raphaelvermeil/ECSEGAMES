@@ -94,6 +94,25 @@
 :root {
   --gradient-hero: linear-gradient(to bottom, #1f1f1f, #031c15, #062c20);
   --gradient-section-a: linear-gradient(to bottom, #062c20, #306032, #2f4d29);
+
+  /* iPhone safe areas. These only report real values because the root
+     layout declares viewportFit: "cover"; without it env() is always 0 and
+     every rule below collapses to its plain padding. Named rather than
+     writing env() inline so the fallback lives in exactly one place —
+     browsers with no notch, and every desktop, resolve these to 0px. */
+  --app-safe-top: env(safe-area-inset-top, 0px);
+  --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Height of the mobile top chrome bar (MobileChromeBar), measured without
+     the safe-area inset above it: 44px of controls plus 12px of padding
+     below. There is deliberately no padding above — the bar's top padding
+     is the inset alone, so on a browser whose own chrome already sits above
+     the page the header starts flush at the logo.
+
+     The schedule's day-tab row pins directly beneath that bar while both
+     are sticky, so it offsets itself by this plus the inset. If the bar's
+     padding ever changes, this is the number to change with it. */
+  --app-chrome-h: 56px;
 }
 
 body {
