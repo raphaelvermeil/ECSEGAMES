@@ -23,7 +23,10 @@ export default function MobilePageBanner({
     // banner would let the chrome bar unpin the moment that short wrapper
     // scrolled past. Each child carries lg:hidden instead.
     <>
-      <MobileChromeBar onOpenMenu={() => setMenuOpen(true)} />
+      <MobileChromeBar
+        menuOpen={menuOpen}
+        onToggleMenu={() => setMenuOpen((o) => !o)}
+      />
 
       <div className="relative flex items-center bg-sched-band px-5 pb-4 pt-5 lg:hidden">
         <div

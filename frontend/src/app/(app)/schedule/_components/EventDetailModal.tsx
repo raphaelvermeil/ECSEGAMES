@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, Clock, Pin, X } from "@/components/icons";
 import type { ScheduleEvent } from "@/lib/events";
-import { useScrollLock, useThemeColor } from "@/lib/overlay";
+import { useScrollLock } from "@/lib/overlay";
 import {
   categoryColor,
   formatFooterTimestamp,
@@ -34,12 +34,13 @@ export default function EventDetailModal({
   const [tab, setTab] = useState<"detail" | "history">("detail");
 
   // Only the sheet scrolls while it is open; the schedule behind it holds
-  // its place. The tint is this overlay's rgba(4,9,7,.72) composited over
-  // the header it covers (--color-sched-chrome), so Safari's address bar
-  // stays the same shade as the top of the screen instead of reverting to
-  // the undimmed header colour.
+  // its place.
+  //
+  // No useThemeColor: the header bar sits above this overlay (z-65 vs z-60)
+  // rather than under it, so the top of the screen stays --color-sched-chrome
+  // and already matches what the layout declares. It used to be tinted to the
+  // dimmed blend of header-under-backdrop, which is no longer what is there.
   useScrollLock();
-  useThemeColor("#0a0e0c");
 
   // Focus the panel on open, and hand focus back to whatever triggered it
   // (the calendar row/rail item) on close.

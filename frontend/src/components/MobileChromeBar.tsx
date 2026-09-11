@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Menu } from "@/components/icons";
+import { Bell, Menu, X } from "@/components/icons";
 import AccountControl from "@/components/AccountControl";
 
 // The phone-sized top bar: ECSE mark, bell, account control, hamburger.
@@ -20,6 +20,16 @@ import AccountControl from "@/components/AccountControl";
 // simply inert. It only works at all because the shell's overflow clip is
 // desktop-only — see (app)/layout.tsx.
 //
+// z-65 puts it above the event sheet's backdrop (z-60) rather than under it.
+// That is deliberate and is what keeps the top edge of the page a constant
+// --color-sched-chrome: iOS Safari only tints its address bar from
+// theme-color when the reader has Website Tinting switched on, so relying on
+// that to match a dimmed header was never dependable. #1a1c1a happens to sit
+// within a shade of Safari's own default dark chrome, so leaving this bar
+// undimmed makes the seam disappear either way. The full-screen event form
+// (z-70) and the nav drawer (z-80) still layer over it — the drawer by
+// opening beneath it, see MobileNavMenu.
+//
 // The top padding is the safe-area inset and nothing else — no design
 // padding is added to it. Where the browser's own chrome already sits above
 // the page (iOS Safari with the address bar at the top) the inset is 0, so
@@ -34,14 +44,20 @@ import AccountControl from "@/components/AccountControl";
 // offsets itself by exactly that sum, so changing the padding here means
 // changing --app-chrome-h in globals.css to match.
 export default function MobileChromeBar({
-  onOpenMenu,
+  menuOpen = false,
+  onToggleMenu,
 }: {
-  // Omitted by the loading skeleton, which has no drawer to open and
+  // Whether the nav drawer is showing. The bar stays visible above it, so
+  // this button is the drawer's only close control — it becomes an ✕ rather
+  // than the drawer carrying a second one of its own.
+  menuOpen?: boolean;
+  // Omitted by the loading skeleton, which has no drawer to toggle and
   // renders the icon as a non-interactive placeholder.
-  onOpenMenu?: () => void;
+  onToggleMenu?: () => void;
 }) {
+  const MenuIcon = menuOpen ? X : Menu;
   return (
-    <div className="sticky top-0 z-30 flex flex-none items-center justify-between gap-3 bg-sched-chrome px-4 pb-3 pt-[var(--app-safe-top)] lg:hidden">
+    <div className="sticky top-0 z-[65] flex flex-none items-center justify-between gap-3 bg-sched-chrome px-4 pb-3 pt-[var(--app-safe-top)] lg:hidden">
       <div className="flex items-center gap-[9px]">
         <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-sched-accent-dim font-mono text-[10px] font-semibold tracking-[0.05em] text-sched-accent-dim">
           ECSE
@@ -59,21 +75,24 @@ export default function MobileChromeBar({
           <Bell width={21} height={21} strokeWidth={1.6} />
         </button>
         <AccountControl />
-        {onOpenMenu ? (
+        {onToggleMenu ? (
           <button
             type="button"
-            onClick={onOpenMenu}
-            aria-label="Open navigation menu"
+            onClick={onToggleMenu}
+            aria-expanded={menuOpen}
+            aria-label={
+              menuOpen ? "Close navigation menu" : "Open navigation menu"
+            }
             className="flex h-11 w-11 items-center justify-center text-sched-text-muted"
           >
-            <Menu width={22} height={22} strokeWidth={1.8} />
+            <MenuIcon width={22} height={22} strokeWidth={1.8} />
           </button>
         ) : (
           <span
             aria-hidden="true"
             className="flex h-11 w-11 items-center justify-center text-sched-text-muted"
           >
-            <Menu width={22} height={22} strokeWidth={1.8} />
+            <MenuIcon width={22} height={22} strokeWidth={1.8} />
           </span>
         )}
       </div>

@@ -36,7 +36,10 @@ export default function CsCompBanner({
     <>
       {/* The shared Navbar is hidden below lg, so this is the header on
           a phone — one component for every page, see MobileChromeBar. */}
-      <MobileChromeBar onOpenMenu={() => setMenuOpen(true)} />
+      <MobileChromeBar
+        menuOpen={menuOpen}
+        onToggleMenu={() => setMenuOpen((o) => !o)}
+      />
 
       <div className="relative px-5 pb-0 pt-5 lg:px-[60px] lg:pt-[30px]">
         <div className="absolute inset-0 bg-sched-band" aria-hidden="true" />

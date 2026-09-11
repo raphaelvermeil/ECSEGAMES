@@ -21,7 +21,10 @@ export default function ScheduleBanner({
           phone. It pins; the green band underneath scrolls away, which is
           why the schedule's day-tab row offsets itself by --app-chrome-h
           (see ScheduleView) rather than sticking at the true top. */}
-      <MobileChromeBar onOpenMenu={() => setMenuOpen(true)} />
+      <MobileChromeBar
+        menuOpen={menuOpen}
+        onToggleMenu={() => setMenuOpen((o) => !o)}
+      />
 
       <div className="relative flex items-center bg-sched-band px-5 pb-4 pt-5 lg:min-h-[180px] lg:px-10 lg:py-9">
         <div

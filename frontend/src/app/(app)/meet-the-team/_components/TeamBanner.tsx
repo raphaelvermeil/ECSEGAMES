@@ -11,7 +11,10 @@ export default function TeamBanner({ subtitle }: { subtitle: string }) {
     <>
       {/* The shared Navbar is hidden below lg, so this is the header on
           a phone — one component for every page, see MobileChromeBar. */}
-      <MobileChromeBar onOpenMenu={() => setMenuOpen(true)} />
+      <MobileChromeBar
+        menuOpen={menuOpen}
+        onToggleMenu={() => setMenuOpen((o) => !o)}
+      />
 
       {/* Desktop drops the title band entirely so the scene gets the extra
           vertical room — the page title already lives in the nav's active

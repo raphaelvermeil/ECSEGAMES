@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignInButton, useAuth, useUser } from "@clerk/nextjs";
-import { X } from "@/components/icons";
 import api from "@/lib/api";
 import { NAV_LINKS } from "@/lib/nav";
-import { useScrollLock, useThemeColor } from "@/lib/overlay";
+import { useScrollLock } from "@/lib/overlay";
 import { teamLabel, type Team } from "@/lib/scores";
 
 // Right-side slide-in drawer for mobile nav — the shared Navbar's link row
@@ -27,18 +26,13 @@ export default function MobileNavMenu({
   const { getToken } = useAuth();
   const [team, setTeam] = useState<Team | null>(null);
 
-  // The drawer is always mounted and returns null when closed, so both of
-  // these take `open` rather than being called unconditionally.
+  // Takes `open` because the drawer stays mounted and returns null when shut.
   //
-  // The tint is --color-sched-band, the drawer's own header, not the dimmed
-  // page behind it: the panel is 76% of the width and its green header is
-  // what actually meets the top edge, so that is what the address bar has to
-  // match. Sampling the rendered top strip gives #092a1f — the average of
-  // that green and the dark sliver left of the drawer — but Safari paints one
-  // flat colour, so matching the larger surface reads better than matching an
-  // average that matches neither.
+  // No useThemeColor here on purpose. The drawer opens beneath the app header
+  // and seals the home-indicator strip with the same colour, so both edges of
+  // the screen are already --color-sched-chrome — exactly what the layout
+  // declares as the default theme-color. There is nothing left to override.
   useScrollLock(open);
-  useThemeColor(open ? "#093325" : null);
 
   useEffect(() => {
     // Signed-out visitors have no team to show, and /api/me would 401 —
@@ -73,7 +67,14 @@ export default function MobileNavMenu({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] lg:hidden">
+    // Opens *beneath* the app header rather than over it. The header is a
+    // constant --color-sched-chrome, which sits within a shade of Safari's
+    // own default dark chrome, so leaving the top strip to it makes the seam
+    // against the address bar disappear whether or not the reader has Website
+    // Tinting switched on. Covering that strip with the drawer's green band
+    // was what made the page read as a rectangle cut out between Safari's two
+    // bars. Both the backdrop and the panel start at the header's bottom edge.
+    <div className="fixed inset-x-0 bottom-0 top-[calc(var(--app-chrome-h)+var(--app-safe-top))] z-[80] lg:hidden">
       <div
         onClick={onClose}
         aria-hidden="true"
@@ -84,27 +85,23 @@ export default function MobileNavMenu({
         aria-modal="true"
         aria-label="Navigation menu"
         className="animate-sched-slide absolute inset-y-0 right-0 flex w-[76%] max-w-xs flex-col border-l border-sched-accent-dim bg-sched-bg-raised"
+        // The panel's first 40px start at exactly the header's colour and
+        // dissolve into its own, so the drawer phases out of the bar above
+        // instead of butting against it with a hard horizontal edge. Written
+        // as an explicit two-colour stop rather than fading to `transparent`:
+        // transparent is rgba(0,0,0,0), and interpolating towards it drags a
+        // muddy grey through the middle of the ramp.
+        //
+        // bg-sched-bg-raised stays on the element as the paint underneath, so
+        // everything past the 40px mark is the flat panel colour.
+        style={{
+          backgroundImage:
+            "linear-gradient(to bottom, var(--color-sched-chrome), var(--color-sched-bg-raised) 40px)",
+        }}
       >
-        <div className="flex flex-none items-center justify-between gap-3 bg-sched-band pb-4 pl-[18px] pr-2 pt-[calc(1.25rem+var(--app-safe-top))]">
-          <div className="flex items-center gap-[9px]">
-            <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-sched-accent-dim font-mono text-[10px] font-semibold tracking-[0.05em] text-sched-accent-dim">
-              ECSE
-            </div>
-            <span className="font-display text-[15px] font-semibold tracking-[0.2em] text-sched-cream">
-              GAMES
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close menu"
-            className="flex h-11 w-11 flex-none items-center justify-center text-sched-text-muted"
-          >
-            <X width={16} height={16} strokeWidth={2} />
-          </button>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto overscroll-contain">
+        {/* A little air before the first row, so the fade has a clean run
+            rather than resolving underneath the Home link's own background. */}
+        <nav className="flex-1 overflow-y-auto overscroll-contain pt-2">
           {NAV_LINKS.map((link) => {
             const active = link.exact
               ? pathname === link.href
@@ -183,6 +180,18 @@ export default function MobileNavMenu({
           )}
         </div>
       </div>
+
+      {/* Seals the home-indicator strip across the full width — over the
+          backdrop as well as the panel — with the same colour as the app
+          header, which sits within a shade of Safari's bottom toolbar.
+          Sealing only the panel left the quarter of the screen beside it
+          still showing dimmed page, which measured #151816 against the
+          toolbar instead of matching it. The footer above pads itself by the
+          same inset so nothing ends up underneath this. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 h-[var(--app-safe-bottom)] bg-sched-chrome"
+      />
     </div>
   );
 }
