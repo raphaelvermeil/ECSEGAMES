@@ -43,9 +43,12 @@ export default function RootLayout({
     >
       <body>
 
-        {/* Sign-out goes straight to the public sign-in page, not the
-            protected home route (which would stall on the auth gate). */}
-        <ClerkProvider afterSignOutUrl="/sign-in">{children}</ClerkProvider>
+        {/* Sign-out lands on the home page. It used to go to /sign-in
+            because every route was gated and home would have bounced them
+            straight back; now that the app is readable signed out, dumping
+            someone on a login form after they deliberately logged out is
+            just rude. */}
+        <ClerkProvider afterSignOutUrl="/">{children}</ClerkProvider>
       </body>
     </html>
   );

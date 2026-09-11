@@ -43,23 +43,29 @@ func (h *Handler) actorName(ctx context.Context, clerkID string) string {
 	return u.Name
 }
 
-// Mount registers event routes on r. Reads (including history) require a
-// valid Clerk JWT; writes require exec or admin. History is readable by
-// anyone who can read the event — it's the scoring *panel* that's
-// exec-only, not the historical record.
+// Mount registers event routes on r in two tiers.
+//
+// The schedule itself is public: anyone can see what's on and when, signed
+// in or not. It's the Games' front window as much as an app screen, and a
+// student shouldn't need an account to find out where Scunts starts.
+//
+// Everything else is exec/admin. That now includes /history, which used to
+// be readable by any signed-in user on the reasoning that it's a historical
+// record rather than the live scoring panel. It carries the scoring paper
+// trail — which exec awarded what to whom, by name — and once the event
+// itself is world-readable that trail would be world-readable too, so it
+// moves behind the same gate as the scores it describes.
 func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey string) {
-	r.Group(func(pr chi.Router) {
-		pr.Use(appmw.RequireAuth(clerkSecretKey))
-		pr.Get("/api/events", h.List)
-		pr.Get("/api/events/{id}", h.Get)
-		pr.Get("/api/events/{id}/history", h.History)
+	r.Get("/api/events", h.List)
+	r.Get("/api/events/{id}", h.Get)
 
-		pr.Group(func(wr chi.Router) {
-			wr.Use(appmw.RequireRole(userRepo, models.RoleExec))
-			wr.Post("/api/events", h.Create)
-			wr.Patch("/api/events/{id}", h.Update)
-			wr.Delete("/api/events/{id}", h.Delete)
-		})
+	r.Group(func(wr chi.Router) {
+		wr.Use(appmw.RequireAuth(clerkSecretKey))
+		wr.Use(appmw.RequireRole(userRepo, models.RoleExec))
+		wr.Get("/api/events/{id}/history", h.History)
+		wr.Post("/api/events", h.Create)
+		wr.Patch("/api/events/{id}", h.Update)
+		wr.Delete("/api/events/{id}", h.Delete)
 	})
 }
 

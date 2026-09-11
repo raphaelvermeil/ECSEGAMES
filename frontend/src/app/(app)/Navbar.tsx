@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Bell } from "@/components/icons";
 import { NAV_LINKS } from "@/lib/nav";
 
@@ -31,6 +31,13 @@ export default function Navbar() {
             <Link
               key={l.href}
               href={l.href}
+              // Every tab is a dynamic route, and Next only *partially*
+              // prefetches those by default (layout down to the loading
+              // boundary). prefetch fetches the whole thing, which is what
+              // puts it in the 5-minute client cache configured by
+              // staleTimes.static — so a tab that has been in view costs no
+              // network at all when you click it.
+              prefetch
               aria-current={active ? "page" : undefined}
               className={`whitespace-nowrap border px-[14px] py-[9px] text-sm font-medium text-sched-accent transition-colors ${
                 active
@@ -51,7 +58,35 @@ export default function Navbar() {
           strokeWidth={1.6}
           className="text-sched-accent"
         />
-        <UserButton />
+        {/* Signing in is now opt-in rather than a wall in front of the app,
+            so this corner is where it happens. <Show> decides in the browser
+            from Clerk's client state — no server auth call, which is what
+            keeps the static routes in this group prerenderable. It renders
+            null while Clerk boots, hence the fixed-height wrapper: without
+            it the nav bar would jolt as the buttons pop in. */}
+        <div className="flex h-9 items-center gap-2">
+          <Show when="signed-in">
+            <UserButton />
+          </Show>
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <button
+                type="button"
+                className="whitespace-nowrap border border-sched-accent-dim px-[14px] py-[7px] text-sm font-medium text-sched-accent transition-colors hover:border-sched-accent"
+              >
+                Sign in
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button
+                type="button"
+                className="whitespace-nowrap border border-sched-accent bg-sched-accent px-[14px] py-[7px] text-sm font-semibold text-sched-bg transition-colors hover:bg-sched-cream hover:border-sched-cream"
+              >
+                Register
+              </button>
+            </SignUpButton>
+          </Show>
+        </div>
       </div>
     </header>
   );

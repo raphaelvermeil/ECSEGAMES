@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, useAuth, useUser } from "@clerk/nextjs";
 import { X } from "@/components/icons";
 import api from "@/lib/api";
 import { NAV_LINKS } from "@/lib/nav";
@@ -27,7 +27,9 @@ export default function MobileNavMenu({
   const [team, setTeam] = useState<Team | null>(null);
 
   useEffect(() => {
-    if (!open || team) return;
+    // Signed-out visitors have no team to show, and /api/me would 401 —
+    // so the drawer opens with no network call at all for them.
+    if (!open || team || !user) return;
     let cancelled = false;
     (async () => {
       try {
@@ -43,7 +45,7 @@ export default function MobileNavMenu({
     return () => {
       cancelled = true;
     };
-  }, [open, team, getToken]);
+  }, [open, team, user, getToken]);
 
   useEffect(() => {
     if (!open) return;
@@ -100,6 +102,12 @@ export default function MobileNavMenu({
                 key={link.href}
                 href={link.href}
                 onClick={onClose}
+                // Same full-route prefetch as the desktop Navbar. The head
+                // start here is only as long as it takes to scan the drawer
+                // and tap, since these links don't exist until it opens —
+                // but that is still a second or so of the round-trip paid
+                // up front.
+                prefetch
                 aria-current={active ? "page" : undefined}
                 className="flex items-center gap-[14px] border-l-[3px] px-[18px] py-[14px]"
                 style={{
@@ -132,7 +140,7 @@ export default function MobileNavMenu({
         </nav>
 
         <div className="flex-none px-[18px] pb-10 pt-4 font-mono text-[10px] leading-[1.7] text-sched-text-muted">
-          {user && (
+          {user ? (
             <>
               Signed in as {user.fullName ?? user.username ?? "you"}
               {team && (
@@ -142,6 +150,30 @@ export default function MobileNavMenu({
                 </>
               )}
             </>
+          ) : (
+            // Browsing works signed out; this is only needed to enter the CS
+            // comp or to run an event as an exec.
+            <div className="flex flex-col gap-2">
+              <span>Sign in to join the CS comp.</span>
+              <div className="flex gap-2">
+                <SignInButton mode="modal">
+                  <button
+                    type="button"
+                    className="flex-1 border border-sched-accent-dim px-3 py-2 font-mono text-[11px] font-medium text-sched-accent"
+                  >
+                    Sign in
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button
+                    type="button"
+                    className="flex-1 border border-sched-accent bg-sched-accent px-3 py-2 font-mono text-[11px] font-semibold text-sched-bg"
+                  >
+                    Register
+                  </button>
+                </SignUpButton>
+              </div>
+            </div>
           )}
         </div>
       </div>

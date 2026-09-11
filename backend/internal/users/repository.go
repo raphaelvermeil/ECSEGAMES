@@ -6,6 +6,7 @@ import (
 
 	"github.com/ecsegames/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -70,4 +71,53 @@ func (r *Repository) SetTeam(ctx context.Context, clerkID string, team models.Te
 		return false, err
 	}
 	return res.MatchedCount > 0, nil
+}
+
+// SetCSCompTeam joins a user to a CS comp sub-team. The filter requires
+// them to have no sub-team yet (absent, or explicitly null), so joining a
+// second one is a conflict rather than a silent team switch — leaving is
+// the only way off a roster. Reports whether the write happened; false
+// means they are already on a sub-team.
+func (r *Repository) SetCSCompTeam(ctx context.Context, clerkID string, teamID primitive.ObjectID) (bool, error) {
+	filter := bson.M{"clerkId": clerkID, "csCompTeamId": nil}
+	update := bson.M{"$set": bson.M{"csCompTeamId": teamID}}
+
+	res, err := r.coll.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return false, err
+	}
+	return res.MatchedCount > 0, nil
+}
+
+// ClearCSCompTeam takes a user off their CS comp sub-team, freeing a slot.
+// Unsetting the field rather than nulling it keeps a not-on-a-team record
+// shaped exactly like one that never joined.
+func (r *Repository) ClearCSCompTeam(ctx context.Context, clerkID string) error {
+	_, err := r.coll.UpdateOne(ctx,
+		bson.M{"clerkId": clerkID},
+		bson.M{"$unset": bson.M{"csCompTeamId": ""}})
+	return err
+}
+
+// ListByCSCompTeam returns a sub-team's roster. Membership lives here on
+// the user rather than as an array on the team, so the roster is this
+// query and there is no second copy to keep in sync.
+func (r *Repository) ListByCSCompTeam(ctx context.Context, teamID primitive.ObjectID) ([]models.User, error) {
+	cur, err := r.coll.Find(ctx, bson.M{"csCompTeamId": teamID})
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	list := []models.User{}
+	if err := cur.All(ctx, &list); err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// CountByCSCompTeam returns how many people are on a sub-team, for the
+// five-member cap.
+func (r *Repository) CountByCSCompTeam(ctx context.Context, teamID primitive.ObjectID) (int64, error) {
+	return r.coll.CountDocuments(ctx, bson.M{"csCompTeamId": teamID})
 }

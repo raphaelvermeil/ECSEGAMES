@@ -1,36 +1,25 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
 import Navbar from "./Navbar";
 import ViewportFloor from "./ViewportFloor";
 
-// Gate for all real features: the user must be signed in AND have completed
-// onboarding (team + name + major). If any of that is missing — including a
-// team that was assigned before name/major existed, or a submission that
-// failed partway — send them back to /select-team to finish it.
-export default async function AppLayout({
+// The app shell. Deliberately does no auth work at all.
+//
+// It used to call auth.protect() and fetch /api/me here, which gated the
+// whole group behind a signed-in account with completed onboarding. The
+// Games schedule, standings, sponsors and team pages are now public — you
+// shouldn't need an account to find out where Scunts starts — so the gate
+// moved to the two places that actually need it: /cs-comp, and the exec
+// controls inside the schedule.
+//
+// Keeping this file free of request-time APIs (cookies, headers, auth) is
+// also what lets the pages under it prerender. A single auth() call here
+// would opt *every* route in the group back into per-request rendering,
+// however static its own content is. Signed-in vs signed-out UI is decided
+// in the browser instead — see Navbar's <Show> blocks.
+export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await auth.protect();
-
-  const { getToken } = await auth();
-  const token = await getToken();
-
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-
-  // If we can't confirm a team (error or none set), route to team selection.
-  if (!res.ok) {
-    redirect("/select-team");
-  }
-  const user = await res.json();
-  if (!user.team || !user.name || !user.major) {
-    redirect("/select-team");
-  }
-
   // --app-vvh is the measured phone viewport height ViewportFloor publishes;
   // TeamView's own height rule reads the same variable, so the shell can't end
   // up taller than the page content and leave a strip of its own background

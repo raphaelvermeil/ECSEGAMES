@@ -1,7 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
-
-export default async function EventsPage() {
-  await auth.protect();
+export default function EventsPage() {
   return (
     <main className="bg-ecsess-900 px-10 pb-11 pt-9">
       <h1 className="text-4xl font-extrabold text-ecsess-50">Events</h1>

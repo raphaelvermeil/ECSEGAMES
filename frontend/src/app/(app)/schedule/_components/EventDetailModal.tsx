@@ -232,15 +232,21 @@ export default function EventDetailModal({
               </div>
             )}
 
-            <div className="border-t border-sched-hair px-5 pb-5 pt-4 lg:px-[30px]">
-              <button
-                type="button"
-                onClick={() => setTab("history")}
-                className="font-mono text-[11px] text-sched-text-muted underline decoration-1 underline-offset-[3px] transition-colors hover:text-sched-accent"
-              >
-                {footLabel}
-              </button>
-            </div>
+            {/* History is the scoring paper trail — which exec awarded what,
+                by name — so it's exec/admin only on the backend now that the
+                event itself is public. Hiding the link keeps a signed-out
+                reader from clicking through to a guaranteed 401. */}
+            {canManage && (
+              <div className="border-t border-sched-hair px-5 pb-5 pt-4 lg:px-[30px]">
+                <button
+                  type="button"
+                  onClick={() => setTab("history")}
+                  className="font-mono text-[11px] text-sched-text-muted underline decoration-1 underline-offset-[3px] transition-colors hover:text-sched-accent"
+                >
+                  {footLabel}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

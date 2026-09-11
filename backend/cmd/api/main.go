@@ -8,6 +8,7 @@ import (
 
 	"github.com/ecsegames/backend/internal/audit"
 	"github.com/ecsegames/backend/internal/config"
+	"github.com/ecsegames/backend/internal/cscomp"
 	"github.com/ecsegames/backend/internal/db"
 	"github.com/ecsegames/backend/internal/events"
 	"github.com/ecsegames/backend/internal/handlers"
@@ -73,6 +74,24 @@ func main() {
 
 		events.Mount(r, eventHandler, userRepo, cfg.ClerkSecretKey)
 		scores.Mount(r, scoreHandler, userRepo, cfg.ClerkSecretKey)
+
+		// The CS comp scores submissions by rendering them in headless
+		// Chrome, so a host without one degrades the same way a missing
+		// Mongo does: the module still mounts, and only submitting is
+		// disabled (Handler.Submit returns 503 on a nil renderer). Reads,
+		// teams and claims keep working.
+		renderer, err := cscomp.NewRenderer(cfg.ChromePath, cfg.CSCompRenderConcurrency)
+		if err != nil {
+			log.Printf("cscomp: renderer unavailable, submissions disabled: %v", err)
+		}
+		cscompStore := cscomp.NewStore(database)
+		// The claim rules are enforced by unique indexes rather than by
+		// checking before writing, so this is not just an optimisation.
+		if err := cscompStore.EnsureIndexes(context.Background()); err != nil {
+			log.Printf("cscomp: ensure indexes: %v", err)
+		}
+		cscompHandler := cscomp.NewHandler(cscompStore, userRepo, renderer, cfg.CSCompSolutionsDir)
+		cscomp.Mount(r, cscompHandler, userRepo, cfg.ClerkSecretKey)
 	} else {
 		log.Printf("database not connected: user API disabled")
 	}

@@ -53,15 +53,14 @@ func (h *Handler) actorName(ctx context.Context, clerkID string) string {
 // corrects a team's points (see scoreRequest.validate), so a single write
 // path covers both.
 //
-// /api/leaderboard is the deliberate exception: standings are a
-// student-facing tab, so it needs only RequireAuth. It is safe to open
-// because Leaderboard returns aggregates and bare timestamped awards —
-// never event identity, actor, or description (see Leaderboard).
+// /api/leaderboard is the deliberate exception: standings are public, with
+// no auth at all. A scoreboard is meant to be read — by students who
+// haven't signed up, by people watching from outside the Games entirely —
+// and it is safe to open because Leaderboard returns aggregates and bare
+// timestamped awards, never event identity, actor, or description (see
+// Leaderboard).
 func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey string) {
-	r.Group(func(pr chi.Router) {
-		pr.Use(appmw.RequireAuth(clerkSecretKey))
-		pr.Get("/api/leaderboard", h.Leaderboard)
-	})
+	r.Get("/api/leaderboard", h.Leaderboard)
 
 	r.Group(func(pr chi.Router) {
 		pr.Use(appmw.RequireAuth(clerkSecretKey))

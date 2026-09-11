@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { UserButton } from "@clerk/nextjs";
 import { Bell, Menu } from "@/components/icons";
+import AccountControl from "@/components/AccountControl";
 import MobileNavMenu from "@/components/MobileNavMenu";
 
 // Mobile-only header for every non-Schedule page — same black top bar +
@@ -37,7 +37,7 @@ export default function MobilePageBanner({
           >
             <Bell width={21} height={21} strokeWidth={1.6} />
           </button>
-          <UserButton />
+          <AccountControl />
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
