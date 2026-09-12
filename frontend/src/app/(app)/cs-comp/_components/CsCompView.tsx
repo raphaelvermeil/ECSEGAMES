@@ -252,8 +252,6 @@ export default function CsCompView() {
     [me, current],
   );
 
-  const code = (current && codes[current.id]) ?? current?.starterCode ?? "";
-
   const mineForCurrent = useMemo(() => {
     if (!current) return null;
     return (
@@ -262,6 +260,22 @@ export default function CsCompView() {
       ) ?? null
     );
   }, [me, current]);
+
+  // What the editor opens with, most recent first: anything typed this
+  // session, then the code you last submitted, then the starter scaffold.
+  //
+  // The middle step is why leaving a part and coming back — or reloading
+  // the page entirely — hands you your own solution again instead of a
+  // blank scaffold. The server already keeps it (Submission.Code is your
+  // best attempt, not your latest), so this is a read, not new storage.
+  //
+  // Only ever your own submission: a teammate's solve is on the same team
+  // board, but it is not yours to open.
+  const code =
+    (current && codes[current.id]) ??
+    mineForCurrent?.code ??
+    current?.starterCode ??
+    "";
 
   function selectView(v: View) {
     // The board is readable before joining anything; the battle and the
