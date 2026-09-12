@@ -2,29 +2,32 @@
 
 import { useEffect, useRef } from "react";
 import { X } from "@/components/icons";
-import { LEVELS, TOTAL_PARTS, partKey, type CompMember } from "@/lib/cs-comp";
+import { LEVEL_META, initialsOf, levelMeta, partKey } from "@/lib/cs-comp";
+import type { Challenge, Claim } from "@/lib/cscomp-api";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export default function LevelPartPicker({
   picker,
+  challenges,
   currentLevel,
   currentPart,
   solved,
-  roster,
-  meMember,
+  claims,
+  meClerkId,
   onSelectLevel,
   onBackToLevels,
   onSelectPart,
   onClose,
 }: {
   picker: "levels" | number;
+  challenges: Challenge[];
   currentLevel: number;
   currentPart: number;
   solved: Record<string, boolean>;
-  roster: CompMember[];
-  meMember: CompMember;
+  claims: Claim[];
+  meClerkId: string;
   onSelectLevel: (n: number) => void;
   onBackToLevels: () => void;
   onSelectPart: (level: number, part: number) => void;
@@ -83,12 +86,24 @@ export default function LevelPartPicker({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  const title = onParts
-    ? `LEVEL ${picker} · ${LEVELS[picker - 1].name}`
-    : "Choose a level";
-  const note = onParts
-    ? `${LEVELS[picker - 1].note} · pick a part — one per teammate`
-    : `${LEVELS.length} levels · 5 parts each · ${TOTAL_PARTS} challenges in the set`;
+  // The levels on offer are whatever was actually seeded, not whatever
+  // LEVEL_META happens to describe — the metadata is styling, the
+  // challenge list is the truth.
+  const levels = LEVEL_META.filter((l) =>
+    challenges.some((c) => c.level === l.n),
+  );
+  const partsOf = (n: number) =>
+    challenges.filter((c) => c.level === n).sort((a, b) => a.part - b.part);
+
+  // Claims are team-wide, so a part shows who on your squad has it.
+  const claimFor = (challengeId: string) =>
+    claims.find((c) => c.challengeId === challengeId) ?? null;
+
+  const meta = onParts ? levelMeta(picker) : null;
+  const title = meta ? `LEVEL ${picker} · ${meta.name}` : "Choose a level";
+  const note = meta
+    ? `${meta.note} · pick a part — one per teammate`
+    : `${levels.length} levels · ${challenges.length} challenges in the set`;
 
   return (
     <div
@@ -103,7 +118,7 @@ export default function LevelPartPicker({
         aria-label="Choose level and part"
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="animate-sched-sheet w-full max-h-[88%] overflow-y-auto border-t border-sched-accent-dim bg-sched-bg font-mono outline-none lg:w-[760px] lg:max-h-[80vh] lg:animate-sched-pop lg:border"
+        className="animate-sched-sheet max-h-[88%] w-full overflow-y-auto border-t border-sched-accent-dim bg-sched-bg font-mono outline-none lg:max-h-[80vh] lg:w-[760px] lg:animate-sched-pop lg:border"
         style={{
           borderColor: "rgba(110,231,135,.34)",
           boxShadow: "0 26px 60px rgba(0,0,0,.55)",
@@ -139,9 +154,10 @@ export default function LevelPartPicker({
 
         {!onParts && (
           <div className="flex flex-col px-[22px] pb-[22px] pt-3.5">
-            {LEVELS.map((l) => {
-              const got = l.parts.filter(
-                (_, i) => solved[partKey(l.n, i + 1)],
+            {levels.map((l) => {
+              const parts = partsOf(l.n);
+              const got = parts.filter(
+                (c) => solved[partKey(l.n, c.part)],
               ).length;
               const here = l.n === currentLevel;
               return (
@@ -172,12 +188,12 @@ export default function LevelPartPicker({
                     </span>
                   </span>
                   <span
-                    className="font-mono text-[13px] font-medium"
+                    className="flex-none font-mono text-[13px] font-medium"
                     style={{ color: l.color }}
                   >
-                    {got}/5 solved
+                    {got}/{parts.length} solved
                   </span>
-                  <span className="font-mono text-[15px] text-sched-text-muted">
+                  <span className="flex-none font-mono text-[15px] text-sched-text-muted">
                     ›
                   </span>
                 </button>
@@ -188,69 +204,66 @@ export default function LevelPartPicker({
 
         {onParts && (
           <div className="grid grid-cols-1 gap-3 px-[22px] pb-6 pt-[18px] sm:grid-cols-2 lg:grid-cols-5">
-            {LEVELS[picker - 1].parts.map((p, i) => {
-              const ln = picker;
-              const pn = i + 1;
-              const isDone = !!solved[partKey(ln, pn)];
-              const here = ln === currentLevel && pn === currentPart;
-              const who = roster[i] ?? null;
-              const isYou = who !== null && who === meMember;
+            {partsOf(picker).map((c) => {
+              const isDone = !!solved[partKey(c.level, c.part)];
+              const here = c.level === currentLevel && c.part === currentPart;
+              const claim = claimFor(c.id);
+              const isYou = claim !== null && claim.clerkId === meClerkId;
+              const color = levelMeta(c.level).color;
               const status = isDone
                 ? "SOLVED"
-                : here
-                  ? "YOU ARE HERE"
-                  : who
-                    ? isYou
-                      ? "YOURS"
-                      : "TAKEN"
+                : claim
+                  ? isYou
+                    ? "YOURS"
+                    : "TAKEN"
+                  : here
+                    ? "YOU ARE HERE"
                     : "FREE";
               return (
                 <button
-                  key={pn}
+                  key={c.id}
                   type="button"
-                  onClick={() => onSelectPart(ln, pn)}
+                  onClick={() => onSelectPart(c.level, c.part)}
                   className="flex min-h-[150px] flex-col gap-2.5 px-3.5 py-3.5 text-left hover:border-sched-accent"
                   style={{
                     background: here
                       ? "#16241c"
                       : "var(--color-sched-bg-raised)",
-                    border: `1px solid ${here ? LEVELS[ln - 1].color : "var(--color-sched-hair)"}`,
+                    border: `1px solid ${here ? color : "var(--color-sched-hair)"}`,
                   }}
                 >
                   <span
                     className="font-mono text-[10px] tracking-[0.16em]"
-                    style={{
-                      color: isDone ? "#6ee787" : LEVELS[ln - 1].color,
-                    }}
+                    style={{ color: isDone ? "#6ee787" : color }}
                   >
-                    PART {pn}
+                    PART {c.part}
                   </span>
                   <span className="font-display text-[15px] font-semibold leading-[1.25] tracking-[0.03em] text-sched-cream">
-                    {p.title}
+                    {c.name}
                   </span>
                   <span className="font-mono text-[10px] text-sched-text-muted">
-                    {p.rects.length} shapes
+                    {c.points} pts
                   </span>
                   <span className="flex-1" />
                   <span className="flex min-h-[26px] items-center gap-[7px]">
                     <span
-                      className="flex h-[26px] w-[26px] items-center justify-center rounded-full font-mono text-[8px] font-medium"
+                      className="flex h-[26px] w-[26px] flex-none items-center justify-center rounded-full font-mono text-[8px] font-medium"
                       style={{
                         border: `2px solid ${
-                          who
+                          claim
                             ? isYou
                               ? "#6ee787"
                               : "rgba(127,148,130,.7)"
                             : "rgba(63,143,87,.3)"
                         }`,
-                        color: who
+                        color: claim
                           ? isYou
                             ? "#6ee787"
                             : "rgba(127,148,130,.7)"
                           : "rgba(63,143,87,.3)",
                       }}
                     >
-                      {who?.initials ?? "—"}
+                      {claim ? initialsOf(claim.name) : "—"}
                     </span>
                     <span className="font-mono text-[9px] tracking-[0.1em] text-sched-text-muted">
                       {status}

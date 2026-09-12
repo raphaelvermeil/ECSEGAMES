@@ -85,13 +85,12 @@ func main() {
 	log.Printf("seeded %d challenges and wrote %d target images to %s", n, n, cfg.CSCompSolutionsDir)
 }
 
-// points is a challenge's worth: its level, capped at five, so the last
-// two levels are both worth the maximum.
+// points is a challenge's worth: its level times a hundred, the rule the
+// standings board states outright ("POINTS = LEVEL x 100 PER SOLVED
+// PART"). Uncapped, so level 6 is worth six times a level 1 part and
+// clearing the hard scenes actually decides the board.
 func points(level int) int {
-	if level > 5 {
-		return 5
-	}
-	return level
+	return level * 100
 }
 
 // css renders one shape's inline style. Ported from the mock's css()

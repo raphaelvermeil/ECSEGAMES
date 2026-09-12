@@ -2,30 +2,52 @@
 
 import { useState } from "react";
 import { Lock } from "@/components/icons";
+import ClockControls from "./ClockControls";
+import type { ClockAction, ClockView } from "@/lib/cscomp-api";
 import MobileChromeBar from "@/components/MobileChromeBar";
 import MobileNavMenu from "@/components/MobileNavMenu";
 
-type View = "teams" | "battle" | "mine";
+type View = "teams" | "battle" | "mine" | "board";
 
-const TABS: { view: View; label: string }[] = [
-  { view: "teams", label: "TEAMS" },
+// `open` tabs are readable before joining a team. The standings are one of
+// them: the board is the thing a student checks before they have a squad.
+const TABS: { view: View; label: string; open?: boolean }[] = [
+  { view: "teams", label: "TEAMS", open: true },
   { view: "battle", label: "BATTLE" },
   { view: "mine", label: "MY TEAM" },
+  { view: "board", label: "LIVE STANDINGS", open: true },
 ];
+
+// How the shared clock's state reads under TIME LEFT. A stopped or paused
+// round is worth saying outright — a frozen number with no label just
+// looks like a broken timer.
+const CLOCK_LABEL: Record<ClockView["status"], string> = {
+  running: "TIME LEFT",
+  paused: "PAUSED",
+  stopped: "NOT STARTED",
+};
 
 export default function CsCompBanner({
   view,
   locked,
   clock,
+  clockText,
   clockUrgent,
+  canControlClock,
+  clockBusy,
+  onClockAction,
   solvedCount,
   totalParts,
   onSelectView,
 }: {
   view: View;
   locked: boolean;
-  clock: string;
+  clock: ClockView | null;
+  clockText: string;
   clockUrgent: boolean;
+  canControlClock: boolean;
+  clockBusy: boolean;
+  onClockAction: (action: ClockAction, seconds?: number) => void;
   solvedCount: number;
   totalParts: number;
   onSelectView: (v: View) => void;
@@ -72,26 +94,42 @@ export default function CsCompBanner({
             </div>
             <div>
               <div className="font-mono text-[9px] tracking-[0.18em] text-sched-text-muted">
-                TIME LEFT
+                {clock ? CLOCK_LABEL[clock.status] : "TIME LEFT"}
               </div>
               <div
                 className="mt-[5px] font-mono text-lg font-medium"
-                style={{ color: clockUrgent ? "#ff7b54" : "#e9f5cd" }}
+                style={{
+                  color: clockUrgent
+                    ? "#ff7b54"
+                    : clock && clock.status !== "running"
+                      ? "#7f9482"
+                      : "#e9f5cd",
+                }}
               >
-                {clock}
+                {clockText}
               </div>
             </div>
           </div>
         </div>
 
+        {canControlClock && (
+          <div className="relative mt-4">
+            <ClockControls
+              clock={clock}
+              busy={clockBusy}
+              onAction={onClockAction}
+            />
+          </div>
+        )}
+
         <div
-          className="relative mt-[26px] flex"
+          className="relative mt-[26px] flex flex-wrap"
           role="tablist"
           aria-label="CS comp view"
         >
           {TABS.map((t) => {
             const active = view === t.view;
-            const isLocked = locked && t.view !== "teams";
+            const isLocked = locked && !t.open;
             return (
               <button
                 key={t.view}
@@ -101,7 +139,7 @@ export default function CsCompBanner({
                 aria-disabled={isLocked}
                 title={isLocked ? "Join a team of 5 first" : undefined}
                 onClick={() => onSelectView(t.view)}
-                className="flex min-h-[44px] items-center gap-2.5 border-l-0 border-t border-b-0 px-[22px] font-mono text-xs font-medium tracking-[0.14em] first:border-l"
+                className="flex min-h-[44px] items-center gap-2.5 border-l-0 border-b-0 border-t px-3.5 font-mono text-[11px] font-medium tracking-[0.14em] first:border-l lg:px-[22px] lg:text-xs"
                 style={{
                   background: active ? "#0b1310" : "rgba(11,19,16,.35)",
                   color: active ? "#e9f5cd" : "#7f9482",
@@ -119,6 +157,13 @@ export default function CsCompBanner({
                     height={14}
                     strokeWidth={1.4}
                     className="flex-none"
+                  />
+                )}
+                {t.view === "board" && (
+                  <span
+                    aria-hidden="true"
+                    className="h-2 w-2 flex-none animate-pulse"
+                    style={{ background: "#6ee787" }}
                   />
                 )}
                 {t.label}

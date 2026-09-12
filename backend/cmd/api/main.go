@@ -90,7 +90,7 @@ func main() {
 		if err := cscompStore.EnsureIndexes(context.Background()); err != nil {
 			log.Printf("cscomp: ensure indexes: %v", err)
 		}
-		cscompHandler := cscomp.NewHandler(cscompStore, userRepo, renderer, cfg.CSCompSolutionsDir)
+		cscompHandler := cscomp.NewHandler(cscompStore, userRepo, renderer, cfg.CSCompSolutionsDir, cfg.CSCompMinutes*60)
 		cscomp.Mount(r, cscompHandler, userRepo, cfg.ClerkSecretKey)
 	} else {
 		log.Printf("database not connected: user API disabled")

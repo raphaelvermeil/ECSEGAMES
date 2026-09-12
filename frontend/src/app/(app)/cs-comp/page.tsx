@@ -34,5 +34,8 @@ export default async function CsCompPage() {
     redirect("/select-team");
   }
 
-  return <CsCompView me={{ name: user.name, program: user.major }} />;
+  // CsCompView loads its own state from /api/cscomp/me, which carries the
+  // same user plus the comp sub-team, claims and submissions. The fetch
+  // above stays because it is the onboarding gate, not the comp's data.
+  return <CsCompView />;
 }

@@ -24,7 +24,7 @@ import (
 // PassThreshold is the match percentage at or above which a challenge is
 // solved, awarding its full points. Below it the challenge is worth
 // nothing — there is no partial credit.
-const PassThreshold = 95.0
+const PassThreshold = 98.0
 
 // MaxCodeBytes caps a submission's source. Untrusted markup gets rendered
 // in a real browser, so the size is bounded before any of it reaches

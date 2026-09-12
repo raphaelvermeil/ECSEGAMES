@@ -21,6 +21,11 @@ type Config struct {
 	CSCompSolutionsDir      string
 	ChromePath              string
 	CSCompRenderConcurrency int
+
+	// CSCompMinutes is how long a fresh comp round runs. It is the length
+	// the clock resets to, not a deadline the server enforces — an exec
+	// starts, pauses and adjusts it (see cscomp.Clock).
+	CSCompMinutes int
 }
 
 // Load reads config from a .env file if present, then environment variables,
@@ -38,6 +43,7 @@ func Load() Config {
 		CSCompSolutionsDir:      getenv("CSCOMP_SOLUTIONS_DIR", "./images/cs-comp/solutions"),
 		ChromePath:              os.Getenv("CHROME_PATH"),
 		CSCompRenderConcurrency: getenvInt("CSCOMP_RENDER_CONCURRENCY", 4),
+		CSCompMinutes:           getenvInt("CSCOMP_MINUTES", 45),
 	}
 }
 

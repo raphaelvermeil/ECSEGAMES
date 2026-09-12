@@ -1,24 +1,30 @@
-import { TEAM_SIZE, type CompSlot, type CompTeam } from "@/lib/cs-comp";
+import { TEAM_SIZE, type CompSlot } from "@/lib/cs-comp";
 
 export default function MyTeamPanel({
-  team,
+  teamName,
+  teamColor,
+  memberCount,
   rows,
   solvedCount,
   totalParts,
   levelPartShort,
   partTitle,
   confirming,
+  busy,
   onAskLeave,
   onCancelLeave,
   onLeave,
 }: {
-  team: CompTeam;
+  teamName: string;
+  teamColor: string;
+  memberCount: number;
   rows: CompSlot[];
   solvedCount: number;
   totalParts: number;
   levelPartShort: string;
   partTitle: string;
   confirming: boolean;
+  busy: boolean;
   onAskLeave: () => void;
   onCancelLeave: () => void;
   onLeave: () => void;
@@ -33,23 +39,23 @@ export default function MyTeamPanel({
           <div className="flex items-center gap-3.5 border-b border-sched-row-line px-[22px] py-5">
             <div
               className="h-[13px] w-[13px] flex-none"
-              style={{ background: team.color }}
+              style={{ background: teamColor }}
             />
             <span className="flex-1 font-display text-[27px] font-semibold tracking-[0.05em] text-sched-cream">
-              {team.name}
+              {teamName}
             </span>
             <span
               className="font-mono text-[15px] font-medium"
-              style={{ color: team.color }}
+              style={{ color: teamColor }}
             >
-              {rows.filter((r) => !r.open).length}/{TEAM_SIZE}
+              {memberCount}/{TEAM_SIZE}
             </span>
           </div>
 
           <div className="flex flex-col">
-            {rows.map((s, i) => (
+            {rows.map((s) => (
               <div
-                key={i}
+                key={s.key}
                 className="flex items-center gap-3.5 border-b border-sched-row-line px-[22px] py-[15px] last:border-b-0"
               >
                 <div
@@ -129,7 +135,8 @@ export default function MyTeamPanel({
                 <button
                   type="button"
                   onClick={onLeave}
-                  className="min-h-[46px] flex-1 bg-sched-coral font-mono text-xs font-medium tracking-[0.14em] text-[#1a0e08]"
+                  disabled={busy}
+                  className="min-h-[46px] flex-1 bg-sched-coral font-mono text-xs font-medium tracking-[0.14em] text-[#1a0e08] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   YES, LEAVE
                 </button>

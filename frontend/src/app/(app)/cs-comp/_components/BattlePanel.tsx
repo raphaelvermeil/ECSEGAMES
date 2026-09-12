@@ -1,49 +1,163 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { targetDoc, type Level, type Part } from "@/lib/cs-comp";
+import { levelMeta } from "@/lib/cs-comp";
+import {
+  fetchTargetURL,
+  PASS_THRESHOLD,
+  type Challenge,
+  type SubmitResult,
+} from "@/lib/cscomp-api";
 
 // The mockup feeds the textarea straight into the output iframe's srcDoc,
 // reloading it on every keystroke. Debouncing keeps typing smooth once the
 // user is mid-scene rather than fighting an iframe reload per character.
 const PREVIEW_DEBOUNCE_MS = 250;
 
+// The challenge canvas, matching the renderer's viewport (see render.go).
+const TARGET_W = 300;
+const TARGET_H = 200;
+
+function toHex(r: number, g: number, b: number): string {
+  return (
+    "#" +
+    [r, g, b]
+      .map((v) => v.toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase()
+  );
+}
+
 export default function BattlePanel({
-  lv,
-  pt,
+  challenge,
   myTeamName,
   myTeamColor,
   code,
-  isDone,
+  solved,
+  best,
+  attempts,
+  result,
+  claimedByMe,
+  claimedByName,
+  busy,
   diff,
   onToggleDiff,
   onChangeCode,
   onReset,
   onSubmit,
+  onClaim,
+  onUnclaim,
   onOpenPicker,
 }: {
-  lv: Level;
-  pt: Part;
+  challenge: Challenge;
   myTeamName: string;
   myTeamColor: string;
   code: string;
-  isDone: boolean;
+  solved: boolean;
+  best: number | null;
+  attempts: number;
+  result: SubmitResult | null;
+  claimedByMe: boolean;
+  claimedByName: string | null;
+  busy: boolean;
   diff: boolean;
   onToggleDiff: () => void;
   onChangeCode: (value: string) => void;
   onReset: () => void;
   onSubmit: () => void;
+  onClaim: () => void;
+  onUnclaim: () => void;
   onOpenPicker: () => void;
 }) {
+  const { getToken } = useAuth();
   const gutterRef = useRef<HTMLDivElement>(null);
+  const targetRef = useRef<HTMLImageElement>(null);
+  const [picking, setPicking] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [previewCode, setPreviewCode] = useState(code);
+  // Tagged with the challenge it belongs to, so switching parts shows the
+  // loading state rather than the previous part's target for a frame —
+  // without clearing state synchronously inside the effect below.
+  const [target, setTarget] = useState<{ id: string; url: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     const t = setTimeout(() => setPreviewCode(code), PREVIEW_DEBOUNCE_MS);
     return () => clearTimeout(t);
   }, [code]);
 
-  const target = useMemo(() => targetDoc(lv, pt), [lv, pt]);
+  // The target is the exact PNG the server diffs against, fetched rather
+  // than rebuilt locally — a target drawn from a second copy of the scene
+  // could drift from the one that actually scores you. It needs the auth
+  // header, so it arrives as a blob URL instead of an <img src>.
+  useEffect(() => {
+    let cancelled = false;
+    let url: string | null = null;
+    async function load() {
+      try {
+        const token = await getToken();
+        const next = await fetchTargetURL(token, challenge.id);
+        if (cancelled) {
+          URL.revokeObjectURL(next);
+          return;
+        }
+        url = next;
+        setTarget({ id: challenge.id, url: next });
+      } catch {
+        if (!cancelled) setTarget(null);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [challenge.id, getToken]);
+
+  const targetURL = target?.id === challenge.id ? target.url : null;
+  const lv = levelMeta(challenge.level);
+
+  async function copyHex(hex: string) {
+    try {
+      await navigator.clipboard.writeText(hex);
+      setCopied(true);
+    } catch {
+      // Clipboard permission can be refused; the hex is on screen to read
+      // either way, so this is not worth an error banner.
+      setCopied(false);
+    }
+  }
+
+  // Samples a pixel out of the target image itself, rather than out of any
+  // local copy of the scene: this is the same PNG the server diffs against,
+  // so the colour the dropper reports is the colour that scores.
+  function sampleTarget(e: React.MouseEvent<HTMLImageElement>) {
+    const img = targetRef.current;
+    if (!img || !img.complete || img.naturalWidth === 0) return;
+
+    // The image is transform-scaled, so go through its visual box instead
+    // of offsetX/offsetY, which are not in the scaled coordinate space.
+    const rect = img.getBoundingClientRect();
+    const x = Math.floor(((e.clientX - rect.left) / rect.width) * TARGET_W);
+    const y = Math.floor(((e.clientY - rect.top) / rect.height) * TARGET_H);
+    if (x < 0 || y < 0 || x >= TARGET_W || y >= TARGET_H) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = TARGET_W;
+    canvas.height = TARGET_H;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(img, 0, 0, TARGET_W, TARGET_H);
+
+    const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
+    const hex = toHex(r, g, b);
+    setPicked(hex);
+    setCopied(false);
+    void copyHex(hex);
+  }
   const gutter = useMemo(
     () =>
       code
@@ -53,6 +167,16 @@ export default function BattlePanel({
     [code],
   );
 
+  // What the last attempt scored, phrased against the pass mark. The
+  // server decides — this only reports what it sent back.
+  const verdict = result
+    ? result.solved
+      ? `SOLVED · ${result.matchPercent.toFixed(1)}% match · +${result.points} pts`
+      : `${result.matchPercent.toFixed(1)}% match · needs ${PASS_THRESHOLD}% · best ${result.best.toFixed(1)}%`
+    : best !== null
+      ? `best ${best.toFixed(1)}% over ${attempts} ${attempts === 1 ? "attempt" : "attempts"}`
+      : null;
+
   return (
     <div className="bg-sched-bg px-5 pb-14 pt-[26px] lg:px-[60px] lg:pb-[60px]">
       <div className="mb-5 flex flex-wrap items-center gap-4">
@@ -60,10 +184,13 @@ export default function BattlePanel({
           className="border border-sched-accent-dim bg-[#16241c] px-[11px] py-1.5 font-mono text-[10px] font-medium tracking-[0.16em]"
           style={{ color: lv.color }}
         >
-          LEVEL {lv.n} · {lv.name}
+          LEVEL {challenge.level} · {lv.name}
         </span>
         <span className="font-display text-2xl font-semibold tracking-[0.03em] text-sched-cream">
-          {pt.title}
+          {challenge.name}
+        </span>
+        <span className="font-mono text-[11px] tracking-[0.14em] text-sched-text-muted">
+          {challenge.points} PTS
         </span>
         <button
           type="button"
@@ -80,6 +207,40 @@ export default function BattlePanel({
           <span className="h-2.5 w-2.5" style={{ background: myTeamColor }} />
           {myTeamName}
         </span>
+      </div>
+
+      {/* Claims are how a squad splits the 30 parts without two people
+          building the same scene. One per person per level, so the button
+          is also the only place that rule becomes visible. */}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        {claimedByMe ? (
+          <>
+            <span className="font-mono text-[11px] tracking-[0.14em] text-sched-accent">
+              ✓ YOU CLAIMED THIS PART
+            </span>
+            <button
+              type="button"
+              onClick={onUnclaim}
+              disabled={busy}
+              className="min-h-9 border border-sched-hair px-3.5 font-mono text-[10px] font-medium tracking-[0.14em] text-sched-text-muted transition-colors hover:border-sched-coral hover:text-sched-coral disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              RELEASE CLAIM
+            </button>
+          </>
+        ) : claimedByName ? (
+          <span className="font-mono text-[11px] tracking-[0.14em] text-sched-text-muted">
+            CLAIMED BY {claimedByName.toUpperCase()} · you can still submit
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={onClaim}
+            disabled={busy}
+            className="min-h-9 border border-sched-accent-dim px-3.5 font-mono text-[10px] font-medium tracking-[0.14em] text-sched-accent transition-colors hover:bg-[#16241c] hover:text-sched-cream disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            CLAIM THIS PART
+          </button>
+        )}
       </div>
 
       {/* Phone: the editor + two 300x200 previews need real width to be
@@ -142,26 +303,43 @@ export default function BattlePanel({
             <button
               type="button"
               onClick={onSubmit}
-              className="min-h-[46px] px-[22px] font-mono text-xs font-medium tracking-[0.14em]"
+              disabled={busy}
+              className="min-h-[46px] px-[22px] font-mono text-xs font-medium tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-60"
               style={{
-                background: isDone ? "#16241c" : "#6ee787",
-                border: `1px solid ${isDone ? "var(--color-sched-accent-dim)" : "#6ee787"}`,
-                color: isDone ? "#6ee787" : "#0b1310",
+                background: solved ? "#16241c" : "#6ee787",
+                border: `1px solid ${solved ? "var(--color-sched-accent-dim)" : "#6ee787"}`,
+                color: solved ? "#6ee787" : "#0b1310",
               }}
             >
-              {isDone ? "✓ SUBMITTED · LOCKED IN" : "SUBMIT SOLUTION"}
+              {busy
+                ? "SCORING…"
+                : solved
+                  ? "✓ SOLVED · SUBMIT AGAIN"
+                  : "SUBMIT SOLUTION"}
             </button>
             <button
               type="button"
               onClick={onReset}
-              className="min-h-[46px] border border-sched-hair px-4.5 font-mono text-xs font-medium tracking-[0.14em] text-sched-text-muted transition-colors hover:border-sched-accent-dim hover:text-sched-cream"
+              disabled={busy}
+              className="min-h-[46px] border border-sched-hair px-4.5 font-mono text-xs font-medium tracking-[0.14em] text-sched-text-muted transition-colors hover:border-sched-accent-dim hover:text-sched-cream disabled:cursor-not-allowed disabled:opacity-50"
             >
               RESET
             </button>
             <div className="flex-1" />
-            <span className="font-mono text-[11px] text-sched-text-muted">
-              renders live · shortest solution wins ties
-            </span>
+            {verdict ? (
+              <span
+                className="font-mono text-[11px] font-medium"
+                style={{
+                  color: result?.solved || solved ? "#6ee787" : "#e9f5cd",
+                }}
+              >
+                {verdict}
+              </span>
+            ) : (
+              <span className="font-mono text-[11px] text-sched-text-muted">
+                scored on the server · {PASS_THRESHOLD}% match to pass
+              </span>
+            )}
           </div>
         </div>
 
@@ -175,23 +353,65 @@ export default function BattlePanel({
                 TARGET
               </span>
               <div className="flex-1" />
-              <span className="font-mono text-[11px] text-sched-text-muted">
-                300 × 200
-              </span>
+
+              {/* Last sampled colour. Clicking re-copies it, for when the
+                  automatic copy on pick was refused or overwritten. */}
+              {picked && (
+                <button
+                  type="button"
+                  onClick={() => copyHex(picked)}
+                  title="Copy this hex"
+                  className="flex items-center gap-1.5 border border-sched-hair px-2 py-1 font-mono text-[10px] tracking-[0.1em] text-sched-cream transition-colors hover:border-sched-accent-dim"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-3 w-3 flex-none border border-[rgba(233,245,205,.25)]"
+                    style={{ background: picked }}
+                  />
+                  {picked}
+                  <span className="text-sched-text-muted">
+                    {copied ? "COPIED" : "COPY"}
+                  </span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setPicking((p) => !p)}
+                disabled={!targetURL}
+                title="Sample a colour straight off the target"
+                aria-pressed={picking}
+                className="min-h-[26px] px-2.5 font-mono text-[10px] font-medium tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-40"
+                style={{
+                  background: picking ? "#6ee787" : "none",
+                  border: `1px solid ${picking ? "#6ee787" : "var(--color-sched-hair)"}`,
+                  color: picking ? "#0b1310" : "#7f9482",
+                }}
+              >
+                {picking ? "CLICK THE TARGET" : "PICK COLOUR"}
+              </button>
             </div>
             <div className="flex h-[300px] items-center justify-center bg-[#0d1712]">
-              <iframe
-                title="Target"
-                srcDoc={target}
-                sandbox=""
-                scrolling="no"
-                style={{
-                  width: 300,
-                  height: 200,
-                  border: 0,
-                  transform: "scale(1.5)",
-                }}
-              />
+              {targetURL ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  ref={targetRef}
+                  src={targetURL}
+                  alt={`Target: ${challenge.name}`}
+                  width={300}
+                  height={200}
+                  onClick={picking ? sampleTarget : undefined}
+                  style={{
+                    transform: "scale(1.5)",
+                    imageRendering: "pixelated",
+                    cursor: picking ? "crosshair" : "default",
+                  }}
+                />
+              ) : (
+                <span className="font-mono text-[11px] text-sched-text-muted">
+                  Loading target…
+                </span>
+              )}
             </div>
           </div>
 
@@ -233,20 +453,19 @@ export default function BattlePanel({
               {/* Onion-skin overlay, not a difference blend — a faint outline
                   of the target sitting on top of your real colors reads much
                   more clearly than the two layers cancelling each other out. */}
-              {diff && (
-                <iframe
+              {diff && targetURL && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
                   aria-hidden="true"
-                  title="Target ghost"
-                  srcDoc={target}
-                  sandbox=""
-                  scrolling="no"
+                  alt=""
+                  src={targetURL}
+                  width={300}
+                  height={200}
                   className="absolute"
                   style={{
-                    width: 300,
-                    height: 200,
-                    border: 0,
                     transform: "scale(1.5)",
                     opacity: 0.4,
+                    imageRendering: "pixelated",
                   }}
                 />
               )}

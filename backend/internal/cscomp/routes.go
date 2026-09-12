@@ -3,9 +3,11 @@ package cscomp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -23,13 +25,20 @@ type Handler struct {
 	users        *users.Repository
 	renderer     *Renderer
 	solutionsDir string
+	compSeconds  int
 }
 
 // NewHandler builds the handler. renderer may be nil — if Chrome could not
 // be started at boot the rest of the comp still works and only Submit
 // returns 503 (see main.go).
-func NewHandler(store *Store, userRepo *users.Repository, renderer *Renderer, solutionsDir string) *Handler {
-	return &Handler{store: store, users: userRepo, renderer: renderer, solutionsDir: solutionsDir}
+func NewHandler(store *Store, userRepo *users.Repository, renderer *Renderer, solutionsDir string, compSeconds int) *Handler {
+	return &Handler{
+		store:        store,
+		users:        userRepo,
+		renderer:     renderer,
+		solutionsDir: solutionsDir,
+		compSeconds:  compSeconds,
+	}
 }
 
 // Mount registers the comp routes on r. Everything here is student-facing,
@@ -48,6 +57,7 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 		pr.Get("/api/cscomp/challenges/{id}/target.png", h.Target)
 
 		pr.Get("/api/cscomp/teams", h.ListTeams)
+		pr.Get("/api/cscomp/leaderboard", h.Standings)
 		pr.Post("/api/cscomp/teams", h.CreateTeam)
 		pr.Post("/api/cscomp/teams/{id}/join", h.JoinTeam)
 		pr.Post("/api/cscomp/teams/{id}/leave", h.LeaveTeam)
@@ -57,7 +67,130 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 		pr.Delete("/api/cscomp/challenges/{id}/claim", h.Unclaim)
 
 		pr.Post("/api/cscomp/challenges/{id}/submit", h.Submit)
+
+		pr.Get("/api/cscomp/clock", h.GetClock)
 	})
+
+	// The clock is the one part of the comp an exec drives, so it is the
+	// one part behind RequireRole. Everything above is student-facing.
+	r.Group(func(er chi.Router) {
+		er.Use(appmw.RequireAuth(clerkSecretKey))
+		er.Use(appmw.RequireRole(userRepo, models.RoleExec))
+
+		er.Post("/api/cscomp/clock", h.ControlClock)
+	})
+}
+
+// ClockView is the clock as the client sees it. RemainingSeconds is
+// resolved server-side so no browser has to reason about skew between its
+// own wall clock and the server's — it counts down locally from this and
+// re-syncs on the next poll.
+type ClockView struct {
+	Status           string `json:"status"`
+	RemainingSeconds int    `json:"remainingSeconds"`
+	DurationSeconds  int    `json:"durationSeconds"`
+	UpdatedBy        string `json:"updatedBy"`
+}
+
+func view(c *Clock, now time.Time) ClockView {
+	return ClockView{
+		Status:           c.Status,
+		RemainingSeconds: c.RemainingAt(now),
+		DurationSeconds:  c.Duration,
+		UpdatedBy:        c.UpdatedBy,
+	}
+}
+
+// GetClock reports the shared countdown. Readable by any authenticated
+// user: everyone in the room is watching the same clock.
+func (h *Handler) GetClock(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	c, err := h.store.GetClock(ctx, h.compSeconds)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, view(c, time.Now().UTC()))
+}
+
+// clockRequest is one control action. Seconds is read only by "adjust",
+// where it is signed: positive adds time, negative takes it away.
+type clockRequest struct {
+	Action  string `json:"action"`
+	Seconds int    `json:"seconds"`
+}
+
+// maxAdjustSeconds bounds a single adjustment so a typo cannot push the
+// comp hours out. Repeated presses still get you anywhere you need.
+const maxAdjustSeconds = 60 * 60
+
+// ControlClock applies an exec's start/pause/stop/adjust to the shared
+// clock. The transitions themselves live on Clock (see clock.go); this
+// reads the current one, applies the named move and writes it back.
+//
+// Last write wins. Two execs racing the same button is not a scenario
+// worth locking for, and every action here is one another exec can
+// immediately correct by pressing a different one.
+func (h *Handler) ControlClock(w http.ResponseWriter, r *http.Request) {
+	clerkID, ok := appmw.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthenticated", http.StatusUnauthorized)
+		return
+	}
+
+	var req clockRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	u, err := h.users.GetOrCreate(ctx, clerkID)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+
+	current, err := h.store.GetClock(ctx, h.compSeconds)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+
+	now := time.Now().UTC()
+	next := *current
+	switch req.Action {
+	case "start":
+		next = next.Start(now)
+	case "pause":
+		next = next.Pause(now)
+	case "stop":
+		next = next.Stop()
+	case "adjust":
+		if req.Seconds == 0 {
+			http.Error(w, "seconds is required", http.StatusBadRequest)
+			return
+		}
+		if req.Seconds > maxAdjustSeconds || req.Seconds < -maxAdjustSeconds {
+			http.Error(w, "adjustment is too large", http.StatusBadRequest)
+			return
+		}
+		next = next.Adjust(now, req.Seconds)
+	default:
+		http.Error(w, "unknown action", http.StatusBadRequest)
+		return
+	}
+
+	next.UpdatedBy = displayName(u)
+	if err := h.store.SaveClock(ctx, next); err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, view(&next, now))
 }
 
 // ListChallenges returns all 30 challenges: level, part, name, points and
@@ -638,4 +771,135 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// Standing is one sub-team's row on the comp board. SolvedParts carries
+// "<level>-<part>" keys rather than challenge IDs so the client can draw
+// its per-level pips without holding the challenge list alongside it.
+//
+// Points is the sum of the solved challenges' own Points values, so the
+// board and a submission's response can never disagree about what a
+// challenge was worth.
+type Standing struct {
+	TeamID      primitive.ObjectID `json:"teamId"`
+	Name        string             `json:"name"`
+	Points      int                `json:"points"`
+	Solved      int                `json:"solved"`
+	MemberCount int                `json:"memberCount"`
+	SolvedParts []string           `json:"solvedParts"`
+	LastLevel   int                `json:"lastLevel"`
+}
+
+// Leaderboard is the comp's own standings. It is deliberately not the
+// Games leaderboard: this ranks the comp's sub-teams by points earned on
+// the 30 challenges and resets with the comp, while the Games board totals
+// scoreEntries across every event. Nothing here touches scoreEntries.
+//
+// Total is the points a team would have for solving everything, so the
+// client can size a progress bar without summing the challenge list.
+type Leaderboard struct {
+	Standings  []Standing `json:"standings"`
+	Total      int        `json:"total"`
+	TotalParts int        `json:"totalParts"`
+}
+
+// Standings ranks every sub-team. Reads are open to any authenticated user
+// rather than gated on team membership — the board is the thing a student
+// checks before they have joined anything, and it exposes nothing a
+// teammate could not already see.
+func (h *Handler) Standings(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	challenges, err := h.store.ListChallenges(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	byID := make(map[primitive.ObjectID]Challenge, len(challenges))
+	total := 0
+	for _, c := range challenges {
+		byID[c.ID] = c
+		total += c.Points
+	}
+
+	subs, err := h.store.ListSolvedSubmissions(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+
+	// Solves are folded per team first so a team's row is one pass over
+	// its own solves rather than a scan of every submission per team.
+	type tally struct {
+		points    int
+		parts     []string
+		lastLevel int
+	}
+	tallies := map[primitive.ObjectID]*tally{}
+	for _, s := range subs {
+		c, ok := byID[s.ChallengeID]
+		if !ok {
+			// A submission whose challenge has since been removed scores
+			// nothing rather than crediting unknown points.
+			continue
+		}
+		t := tallies[s.TeamID]
+		if t == nil {
+			t = &tally{}
+			tallies[s.TeamID] = t
+		}
+		t.points += c.Points
+		t.parts = append(t.parts, fmt.Sprintf("%d-%d", c.Level, c.Part))
+		if c.Level > t.lastLevel {
+			t.lastLevel = c.Level
+		}
+	}
+
+	teams, err := h.store.ListTeams(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+
+	rows := make([]Standing, 0, len(teams))
+	for _, team := range teams {
+		count, err := h.users.CountByCSCompTeam(ctx, team.ID)
+		if err != nil {
+			http.Error(w, "storage error", http.StatusInternalServerError)
+			return
+		}
+		row := Standing{
+			TeamID:      team.ID,
+			Name:        team.Name,
+			MemberCount: int(count),
+			SolvedParts: []string{},
+		}
+		if t := tallies[team.ID]; t != nil {
+			row.Points = t.points
+			row.Solved = len(t.parts)
+			row.SolvedParts = t.parts
+			row.LastLevel = t.lastLevel
+		}
+		rows = append(rows, row)
+	}
+
+	// Points, then solves, then name — so the order is stable across polls
+	// for teams that are genuinely tied rather than flickering between
+	// them every fifteen seconds.
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i].Points != rows[j].Points {
+			return rows[i].Points > rows[j].Points
+		}
+		if rows[i].Solved != rows[j].Solved {
+			return rows[i].Solved > rows[j].Solved
+		}
+		return rows[i].Name < rows[j].Name
+	})
+
+	writeJSON(w, http.StatusOK, Leaderboard{
+		Standings:  rows,
+		Total:      total,
+		TotalParts: len(challenges),
+	})
 }

@@ -16,6 +16,7 @@ const (
 	teamCollection       = "cscompTeams"
 	submissionCollection = "cscompSubmissions"
 	claimCollection      = "cscompClaims"
+	clockCollection      = "cscompClock"
 )
 
 // ErrConflict is returned when a write loses to one of the uniqueness
@@ -29,6 +30,7 @@ type Store struct {
 	teams       *mongo.Collection
 	submissions *mongo.Collection
 	claims      *mongo.Collection
+	clock       *mongo.Collection
 }
 
 // NewStore returns a comp store backed by the given database.
@@ -38,6 +40,7 @@ func NewStore(database *mongo.Database) *Store {
 		teams:       database.Collection(teamCollection),
 		submissions: database.Collection(submissionCollection),
 		claims:      database.Collection(claimCollection),
+		clock:       database.Collection(clockCollection),
 	}
 }
 
@@ -263,5 +266,49 @@ func (s *Store) DeleteClaim(ctx context.Context, teamID, challengeID primitive.O
 // board for the teammates they left behind.
 func (s *Store) DeleteClaimsByMember(ctx context.Context, teamID primitive.ObjectID, clerkID string) error {
 	_, err := s.claims.DeleteMany(ctx, bson.M{"teamId": teamID, "clerkId": clerkID})
+	return err
+}
+
+// ListSolvedSubmissions returns every submission that cleared the pass
+// threshold, across all sub-teams — the raw material for the standings.
+//
+// The filter is the same PassThreshold the Submission.Solved method uses,
+// applied in the query so the board does not pull down 30 challenges ×
+// every roster's worth of failed attempts just to throw most of them away.
+func (s *Store) ListSolvedSubmissions(ctx context.Context) ([]Submission, error) {
+	cur, err := s.submissions.Find(ctx, bson.M{"matchPercent": bson.M{"$gte": PassThreshold}})
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	list := []Submission{}
+	if err := cur.All(ctx, &list); err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// GetClock returns the comp clock, or a fresh unstarted one of the given
+// length if no exec has touched it yet. The default is not written on
+// read: a clock nobody has started has nothing worth persisting.
+func (s *Store) GetClock(ctx context.Context, defaultSeconds int) (*Clock, error) {
+	var c Clock
+	err := s.clock.FindOne(ctx, bson.M{"_id": clockID}).Decode(&c)
+	if err == mongo.ErrNoDocuments {
+		fresh := NewClock(defaultSeconds)
+		return &fresh, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
+// SaveClock writes the single clock document.
+func (s *Store) SaveClock(ctx context.Context, c Clock) error {
+	c.ID = clockID
+	c.UpdatedAt = time.Now().UTC()
+	_, err := s.clock.ReplaceOne(ctx, bson.M{"_id": clockID}, c, options.Replace().SetUpsert(true))
 	return err
 }
