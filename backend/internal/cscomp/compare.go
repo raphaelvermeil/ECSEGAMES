@@ -32,14 +32,14 @@ func decodePNG(b []byte) (image.Image, error) {
 // cmd/seedcscomp), which is what makes a pixel diff meaningful at all.
 func MatchPercent(got, want image.Image) (float64, error) {
 	gb, wb := got.Bounds(), want.Bounds()
-	if gb.Dx() != canvasWidth || gb.Dy() != canvasHeight ||
-		wb.Dx() != canvasWidth || wb.Dy() != canvasHeight {
+	if gb.Dx() != renderWidth || gb.Dy() != renderHeight ||
+		wb.Dx() != renderWidth || wb.Dy() != renderHeight {
 		return 0, errSizeMismatch
 	}
 
 	matched := 0
-	for y := 0; y < canvasHeight; y++ {
-		for x := 0; x < canvasWidth; x++ {
+	for y := 0; y < renderHeight; y++ {
+		for x := 0; x < renderWidth; x++ {
 			gr, gg, gbl, _ := got.At(gb.Min.X+x, gb.Min.Y+y).RGBA()
 			wr, wg, wbl, _ := want.At(wb.Min.X+x, wb.Min.Y+y).RGBA()
 			if within(gr, wr) && within(gg, wg) && within(gbl, wbl) {
@@ -47,7 +47,7 @@ func MatchPercent(got, want image.Image) (float64, error) {
 			}
 		}
 	}
-	return float64(matched) / float64(canvasWidth*canvasHeight) * 100, nil
+	return float64(matched) / float64(renderWidth*renderHeight) * 100, nil
 }
 
 // within reports whether two RGBA() channel values (16-bit, alpha

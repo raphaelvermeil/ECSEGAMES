@@ -10,14 +10,33 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// The challenge canvas. Both the seeder's target images and every
-// submission are rendered at exactly this size, at device scale factor 1 —
-// the mock's iframe dimensions. (Its on-screen `transform: scale(1.5)` is
-// cosmetic and must not be reproduced here: a target rendered at a
-// different size than the submissions would never match.)
+// The challenge canvas, in CSS pixels. Both the seeder's target images and
+// every submission are laid out at exactly this size — the mock's iframe
+// dimensions, and the coordinate space every challenge is authored in.
 const (
 	canvasWidth  = 300
 	canvasHeight = 200
+)
+
+// canvasScale is the device pixel ratio the canvas is rasterized at. The
+// layout stays canvasWidth x canvasHeight CSS pixels, so no challenge
+// moves; there are simply more device pixels per CSS pixel.
+//
+// It is 3 because of how the target is displayed: the UI shows the PNG at
+// `transform: scale(1.5)`, and a HiDPI screen doubles that again, so a 1x
+// image reached the eye magnified 3x — visibly stair-stepped on every
+// curve, next to a live preview that stays vector-crisp at any zoom.
+//
+// Whatever this is, targets and submissions must share it: MatchPercent
+// diffs them pixel for pixel and rejects a size mismatch outright, so
+// changing it means re-rendering all 30 targets (cmd/seedcscomp).
+const canvasScale = 3
+
+// renderWidth/renderHeight are the dimensions that actually come back: what
+// the PNGs on disk hold and what the comparison works in.
+const (
+	renderWidth  = canvasWidth * canvasScale
+	renderHeight = canvasHeight * canvasScale
 )
 
 // renderTimeout bounds a single screenshot. A page that hangs takes its
@@ -110,7 +129,7 @@ func NewRenderer(chromePath string, concurrency int) (*Renderer, error) {
 func (rd *Renderer) Close() { rd.cancel() }
 
 // Render loads html in an isolated tab and returns a PNG of the
-// canvasWidth x canvasHeight viewport. The page is navigated as a data:
+// canvasWidth x canvasHeight viewport, rasterized at canvasScale. The page is navigated as a data:
 // URL so it has no origin to reach anything from, and it is given no
 // network and no scripting.
 func (rd *Renderer) Render(ctx context.Context, html string) ([]byte, error) {
@@ -133,7 +152,7 @@ func (rd *Renderer) Render(ctx context.Context, html string) ([]byte, error) {
 		network.Enable(),
 		network.SetBlockedURLs().WithURLPatterns(blockEverything),
 		emulation.SetScriptExecutionDisabled(true),
-		chromedp.EmulateViewport(canvasWidth, canvasHeight),
+		chromedp.EmulateViewport(canvasWidth, canvasHeight, chromedp.EmulateScale(canvasScale)),
 		chromedp.Navigate(url),
 		chromedp.CaptureScreenshot(&buf),
 	)

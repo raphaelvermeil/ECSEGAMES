@@ -15,10 +15,6 @@ import {
 // user is mid-scene rather than fighting an iframe reload per character.
 const PREVIEW_DEBOUNCE_MS = 250;
 
-// The challenge canvas, matching the renderer's viewport (see render.go).
-const TARGET_W = 300;
-const TARGET_H = 200;
-
 function toHex(r: number, g: number, b: number): string {
   return (
     "#" +
@@ -140,17 +136,21 @@ export default function BattlePanel({
 
     // The image is transform-scaled, so go through its visual box instead
     // of offsetX/offsetY, which are not in the scaled coordinate space.
+    // Both ends of the mapping are the PNG's own pixels: drawing it at
+    // anything but its natural size would resample it, and a colour read
+    // back out of a resampled copy is not the colour that scores.
+    const { naturalWidth: w, naturalHeight: h } = img;
     const rect = img.getBoundingClientRect();
-    const x = Math.floor(((e.clientX - rect.left) / rect.width) * TARGET_W);
-    const y = Math.floor(((e.clientY - rect.top) / rect.height) * TARGET_H);
-    if (x < 0 || y < 0 || x >= TARGET_W || y >= TARGET_H) return;
+    const x = Math.floor(((e.clientX - rect.left) / rect.width) * w);
+    const y = Math.floor(((e.clientY - rect.top) / rect.height) * h);
+    if (x < 0 || y < 0 || x >= w || y >= h) return;
 
     const canvas = document.createElement("canvas");
-    canvas.width = TARGET_W;
-    canvas.height = TARGET_H;
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.drawImage(img, 0, 0, TARGET_W, TARGET_H);
+    ctx.drawImage(img, 0, 0);
 
     const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
     const hex = toHex(r, g, b);
@@ -403,7 +403,6 @@ export default function BattlePanel({
                   onClick={picking ? sampleTarget : undefined}
                   style={{
                     transform: "scale(1.5)",
-                    imageRendering: "pixelated",
                     cursor: picking ? "crosshair" : "default",
                   }}
                 />
@@ -465,7 +464,6 @@ export default function BattlePanel({
                   style={{
                     transform: "scale(1.5)",
                     opacity: 0.4,
-                    imageRendering: "pixelated",
                   }}
                 />
               )}
