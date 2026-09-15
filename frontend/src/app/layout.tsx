@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Saira, Pixelify_Sans, IBM_Plex_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
@@ -27,6 +27,31 @@ export const metadata: Metadata = {
   description: "ECSE Games competition platform",
 };
 
+// viewportFit: "cover" is what lets the layout reach into an iPhone's safe
+// areas — the notch/Dynamic Island strip at the top and the home-indicator
+// strip at the bottom. Two things follow from it:
+//
+//  1. The dark chrome now runs edge to edge, so the status bar sits on the
+//     app's own header instead of on a letterbox band in a slightly
+//     different shade of black.
+//  2. env(safe-area-inset-*) starts reporting real numbers. Until this
+//     existed every one of those returned 0, which is why the schedule's
+//     floating Add button had inset-aware positioning that never did
+//     anything.
+//
+// Because the content can now sit under the hardware, anything pinned to a
+// screen edge has to pad itself back out — see --app-safe-top/-bottom in
+// globals.css and the sticky headers that consume them.
+//
+// themeColor matches --color-sched-chrome so the browser tints its own
+// surrounding UI to match the header rather than guessing from the page.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#1a1c1a",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -42,10 +67,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body>
-
-        {/* Sign-out goes straight to the public sign-in page, not the
-            protected home route (which would stall on the auth gate). */}
-        <ClerkProvider afterSignOutUrl="/sign-in">{children}</ClerkProvider>
+        {/* Sign-out lands on the home page. It used to go to /sign-in
+            because every route was gated and home would have bounced them
+            straight back; now that the app is readable signed out, dumping
+            someone on a login form after they deliberately logged out is
+            just rude. */}
+        <ClerkProvider afterSignOutUrl="/">{children}</ClerkProvider>
       </body>
     </html>
   );

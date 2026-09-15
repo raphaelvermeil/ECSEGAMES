@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 // Role is a user's access level. New sign-ups default to RoleStudent.
 type Role string
@@ -38,12 +42,17 @@ func IsValidTeam(t Team) bool {
 // identity from Clerk and the upsert key. Name, Major and Email are
 // collected at team selection so later records (scores, event history) can
 // be attributed to a person by name instead of a raw Clerk ID.
+// CSCompTeamID is separate from Team: it points at the CS comp sub-team of
+// five this person joined, which mixes people from any of the four Games
+// teams. Nil (or absent, on records created before the comp existed) means
+// they are not on one.
 type User struct {
-	ClerkID   string    `bson:"clerkId" json:"clerkId"`
-	Name      string    `bson:"name" json:"name"`
-	Major     string    `bson:"major" json:"major"`
-	Email     string    `bson:"email" json:"email"`
-	Role      Role      `bson:"role" json:"role"`
-	Team      Team      `bson:"team" json:"team"`
-	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
+	ClerkID      string              `bson:"clerkId" json:"clerkId"`
+	Name         string              `bson:"name" json:"name"`
+	Major        string              `bson:"major" json:"major"`
+	Email        string              `bson:"email" json:"email"`
+	Role         Role                `bson:"role" json:"role"`
+	Team         Team                `bson:"team" json:"team"`
+	CSCompTeamID *primitive.ObjectID `bson:"csCompTeamId,omitempty" json:"csCompTeamId"`
+	CreatedAt    time.Time           `bson:"createdAt" json:"createdAt"`
 }

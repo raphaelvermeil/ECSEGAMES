@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, Clock, Pin, X } from "@/components/icons";
 import type { ScheduleEvent } from "@/lib/events";
+import { useScrollLock } from "@/lib/overlay";
 import {
   categoryColor,
   formatFooterTimestamp,
@@ -32,18 +33,38 @@ export default function EventDetailModal({
   const panelRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<"detail" | "history">("detail");
 
+  // Only the sheet scrolls while it is open; the schedule behind it holds
+  // its place.
+  //
+  // No useThemeColor: the header bar sits above this overlay (z-65 vs z-60)
+  // rather than under it, so the top of the screen stays --color-sched-chrome
+  // and already matches what the layout declares. It used to be tinted to the
+  // dimmed blend of header-under-backdrop, which is no longer what is there.
+  useScrollLock();
+
   // Focus the panel on open, and hand focus back to whatever triggered it
   // (the calendar row/rail item) on close.
+  //
+  // preventScroll matters here. On a phone this is a bottom sheet that
+  // animates up from translateY(100%), so at the instant focus lands the
+  // panel is still entirely below the viewport — and a plain focus() makes
+  // the browser scroll its scrollable ancestors to reveal it, which parks
+  // the overlay at the panel's bottom. The result was a flash of the end of
+  // the description at the top of the screen before the animation finished
+  // and everything snapped back. The sheet is positioned by CSS; focus has
+  // no business moving it.
   useEffect(() => {
     const trigger = document.activeElement as HTMLElement | null;
-    panelRef.current?.focus();
+    panelRef.current?.focus({ preventScroll: true });
     return () => trigger?.focus?.();
   }, []);
 
   // Re-focus the panel whenever the detail/history content swaps out from
   // under the user, so keyboard/screen-reader users don't lose their place.
+  // Same reasoning on preventScroll — and note this also runs on mount, so
+  // without it the panel was being scrolled into view twice.
   useEffect(() => {
-    panelRef.current?.focus();
+    panelRef.current?.focus({ preventScroll: true });
   }, [tab]);
 
   useEffect(() => {
@@ -108,7 +129,16 @@ export default function EventDetailModal({
         aria-label="Event detail"
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="animate-sched-sheet w-full max-h-[88%] overflow-y-auto border-t border-sched-accent-dim bg-sched-bg-raised font-mono outline-none lg:animate-sched-pop lg:max-w-[780px] lg:max-h-none lg:overflow-visible lg:border"
+        // 88svh rather than 88%: a percentage max-height resolves against the
+        // overlay's own resolved height, and on iOS that settles a frame late
+        // while the URL bar animates. Until it does, the sheet is at its
+        // natural height — and because the overlay is `items-end`, anything
+        // taller than it gets pushed out of the *top*, which is what put the
+        // end of the description at the top of the screen for a frame. svh is
+        // the smallest-viewport unit, so it resolves immediately and doesn't
+        // move when the URL bar collapses; it's the same reason the shell uses
+        // svh rather than vh (see (app)/layout.tsx).
+        className="animate-sched-sheet max-h-[88svh] w-full overflow-y-auto overscroll-contain border-t border-sched-accent-dim bg-sched-bg-raised pb-[var(--app-safe-bottom)] font-mono outline-none lg:animate-sched-pop lg:max-h-none lg:max-w-[780px] lg:overflow-visible lg:border lg:pb-0"
       >
         <div
           aria-hidden="true"
@@ -232,15 +262,21 @@ export default function EventDetailModal({
               </div>
             )}
 
-            <div className="border-t border-sched-hair px-5 pb-5 pt-4 lg:px-[30px]">
-              <button
-                type="button"
-                onClick={() => setTab("history")}
-                className="font-mono text-[11px] text-sched-text-muted underline decoration-1 underline-offset-[3px] transition-colors hover:text-sched-accent"
-              >
-                {footLabel}
-              </button>
-            </div>
+            {/* History is the scoring paper trail — which exec awarded what,
+                by name — so it's exec/admin only on the backend now that the
+                event itself is public. Hiding the link keeps a signed-out
+                reader from clicking through to a guaranteed 401. */}
+            {canManage && (
+              <div className="border-t border-sched-hair px-5 pb-5 pt-4 lg:px-[30px]">
+                <button
+                  type="button"
+                  onClick={() => setTab("history")}
+                  className="font-mono text-[11px] text-sched-text-muted underline decoration-1 underline-offset-[3px] transition-colors hover:text-sched-accent"
+                >
+                  {footLabel}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

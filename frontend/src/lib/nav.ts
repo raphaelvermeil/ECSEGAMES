@@ -34,7 +34,7 @@ export const NAV_LINKS: NavLink[] = [
   {
     href: "/cs-comp",
     label: "CS comp",
-    description: "Coming soon.",
+    description: "In-house CSS battle — teams of 5.",
     icon: CodeXml,
   },
   {

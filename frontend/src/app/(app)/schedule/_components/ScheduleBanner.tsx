@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UserButton } from "@clerk/nextjs";
-import { Bell, Menu } from "@/components/icons";
+import MobileChromeBar from "@/components/MobileChromeBar";
 import MobileNavMenu from "@/components/MobileNavMenu";
 
 export default function ScheduleBanner({
@@ -18,38 +17,14 @@ export default function ScheduleBanner({
 
   return (
     <>
-      {/* Mobile only — the shared Navbar is hidden on this route below lg,
-          so its logo/bell/account row lives here instead: same chrome
-          color as the Navbar, sitting above the green band rather than
-          merged into it. */}
-      <div className="flex items-center justify-between gap-3 bg-sched-chrome px-4 py-3 lg:hidden">
-        <div className="flex items-center gap-[9px]">
-          <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-sched-accent-dim font-mono text-[10px] font-semibold tracking-[0.05em] text-sched-accent-dim">
-            ECSE
-          </div>
-          <span className="font-display text-[15px] font-semibold tracking-[0.2em] text-sched-cream">
-            GAMES
-          </span>
-        </div>
-        <div className="flex items-center gap-[6px]">
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="flex h-11 w-11 items-center justify-center text-sched-accent"
-          >
-            <Bell width={21} height={21} strokeWidth={1.6} />
-          </button>
-          <UserButton />
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open navigation menu"
-            className="flex h-11 w-11 items-center justify-center text-sched-text-muted"
-          >
-            <Menu width={22} height={22} strokeWidth={1.8} />
-          </button>
-        </div>
-      </div>
+      {/* The shared Navbar is hidden below lg, so this is the header on a
+          phone. It pins; the green band underneath scrolls away, which is
+          why the schedule's day-tab row offsets itself by --app-chrome-h
+          (see ScheduleView) rather than sticking at the true top. */}
+      <MobileChromeBar
+        menuOpen={menuOpen}
+        onToggleMenu={() => setMenuOpen((o) => !o)}
+      />
 
       <div className="relative flex items-center bg-sched-band px-5 pb-4 pt-5 lg:min-h-[180px] lg:px-10 lg:py-9">
         <div
