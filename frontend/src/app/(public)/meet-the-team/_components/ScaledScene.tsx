@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useZoom } from "../../useZoom";
+import { useZoom } from "@/lib/useZoom";
 import { SCENE_HEIGHT, SCENE_WIDTH } from "./CampScene";
 
 // Scales the fixed 1916x786 camp scene to fit the box it's given, picking

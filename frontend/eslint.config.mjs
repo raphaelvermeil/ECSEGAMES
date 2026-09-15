@@ -8,8 +8,9 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   // Enforce that every route resource guards itself with `await auth.protect()`.
-  // All routes are protected except the auth pages and the (marketing) group,
-  // which holds the public landing page and must stay reachable signed out.
+  // All routes are protected except the auth pages, the (marketing) group
+  // (the landing page) and the (public) group (schedule, sponsors, meet the
+  // team) — all of which must stay reachable signed out.
   // The rule classifies by folder, not by file, which is why the landing page
   // lives in its own route group rather than sitting directly in src/app —
   // exempting it there would have exempted the whole app root.
@@ -24,6 +25,7 @@ const eslintConfig = defineConfig([
             "src/app/sign-in/**",
             "src/app/sign-up/**",
             "src/app/(marketing)/**",
+            "src/app/(public)/**",
           ],
         },
       ],

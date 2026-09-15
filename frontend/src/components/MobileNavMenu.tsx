@@ -23,11 +23,20 @@ export default function MobileNavMenu({
 }) {
   const pathname = usePathname();
   const { user } = useUser();
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn, isLoaded } = useAuth();
   const [team, setTeam] = useState<Team | null>(null);
 
+  // Schedule, Sponsors and Meet the team are readable signed out; the rest
+  // would bounce to sign-in, so they are hidden rather than offered. While
+  // Clerk is still resolving, show the public set — erring that way risks a
+  // link appearing a moment late, not a dead link being tapped.
+  const links =
+    isLoaded && isSignedIn ? NAV_LINKS : NAV_LINKS.filter((l) => l.public);
+
   useEffect(() => {
-    if (!open || team) return;
+    // /api/me needs a session; skip it entirely when signed out rather than
+    // firing a request that can only 401.
+    if (!open || team || !isSignedIn) return;
     let cancelled = false;
     (async () => {
       try {
@@ -43,7 +52,7 @@ export default function MobileNavMenu({
     return () => {
       cancelled = true;
     };
-  }, [open, team, getToken]);
+  }, [open, team, getToken, isSignedIn]);
 
   useEffect(() => {
     if (!open) return;
@@ -89,7 +98,7 @@ export default function MobileNavMenu({
         </div>
 
         <nav className="flex-1 overflow-y-auto">
-          {NAV_LINKS.map((link) => {
+          {links.map((link) => {
             const active = link.exact
               ? pathname === link.href
               : pathname === link.href ||
@@ -132,6 +141,15 @@ export default function MobileNavMenu({
         </nav>
 
         <div className="flex-none px-[18px] pb-10 pt-4 font-mono text-[10px] leading-[1.7] text-sched-text-muted">
+          {isLoaded && !isSignedIn && (
+            <Link
+              href="/sign-in"
+              onClick={onClose}
+              className="inline-block border border-sched-accent-dim px-[14px] py-[9px] text-[11px] uppercase tracking-[0.12em] text-sched-accent"
+            >
+              Sign in
+            </Link>
+          )}
           {user && (
             <>
               Signed in as {user.fullName ?? user.username ?? "you"}

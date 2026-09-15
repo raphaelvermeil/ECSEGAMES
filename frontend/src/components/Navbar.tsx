@@ -9,8 +9,12 @@ import { NAV_LINKS } from "@/lib/nav";
 // Desktop only — every page renders its own mobile header (ScheduleBanner
 // for /schedule, MobilePageBanner elsewhere) with its own logo/bell/account
 // row and hamburger menu, so this bar would just duplicate that below lg.
-export default function Navbar() {
+export default function Navbar({ signedIn }: { signedIn: boolean }) {
   const pathname = usePathname();
+  // Signed-out visitors only get the links they can actually open; the rest
+  // would bounce them to sign-in, which is a worse experience than not
+  // offering them. The bell and account button are session-only too.
+  const links = signedIn ? NAV_LINKS : NAV_LINKS.filter((l) => l.public);
 
   return (
     <header className="hidden h-[72px] items-center gap-[30px] bg-sched-chrome px-[22px] font-mono lg:flex">
@@ -23,7 +27,7 @@ export default function Navbar() {
         </span>
       </Link>
       <nav className="flex items-center gap-2">
-        {NAV_LINKS.map((l) => {
+        {links.map((l) => {
           const active = l.exact
             ? pathname === l.href
             : pathname === l.href || pathname.startsWith(l.href + "/");
@@ -45,13 +49,24 @@ export default function Navbar() {
       </nav>
       <div className="flex-1" />
       <div className="flex items-center gap-[18px]">
-        <Bell
-          width={22}
-          height={22}
-          strokeWidth={1.6}
-          className="text-sched-accent"
-        />
-        <UserButton />
+        {signedIn ? (
+          <>
+            <Bell
+              width={22}
+              height={22}
+              strokeWidth={1.6}
+              className="text-sched-accent"
+            />
+            <UserButton />
+          </>
+        ) : (
+          <Link
+            href="/sign-in"
+            className="whitespace-nowrap rounded-sm border border-sched-accent-dim px-[14px] py-[9px] text-sm font-medium text-sched-accent transition-colors hover:bg-sched-accent hover:text-sched-bg"
+          >
+            Sign in
+          </Link>
+        )}
       </div>
     </header>
   );

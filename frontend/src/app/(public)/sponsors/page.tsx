@@ -1,8 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
 import MobilePageBanner from "@/components/MobilePageBanner";
 
-export default async function SponsorsPage() {
-  await auth.protect();
+export default function SponsorsPage() {
   return (
     <>
       <MobilePageBanner title="Sponsors" subtitle="Coming soon." />

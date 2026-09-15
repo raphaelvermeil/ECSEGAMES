@@ -13,12 +13,16 @@ export interface NavLink {
   exact?: boolean;
   // Mobile menu only — the desktop nav bar just shows the label.
   description: string;
+  // Reachable without a session. Signed-out visitors see only these; the
+  // rest are hidden rather than shown and then bounced to sign-in.
+  public?: boolean;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
 export const NAV_LINKS: NavLink[] = [
   {
     href: "/schedule",
+    public: true,
     label: "Schedule",
     description: "All three days, event by event.",
     icon: CalendarDays,
@@ -37,12 +41,14 @@ export const NAV_LINKS: NavLink[] = [
   },
   {
     href: "/sponsors",
+    public: true,
     label: "Sponsors",
     description: "Coming soon.",
     icon: Briefcase,
   },
   {
     href: "/meet-the-team",
+    public: true,
     label: "Meet the team",
     description: "The crews behind ECSE Games.",
     icon: Users,

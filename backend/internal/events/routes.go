@@ -33,10 +33,21 @@ func NewHandler(store *Store, auditStore *audit.Store) *Handler {
 // anyone who can read the event — it's the scoring *panel* that's
 // exec-only, not the historical record.
 func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey string) {
+	// Reading the schedule is public: the Schedule tab is reachable signed
+	// out, and event titles, times and locations are public-facing anyway.
+	// OptionalAuth rather than no middleware at all, because the handlers
+	// still need to know whether the caller is signed in — anonymous
+	// responses drop the createdBy/lastEditedBy attribution (see publicView).
 	r.Group(func(pr chi.Router) {
-		pr.Use(appmw.RequireAuth(clerkSecretKey))
+		pr.Use(appmw.OptionalAuth(clerkSecretKey))
 		pr.Get("/api/events", h.List)
 		pr.Get("/api/events/{id}", h.Get)
+	})
+
+	r.Group(func(pr chi.Router) {
+		pr.Use(appmw.RequireAuth(clerkSecretKey))
+		// History stays behind a session: unlike the event itself it names
+		// which exec did what, which is not public information.
 		pr.Get("/api/events/{id}/history", h.History)
 
 		pr.Group(func(wr chi.Router) {
@@ -46,6 +57,23 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 			wr.Delete("/api/events/{id}", h.Delete)
 		})
 	})
+}
+
+// publicView strips the fields an anonymous caller should not see. CreatedBy
+// and LastEditedBy hold raw Clerk user IDs, which identify real people, so
+// they are omitted for signed-out callers — their json tags carry omitempty
+// so the keys disappear rather than serialising as empty strings. The
+// timestamps stay: they carry no identity.
+func publicView(e Event) Event {
+	e.CreatedBy = ""
+	e.LastEditedBy = ""
+	return e
+}
+
+// signedIn reports whether OptionalAuth identified the caller.
+func signedIn(r *http.Request) bool {
+	_, ok := appmw.UserIDFromContext(r.Context())
+	return ok
 }
 
 // List returns events, optionally narrowed by ?from=&to= (RFC3339 timestamps)
@@ -83,6 +111,11 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
+	if !signedIn(r) {
+		for i := range list {
+			list[i] = publicView(list[i])
+		}
+	}
 	writeJSON(w, http.StatusOK, list)
 }
 
@@ -105,6 +138,10 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
+	}
+	if !signedIn(r) {
+		public := publicView(*e)
+		e = &public
 	}
 	writeJSON(w, http.StatusOK, e)
 }

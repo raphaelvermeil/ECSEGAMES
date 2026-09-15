@@ -39,14 +39,17 @@ type Event struct {
 	LongDescription  string             `bson:"longDescription" json:"longDescription"`
 	// Access and Captain are the two notices shown in event detail: access/
 	// sustainability info, and what the team captain needs to do.
-	Access       string    `bson:"access" json:"access"`
-	Captain      string    `bson:"captain" json:"captain"`
-	StartsAt     time.Time `bson:"startsAt" json:"startsAt"`
-	EndsAt       time.Time `bson:"endsAt" json:"endsAt"`
-	Location     string    `bson:"location" json:"location"`
-	Category     Category  `bson:"category" json:"category"`
-	CreatedBy    string    `bson:"createdBy" json:"createdBy"`
+	Access   string    `bson:"access" json:"access"`
+	Captain  string    `bson:"captain" json:"captain"`
+	StartsAt time.Time `bson:"startsAt" json:"startsAt"`
+	EndsAt   time.Time `bson:"endsAt" json:"endsAt"`
+	Location string    `bson:"location" json:"location"`
+	Category Category  `bson:"category" json:"category"`
+	// createdBy/lastEditedBy are omitempty because event reads are public:
+	// publicView blanks these Clerk user IDs for anonymous callers, and
+	// omitempty is what makes the keys vanish instead of serialising as "".
+	CreatedBy    string    `bson:"createdBy" json:"createdBy,omitempty"`
 	CreatedAt    time.Time `bson:"createdAt" json:"createdAt"`
-	LastEditedBy string    `bson:"lastEditedBy" json:"lastEditedBy"`
+	LastEditedBy string    `bson:"lastEditedBy" json:"lastEditedBy,omitempty"`
 	LastEditedAt time.Time `bson:"lastEditedAt" json:"lastEditedAt"`
 }

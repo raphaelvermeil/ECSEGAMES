@@ -94,6 +94,11 @@ export default function EventDetailModal({
     ? "Open all weekend"
     : `${formatTime(start)} – ${formatTime(end)}`;
   const neverEdited = event.lastEditedAt === event.createdAt;
+  // The API omits createdBy/lastEditedBy for signed-out callers, so there is
+  // nobody to name. The footer is hidden rather than shown with a blank
+  // name — and it doubles as the entry point to the history tab, which is
+  // authenticated, so an anonymous visitor should not be offered it anyway.
+  const hasAttribution = Boolean(event.createdBy || event.lastEditedBy);
   const footLabel = neverEdited
     ? `Created by ${event.createdBy} · ${formatFooterTimestamp(event.createdAt)}`
     : `Last edited by ${event.lastEditedBy} · ${formatFooterTimestamp(event.lastEditedAt)}`;
@@ -235,15 +240,17 @@ export default function EventDetailModal({
               </div>
             )}
 
-            <div className="border-t border-sched-hair px-5 pb-5 pt-4 lg:px-[30px]">
-              <button
-                type="button"
-                onClick={() => setTab("history")}
-                className="font-mono text-[11px] text-sched-text-muted underline decoration-1 underline-offset-[3px] transition-colors hover:text-sched-accent"
-              >
-                {footLabel}
-              </button>
-            </div>
+            {hasAttribution && (
+              <div className="border-t border-sched-hair px-5 pb-5 pt-4 lg:px-[30px]">
+                <button
+                  type="button"
+                  onClick={() => setTab("history")}
+                  className="font-mono text-[11px] text-sched-text-muted underline decoration-1 underline-offset-[3px] transition-colors hover:text-sched-accent"
+                >
+                  {footLabel}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

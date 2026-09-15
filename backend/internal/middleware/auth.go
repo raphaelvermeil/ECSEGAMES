@@ -43,7 +43,43 @@ func RequireAuth(secretKey string) func(http.Handler) http.Handler {
 	}
 }
 
-// UserIDFromContext returns the Clerk user ID stored by RequireAuth.
+// OptionalAuth verifies a Clerk session token when one is supplied, but lets
+// the request through either way. It is the gate for endpoints that serve
+// both audiences from one route: signed-out visitors get the public view,
+// while a signed-in caller is identified so the handler can return more.
+//
+// Contrast with RequireAuth, which rejects anonymous requests. A token that
+// is present but invalid is treated as no token rather than a 401 — the
+// endpoint is public, so a stale session should degrade to the public view
+// instead of erroring.
+func OptionalAuth(secretKey string) func(http.Handler) http.Handler {
+	if secretKey != "" {
+		clerk.SetKey(secretKey)
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if secretKey == "" {
+				next.ServeHTTP(w, r)
+				return
+			}
+			token := bearerToken(r)
+			if token == "" {
+				next.ServeHTTP(w, r)
+				return
+			}
+			claims, err := jwt.Verify(r.Context(), &jwt.VerifyParams{Token: token})
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+			ctx := context.WithValue(r.Context(), userIDKey, claims.Subject)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+// UserIDFromContext returns the Clerk user ID stored by RequireAuth or
+// OptionalAuth. When it reports false the caller is anonymous.
 func UserIDFromContext(ctx context.Context) (string, bool) {
 	id, ok := ctx.Value(userIDKey).(string)
 	return id, ok

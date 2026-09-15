@@ -18,9 +18,11 @@ export interface ScheduleEvent {
   endsAt: string;
   location: string;
   category: EventCategory;
-  createdBy: string;
+  // Omitted by the API for signed-out callers (they hold Clerk user IDs),
+  // so these are optional — anything rendering them must handle absence.
+  createdBy?: string;
   createdAt: string;
-  lastEditedBy: string;
+  lastEditedBy?: string;
   lastEditedAt: string;
 }
 
