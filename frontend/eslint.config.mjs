@@ -26,7 +26,11 @@ const eslintConfig = defineConfig([
       "@clerk/next/require-auth-protection": [
         "error",
         {
-          protected: ["src/app/(app)/cs-comp/**", "src/app/select-team/**"],
+          protected: [
+            "src/app/(app)/cs-comp/**",
+            "src/app/(app)/leaderboard/**",
+            "src/app/select-team/**",
+          ],
           public: ["**"],
         },
       ],

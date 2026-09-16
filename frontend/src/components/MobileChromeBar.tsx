@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Menu, X } from "@/components/icons";
+import { Menu, X } from "@/components/icons";
 import AccountControl from "@/components/AccountControl";
 
 // The phone-sized top bar: ECSE mark, bell, account control, hamburger.
@@ -67,13 +67,6 @@ export default function MobileChromeBar({
         </span>
       </div>
       <div className="flex items-center gap-[6px]">
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="flex h-11 w-11 items-center justify-center text-sched-accent"
-        >
-          <Bell width={21} height={21} strokeWidth={1.6} />
-        </button>
         <AccountControl />
         {onToggleMenu ? (
           <button
