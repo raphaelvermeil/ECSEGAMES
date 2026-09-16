@@ -1,13 +1,17 @@
-import MobilePageBanner from "@/components/MobilePageBanner";
+import LandingHero from "@/components/landing/LandingHero";
+import LandingSections from "@/components/landing/LandingSections";
+import LandingFooter from "@/components/landing/LandingFooter";
 
+// The public front door. It renders inside the (app) shell so the normal
+// Navbar is its header — signed-out visitors get the sign-in button there,
+// signed-in ones their UserButton — and it deliberately makes no auth()
+// call, so it keeps prerendering like the rest of the group.
 export default function Home() {
   return (
-    <>
-      <MobilePageBanner title="Home" subtitle="Coming soon." />
-      <main className="hidden bg-ecsess-900 px-10 pb-11 pt-9 lg:block">
-        <h1 className="text-4xl font-extrabold text-ecsess-50">Home</h1>
-        <p className="mt-1.5 text-base text-ecsess-300">Coming soon.</p>
-      </main>
-    </>
+    <main>
+      <LandingHero />
+      <LandingSections />
+      <LandingFooter />
+    </main>
   );
 }

@@ -23,8 +23,12 @@ export default function MobileNavMenu({
 }) {
   const pathname = usePathname();
   const { user } = useUser();
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [team, setTeam] = useState<Team | null>(null);
+  // Same rule as the desktop Navbar: signed-in only tabs are hidden signed
+  // out, and the public set is shown while Clerk is still resolving.
+  const links =
+    isLoaded && isSignedIn ? NAV_LINKS : NAV_LINKS.filter((l) => l.public);
 
   // Takes `open` because the drawer stays mounted and returns null when shut.
   //
@@ -102,7 +106,7 @@ export default function MobileNavMenu({
         {/* A little air before the first row, so the fade has a clean run
             rather than resolving underneath the Home link's own background. */}
         <nav className="flex-1 overflow-y-auto overscroll-contain pt-2">
-          {NAV_LINKS.map((link) => {
+          {links.map((link) => {
             const active = link.exact
               ? pathname === link.href
               : pathname === link.href ||

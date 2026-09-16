@@ -8,6 +8,7 @@ import {
 } from "@/components/icons";
 import { TEAM_COLORS } from "@/lib/leaderboard";
 import { TEAMS } from "@/lib/scores";
+import SignedOutOnly from "./SignedOutOnly";
 
 // ============================================================
 // PLACEHOLDER CONTENT — everything in this file is filler meant to be
@@ -144,9 +145,13 @@ export default function LandingSections() {
               </li>
             ))}
           </ul>
-          <p className="mt-7 font-mono text-xs text-sched-text-muted">
-            The full three-day schedule is available once you sign in.
-          </p>
+          <Link
+            href="/schedule"
+            className="mt-7 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.14em] text-sched-accent transition-colors hover:text-sched-cream"
+          >
+            See the full three-day schedule
+            <ArrowRight width={14} height={14} strokeWidth={2} />
+          </Link>
         </div>
       </section>
 
@@ -169,23 +174,25 @@ export default function LandingSections() {
         </div>
       </section>
 
-      <section className="border-t border-sched-hair bg-sched-band px-5 py-14 text-center lg:px-10 lg:py-20">
-        <div className="mx-auto max-w-2xl">
-          <h2 className="font-display text-3xl font-semibold text-sched-cream lg:text-4xl">
-            Ready to play?
-          </h2>
-          <p className="mt-3 text-base text-sched-text">
-            Sign up with your McGill email and pick your team.
-          </p>
-          <Link
-            href="/sign-up"
-            className="mt-7 inline-flex items-center justify-center gap-2 rounded-sm bg-sched-accent px-6 py-3 font-mono text-sm uppercase tracking-[0.14em] text-sched-bg! transition-opacity hover:opacity-90"
-          >
-            Create an account
-            <ArrowRight width={16} height={16} strokeWidth={2} />
-          </Link>
-        </div>
-      </section>
+      <SignedOutOnly>
+        <section className="border-t border-sched-hair bg-sched-band px-5 py-14 text-center lg:px-10 lg:py-20">
+          <div className="mx-auto max-w-2xl">
+            <h2 className="font-display text-3xl font-semibold text-sched-cream lg:text-4xl">
+              Ready to play?
+            </h2>
+            <p className="mt-3 text-base text-sched-text">
+              Sign up with your McGill email and pick your team.
+            </p>
+            <Link
+              href="/sign-up"
+              className="mt-7 inline-flex items-center justify-center gap-2 rounded-sm bg-sched-accent px-6 py-3 font-mono text-sm uppercase tracking-[0.14em] text-sched-bg! transition-opacity hover:opacity-90"
+            >
+              Create an account
+              <ArrowRight width={16} height={16} strokeWidth={2} />
+            </Link>
+          </div>
+        </section>
+      </SignedOutOnly>
     </>
   );
 }
