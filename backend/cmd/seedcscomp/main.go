@@ -41,7 +41,7 @@ func main() {
 		log.Fatalf("mongo connect: %v", err)
 	}
 
-	renderer, err := cscomp.NewRenderer(cfg.ChromePath, 1)
+	renderer, err := cscomp.NewRenderer(cfg.ChromePath, cfg.ChromeNoSandbox, 1)
 	if err != nil {
 		log.Fatalf("start chrome: %v", err)
 	}

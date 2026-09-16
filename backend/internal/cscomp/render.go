@@ -78,12 +78,13 @@ type Renderer struct {
 }
 
 // NewRenderer starts the shared browser. chromePath may be empty, in which
-// case chromedp locates Chrome itself; concurrency <= 0 falls back to 4.
+// case chromedp locates Chrome itself; noSandbox drops Chrome's own sandbox
+// for containers that can't grant it; concurrency <= 0 falls back to 4.
 //
 // A failure here is not fatal to the server: main logs it and mounts the
 // module with a nil Renderer, so reads, teams and claims keep working
 // while submissions return 503.
-func NewRenderer(chromePath string, concurrency int) (*Renderer, error) {
+func NewRenderer(chromePath string, noSandbox bool, concurrency int) (*Renderer, error) {
 	if concurrency <= 0 {
 		concurrency = 4
 	}
@@ -102,6 +103,9 @@ func NewRenderer(chromePath string, concurrency int) (*Renderer, error) {
 	)
 	if chromePath != "" {
 		opts = append(opts, chromedp.ExecPath(chromePath))
+	}
+	if noSandbox {
+		opts = append(opts, chromedp.NoSandbox)
 	}
 
 	allocCtx, cancelAlloc := chromedp.NewExecAllocator(context.Background(), opts...)

@@ -80,7 +80,7 @@ func main() {
 		// Mongo does: the module still mounts, and only submitting is
 		// disabled (Handler.Submit returns 503 on a nil renderer). Reads,
 		// teams and claims keep working.
-		renderer, err := cscomp.NewRenderer(cfg.ChromePath, cfg.CSCompRenderConcurrency)
+		renderer, err := cscomp.NewRenderer(cfg.ChromePath, cfg.ChromeNoSandbox, cfg.CSCompRenderConcurrency)
 		if err != nil {
 			log.Printf("cscomp: renderer unavailable, submissions disabled: %v", err)
 		}

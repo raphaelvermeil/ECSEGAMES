@@ -1,0 +1,7 @@
+# Local-only files that must not end up in the image.
+.env
+.env.example
+.air.toml
+tmp/
+api
+*.md

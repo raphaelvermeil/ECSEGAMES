@@ -17,9 +17,13 @@ type Config struct {
 	// CS comp rendering. CSCompSolutionsDir holds the target PNGs the
 	// seeder writes and scoring diffs against; ChromePath is empty by
 	// default, letting chromedp find Chrome itself; the concurrency limit
-	// caps how many submissions may be rasterized at once.
+	// caps how many submissions may be rasterized at once. ChromeNoSandbox
+	// is for containers (see the Dockerfile): Chrome's sandbox needs
+	// privileges a hosted container doesn't have, and the rendered pages
+	// already run with no scripting and no network.
 	CSCompSolutionsDir      string
 	ChromePath              string
+	ChromeNoSandbox         bool
 	CSCompRenderConcurrency int
 
 	// CSCompMinutes is how long a fresh comp round runs. It is the length
@@ -42,6 +46,7 @@ func Load() Config {
 
 		CSCompSolutionsDir:      getenv("CSCOMP_SOLUTIONS_DIR", "./images/cs-comp/solutions"),
 		ChromePath:              os.Getenv("CHROME_PATH"),
+		ChromeNoSandbox:         os.Getenv("CHROME_NO_SANDBOX") == "1",
 		CSCompRenderConcurrency: getenvInt("CSCOMP_RENDER_CONCURRENCY", 4),
 		CSCompMinutes:           getenvInt("CSCOMP_MINUTES", 45),
 	}
