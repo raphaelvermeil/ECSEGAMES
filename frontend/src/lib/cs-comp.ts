@@ -3,7 +3,7 @@ import type { Claim, CompUser } from "@/lib/cscomp-api";
 // CS comp — in-house CSS battle. Teams of 5 recreate a target scene in a
 // single HTML+CSS file, one part per teammate.
 //
-// Everything with a right answer — the 30 challenges, their starter code,
+// Everything with a right answer — the challenges, their starter code,
 // their target images, who is on which team, what is claimed and what is
 // solved — comes from the backend (see lib/cscomp-api.ts). What lives here
 // is the presentation metadata the backend has no opinion about: level
@@ -59,6 +59,18 @@ export const LEVEL_META: LevelMeta[] = [
     name: "THE LANDSCAPE",
     color: "#58d6a8",
     note: "One whole scene, fifteen blocks and up. No shortcuts.",
+  },
+  {
+    n: 7,
+    name: "ASSEMBLY LINE",
+    color: "#f48fb1",
+    note: "Flexbox. Paste the children, then count them with :nth-child.",
+  },
+  {
+    n: 8,
+    name: "THE LONG VIEW",
+    color: "#e9f5cd",
+    note: "Landscapes built out of repeats. Bands of rows, nested.",
   },
 ];
 

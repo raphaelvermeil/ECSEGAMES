@@ -22,21 +22,38 @@ type rect struct {
 	extra      string
 }
 
-// part is one of a level's five challenges.
+// part is one of a level's five challenges. A part is authored one of two
+// ways and never both: as rects, the absolutely positioned shapes levels
+// 1-6 are made of, or as target + scaffold, hand-written markup for the
+// flow-layout levels. Flexbox cannot be expressed as a list of rectangles,
+// which is the whole reason the second form exists.
+//
+// target is the answer's markup and scaffold the starter the editor opens
+// with; both sit under the level's body background, which targetDoc and
+// starter supply, so neither repeats it.
 type part struct {
 	title string
 	rects []rect
+
+	target   string
+	scaffold string
 }
 
 // level groups five parts under a shared background colour.
+//
+// example is the worked snippet shown in the editor's HOW IT WORKS panel:
+// the level's technique on a scene that is not one of its parts, so it can
+// be read and copied without giving a part away. Empty on levels 1-6,
+// which teach no technique, and the panel is hidden when it is.
 type level struct {
-	n     int
-	name  string
-	bg    string
-	parts []part
+	n       int
+	name    string
+	bg      string
+	example string
+	parts   []part
 }
 
-// levels is the competition: 6 levels of 5 parts.
+// levels is the competition: 8 levels of 5 parts.
 var levels = []level{
 	{n: 1, name: "WARM UP", bg: "#2a3d4f", parts: []part{
 		{title: "Horizon", rects: []rect{
@@ -400,5 +417,999 @@ var levels = []level{
 			{96, 104, 4, 26, "#5f6b5c", "", ""},
 			{88, 96, 20, 10, "#9aa196", "2px", ""},
 		}},
+	}},
+
+	// Levels 7 and 8 are the flow-layout half of the set. The scenes repeat
+	// one element, so they are built by giving a container a rule and
+	// handing it children rather than by placing every shape.
+	//
+	// Pasting the children is the easy half and is meant to be: no part is
+	// solved by it, because no two children in a row look the same. What
+	// tells them apart is :nth-child, counting siblings in CSS, so the work
+	// is in the stylesheet and the markup stays dumb.
+	//
+	// These parts are authored as target + scaffold rather than rects: a
+	// flow layout is exactly the thing a list of rectangles cannot say.
+	// Every child is a <div>, never an <i>: the flow levels drop the
+	// i{display:block} rule the rect levels rely on, and an inline <i> with
+	// no content collapses to nothing the moment it is not a flex item.
+	{n: 7, name: "ASSEMBLY LINE", bg: "#1e3348", example: `<!-- EXAMPLE. Not this part, just the idea.
+     Four bars in a row - and every second one a different colour,
+     without a second class anywhere in the HTML. -->
+
+<style>
+  .row {
+    /* the CONTAINER gets placed once, the way you already know */
+    position: absolute;
+    left: 40px; top: 80px;
+    width: 220px; height: 40px;
+
+    display: flex;            /* its children now sit in a row        */
+    gap: 20px;                /* space between them                   */
+    justify-content: center;  /* how the leftover space is handed out */
+    align-items: center;      /* where they sit across the row        */
+  }
+
+  /* one rule, every bar. No left, no top on a child, ever again. */
+  .row div { width: 40px; height: 24px; background: #6ee787 }
+
+  /* and one more rule that only catches the 2nd and the 4th */
+  .row div:nth-child(even) { background: #ffd166 }
+</style>
+
+<div class="row">
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+</div>
+
+<!-- The four tags are identical. The CSS is what tells them apart, by
+     COUNTING them, and that is the job from here on: paste the children,
+     then select the ones you want.
+
+       :nth-child(odd)     1st, 3rd, 5th ...
+       :nth-child(even)    2nd, 4th, 6th ...
+       :nth-child(3n)      every 3rd
+       :nth-child(3n + 1)  1st, 4th, 7th ...
+       :nth-child(2)       just the 2nd
+
+     Worth reading up on: justify-content, align-items, flex-direction,
+     gap, and :nth-child.
+
+     4 x 40px + 3 x 20px of gap = 220px, which is why the row is 220
+     wide. Numbers that divide evenly are how a scene lands on whole
+     pixels, and whole pixels are how it matches the target. -->`, parts: []part{
+
+		{title: "Bunting", target: `<style>
+  .ground { position: absolute; left: 0; top: 160px; width: 300px; height: 40px; background: #2c5e40 }
+  .pole { position: absolute; top: 40px; width: 5px; height: 122px; background: #8a5a3c }
+  .left { left: 6px }
+  .right { left: 289px }
+  .string { position: absolute; left: 6px; top: 44px; width: 288px; height: 3px; background: #e9f5cd }
+  .line {
+    position: absolute;
+    left: 6px; top: 47px;
+    width: 288px; height: 32px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .line div { width: 24px; height: 32px; background: #ffd166; clip-path: polygon(0 0, 100% 0, 50% 100%) }
+  .line div:nth-child(even) { background: #ff7b54 }
+</style>
+
+<div class="ground"></div>
+<div class="pole left"></div>
+<div class="pole right"></div>
+<div class="string"></div>
+
+<div class="line">
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+</div>`, scaffold: `<style>
+  .ground { position: absolute; left: 0; top: 160px; width: 300px; height: 40px; background: #2c5e40 }
+  .pole { position: absolute; top: 40px; width: 5px; height: 122px; background: #8a5a3c }
+  .left { left: 6px }
+  .right { left: 289px }
+  .string { position: absolute; left: 6px; top: 44px; width: 288px; height: 3px; background: #e9f5cd }
+
+  .line {
+    position: absolute;
+    left: 6px; top: 47px;
+    width: 288px; height: 32px;
+    display: flex;
+    /* nine flags share these 288px, the outer two touching the poles.
+       One justify-content value does the whole thing. */
+  }
+
+  /* every flag is this. Every second flag is #ff7b54 instead, and the
+     tags below are all identical, so that cannot come from the HTML. */
+  .line div { width: 24px; height: 32px; background: #ffd166; clip-path: polygon(0 0, 100% 0, 50% 100%) }
+</style>
+
+<div class="ground"></div>
+<div class="pole left"></div>
+<div class="pole right"></div>
+<div class="string"></div>
+
+<!-- 1 flag hung, 8 to go. Copy the tag, not the numbers. -->
+<div class="line">
+  <div></div>
+</div>`},
+
+		{title: "Balloon release", target: `<style>
+  .ground { position: absolute; left: 0; top: 168px; width: 300px; height: 32px; background: #2c5e40 }
+  .horizon { position: absolute; left: 0; top: 164px; width: 300px; height: 4px; background: #3f8f57 }
+  .bunch {
+    position: absolute;
+    left: 18px; top: 34px;
+    width: 264px; height: 102px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .balloon { width: 34px; height: 102px }
+  .balloon .body { width: 34px; height: 44px; border-radius: 50%; background: #ff7b54 }
+  .balloon .tail { width: 2px; height: 58px; margin: 0 auto; background: #e9f5cd }
+  .bunch .balloon:nth-child(even) { margin-top: 18px }
+  .bunch .balloon:nth-child(even) .body { background: #4cc9f0 }
+</style>
+
+<div class="horizon"></div>
+<div class="ground"></div>
+
+<div class="bunch">
+  <div class="balloon"><div class="body"></div><div class="tail"></div></div>
+  <div class="balloon"><div class="body"></div><div class="tail"></div></div>
+  <div class="balloon"><div class="body"></div><div class="tail"></div></div>
+  <div class="balloon"><div class="body"></div><div class="tail"></div></div>
+  <div class="balloon"><div class="body"></div><div class="tail"></div></div>
+  <div class="balloon"><div class="body"></div><div class="tail"></div></div>
+</div>`, scaffold: `<style>
+  .ground { position: absolute; left: 0; top: 168px; width: 300px; height: 32px; background: #2c5e40 }
+  .horizon { position: absolute; left: 0; top: 164px; width: 300px; height: 4px; background: #3f8f57 }
+
+  .bunch {
+    position: absolute;
+    left: 18px; top: 34px;
+    width: 264px; height: 102px;
+    display: flex;
+    align-items: flex-start;
+    /* six balloons, evenly spread, the outer two on the container edges */
+  }
+
+  /* a flex child can hold children of its own: body on top, string under.
+     margin: 0 auto is what keeps the 2px string centred under the 34px
+     balloon without either of them knowing where they are on screen. */
+  .balloon { width: 34px; height: 102px }
+  .balloon .body { width: 34px; height: 44px; border-radius: 50%; background: #ff7b54 }
+  .balloon .tail { width: 2px; height: 58px; margin: 0 auto; background: #e9f5cd }
+
+  /* every second balloon is #4cc9f0 and hangs 18px lower. All six tags
+     below are identical, so the CSS has to do the choosing - and the
+     colour lives on a CHILD of the balloon you select, not on it. */
+</style>
+
+<div class="horizon"></div>
+<div class="ground"></div>
+
+<!-- 1 balloon up, 5 to go. -->
+<div class="bunch">
+  <div class="balloon"><div class="body"></div><div class="tail"></div></div>
+</div>`},
+
+		{title: "Chain", target: `<style>
+  .beam { position: absolute; left: 0; top: 0; width: 300px; height: 10px; background: #5a4632 }
+  .weight { position: absolute; left: 118px; top: 188px; width: 64px; height: 12px; background: #5f6b5c }
+  .chain {
+    position: absolute;
+    left: 120px; top: 10px;
+    width: 60px; height: 178px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .chain div {
+    box-sizing: border-box;
+    width: 40px; height: 22px;
+    border: 4px solid #9aa196;
+    border-radius: 11px;
+  }
+  .chain div:nth-child(3n) { border-color: #ffd166 }
+</style>
+
+<div class="beam"></div>
+<div class="weight"></div>
+
+<div class="chain">
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+</div>`, scaffold: `<style>
+  .beam { position: absolute; left: 0; top: 0; width: 300px; height: 10px; background: #5a4632 }
+  .weight { position: absolute; left: 118px; top: 188px; width: 64px; height: 12px; background: #5f6b5c }
+
+  .chain {
+    position: absolute;
+    left: 120px; top: 10px;
+    width: 60px; height: 178px;
+    display: flex;
+    gap: 4px;
+    /* a flex container runs across by default. This one has to run DOWN,
+       and a link is narrower than the container, so without a second
+       property the links stretch to the full 60px instead of centring. */
+  }
+
+  /* box-sizing: border-box makes the 4px border count inside the 40x22,
+     so a link measures 40x22 on screen and the gap maths stays whole. */
+  .chain div {
+    box-sizing: border-box;
+    width: 40px; height: 22px;
+    border: 4px solid #9aa196;
+    border-radius: 11px;
+  }
+
+  /* two of the seven links are brass instead of steel. Count which two
+     off the target, then write the rule that catches exactly those. */
+</style>
+
+<div class="beam"></div>
+<div class="weight"></div>
+
+<!-- 1 link hung, 6 to go. 7 x 22px + 6 x 4px of gap = 178px. -->
+<div class="chain">
+  <div></div>
+</div>`},
+
+		{title: "Picket fence", target: `<style>
+  .ground { position: absolute; left: 0; top: 162px; width: 300px; height: 38px; background: #2c5e40 }
+  .fence {
+    position: absolute;
+    left: 6px; top: 74px;
+    width: 288px; height: 96px;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+  }
+  .fence div {
+    width: 22px; height: 96px;
+    background: #e9f5cd;
+    clip-path: polygon(50% 0, 100% 16px, 100% 100%, 0 100%, 0 16px);
+  }
+  .fence div:nth-child(even) { height: 78px }
+  .rail { position: absolute; left: 6px; width: 288px; height: 8px; background: #9aa196 }
+  .upper { top: 98px }
+  .lower { top: 140px }
+</style>
+
+<div class="ground"></div>
+
+<div class="fence">
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+</div>
+
+<div class="rail upper"></div>
+<div class="rail lower"></div>`, scaffold: `<style>
+  .ground { position: absolute; left: 0; top: 162px; width: 300px; height: 38px; background: #2c5e40 }
+
+  .fence {
+    position: absolute;
+    left: 6px; top: 74px;
+    width: 288px; height: 96px;
+    display: flex;
+    align-items: flex-end;
+    /* eight pickets, and this time the gap at each END is half the gap
+       between them. There is a justify-content value that means exactly
+       that, and it is not space-between. */
+  }
+
+  /* a full-height picket. The short ones are 78px, and they still stand
+     on the ground rather than hanging - that is what align-items above
+     is already doing for you. */
+  .fence div {
+    width: 22px; height: 96px;
+    background: #e9f5cd;
+    clip-path: polygon(50% 0, 100% 16px, 100% 100%, 0 100%, 0 16px);
+  }
+
+  /* the rails are absolute, laid over the flex row. The two coexist
+     fine: a positioned element still paints on top of the flow. */
+  .rail { position: absolute; left: 6px; width: 288px; height: 8px; background: #9aa196 }
+  .upper { top: 98px }
+  .lower { top: 140px }
+</style>
+
+<div class="ground"></div>
+
+<!-- 1 picket in, 7 to go. -->
+<div class="fence">
+  <div></div>
+</div>
+
+<div class="rail upper"></div>
+<div class="rail lower"></div>`},
+
+		{title: "Level meter", target: `<style>
+  .panel { position: absolute; left: 6px; top: 26px; width: 288px; height: 148px; background: #142a33 }
+  .tag { position: absolute; left: 12px; top: 34px; width: 80px; height: 6px; background: #6ee787 }
+  .baseline { position: absolute; left: 12px; top: 160px; width: 276px; height: 4px; background: #e9f5cd }
+  .meter {
+    position: absolute;
+    left: 12px; top: 40px;
+    width: 276px; height: 120px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .meter div { width: 12px; height: 36px; border-radius: 3px; background: #4cc9f0 }
+  .meter div:nth-child(3n + 1) { height: 96px }
+  .meter div:nth-child(3n + 2) { height: 64px }
+</style>
+
+<div class="panel"></div>
+<div class="tag"></div>
+
+<div class="meter">
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+</div>
+
+<div class="baseline"></div>`, scaffold: `<style>
+  .panel { position: absolute; left: 6px; top: 26px; width: 288px; height: 148px; background: #142a33 }
+  .tag { position: absolute; left: 12px; top: 34px; width: 80px; height: 6px; background: #6ee787 }
+  .baseline { position: absolute; left: 12px; top: 160px; width: 276px; height: 4px; background: #e9f5cd }
+
+  .meter {
+    position: absolute;
+    left: 12px; top: 40px;
+    width: 276px; height: 120px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  /* the shortest bar. The other two heights in the sawtooth are 96px and
+     64px, and the pattern restarts every third bar - twelve bars, four
+     repeats of it. Two more rules, no extra classes. */
+  .meter div { width: 12px; height: 36px; border-radius: 3px; background: #4cc9f0 }
+</style>
+
+<div class="panel"></div>
+<div class="tag"></div>
+
+<!-- 1 bar standing, 11 to go. -->
+<div class="meter">
+  <div></div>
+</div>
+
+<div class="baseline"></div>`},
+	}},
+
+	{n: 8, name: "THE LONG VIEW", bg: "#0f1a26", example: `<!-- EXAMPLE. Not this part, just the idea.
+     A ridge of five posts, every third one taller, standing on the
+     ground instead of hanging from the top of the band. -->
+
+<style>
+  .band {
+    position: absolute;
+    left: 50px; top: 60px;
+    width: 200px; height: 80px;
+
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;   /* stand them on the bottom edge */
+    gap: 10px;
+  }
+
+  .band div { width: 30px; height: 40px; background: #2c5e40 }
+  .band div:nth-child(3n) { height: 70px; background: #235838 }
+</style>
+
+<div class="band">
+  <div></div><div></div><div></div><div></div><div></div>
+</div>
+
+<!-- 5 x 30px + 4 x 10px of gap = 190px, centred in 200px.
+
+     A landscape is that, several times over. A flex child can be a flex
+     container itself, so a scene becomes a COLUMN of bands, each band a
+     ROW of repeats:
+
+  .scene { display: flex; flex-direction: column }   <- stacks the bands
+  .scene > div { display: flex }                     <- each band a row
+
+     The bands are stacked in order and their heights add up to 200, so
+     no band is ever placed: sky first, then whatever is behind, then
+     whatever is in front. Give a band its own background and it becomes
+     that layer of the scene.
+
+     Also worth knowing here:
+       flex-wrap: wrap      lets a row spill onto the next line
+       align-content        where those wrapped lines sit in the box
+       box-sizing: border-box   padding and border count INSIDE a width
+       :nth-child(3n), :nth-child(odd), :nth-child(even)   count siblings -->`, parts: []part{
+
+		{title: "Pine ridge", target: `<style>
+  .sun { position: absolute; left: 240px; top: 24px; width: 34px; height: 34px; border-radius: 50%; background: #ffd98a }
+  .ridge {
+    position: absolute;
+    left: 0; top: 60px;
+    width: 300px; height: 140px;
+    box-sizing: border-box;
+    background: #17293a;
+    border-bottom: 34px solid #2c5e40;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .ridge div {
+    width: 26px; height: 70px;
+    background: #235838;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+  .ridge div:nth-child(even) { height: 92px; background: #1d4a30 }
+</style>
+
+<div class="sun"></div>
+
+<div class="ridge">
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+</div>`, scaffold: `<style>
+  .sun { position: absolute; left: 240px; top: 24px; width: 34px; height: 34px; border-radius: 50%; background: #ffd98a }
+
+  /* the ground is not a separate block: it is this band's bottom border,
+     which is why box-sizing matters - the 34px comes out of the 140px. */
+  .ridge {
+    position: absolute;
+    left: 0; top: 60px;
+    width: 300px; height: 140px;
+    box-sizing: border-box;
+    background: #17293a;
+    border-bottom: 34px solid #2c5e40;
+    display: flex;
+    gap: 6px;
+    /* nine pines, centred as a group, rooted on the grass rather than
+       hanging off the top of the band. Two properties. */
+  }
+
+  /* the short pine. The tall ones are 92px and #1d4a30, they alternate
+     with these, and all nine tags below are identical. */
+  .ridge div {
+    width: 26px; height: 70px;
+    background: #235838;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+</style>
+
+<div class="sun"></div>
+
+<!-- 1 pine, 8 to go. 9 x 26px + 8 x 6px of gap = 282px, centred in 300. -->
+<div class="ridge">
+  <div></div>
+</div>`},
+
+		{title: "City skyline", target: `<style>
+  .city {
+    position: absolute;
+    left: 0; top: 40px;
+    width: 300px; height: 160px;
+    box-sizing: border-box;
+    background: #16283a;
+    border-bottom: 20px solid #1d3550;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .tower {
+    box-sizing: border-box;
+    padding: 8px;
+    background: #0f2033;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 6px;
+  }
+  .tower div { width: 12px; height: 12px; background: #ffd166 }
+  .city .tower:nth-child(3n + 1) { width: 52px; height: 110px }
+  .city .tower:nth-child(3n + 2) { width: 46px; height: 76px }
+  .city .tower:nth-child(3n) { width: 58px; height: 94px }
+</style>
+
+<div class="city">
+  <div class="tower">
+    <div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div>
+  </div>
+  <div class="tower">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+  </div>
+  <div class="tower">
+    <div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div>
+  </div>
+  <div class="tower">
+    <div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div>
+  </div>
+  <div class="tower">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+  </div>
+</div>`, scaffold: `<style>
+  .city {
+    position: absolute;
+    left: 0; top: 40px;
+    width: 300px; height: 160px;
+    box-sizing: border-box;
+    background: #16283a;
+    border-bottom: 20px solid #1d3550;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  /* a tower is a flex container too, and its windows are the repeat.
+     Two windows fit across every tower and the rest have to spill onto
+     the next line by themselves - a plain flex row would sit them all
+     on one line and let them run off the side. The lines also need to
+     pack to the TOP of the tower rather than spread down it. */
+  .tower {
+    box-sizing: border-box;
+    padding: 8px;
+    background: #0f2033;
+    display: flex;
+    gap: 6px;
+  }
+  .tower div { width: 12px; height: 12px; background: #ffd166 }
+
+  /* five towers, three sizes, cycling. The first is written out - the
+     other two sizes are 46x76 and 58x94, in that order after this one. */
+  .city .tower:nth-child(3n + 1) { width: 52px; height: 110px }
+</style>
+
+<!-- tower 1 of 5, with its 10 windows. The others carry 6, 8, 10 and 6
+     windows - count them off the target. -->
+<div class="city">
+  <div class="tower">
+    <div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div>
+  </div>
+</div>`},
+
+		{title: "Mountain range", target: `<style>
+  .scene {
+    position: absolute;
+    left: 0; top: 0;
+    width: 300px; height: 200px;
+    display: flex;
+    flex-direction: column;
+  }
+  .sky {
+    height: 50px;
+    background: #17293a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+  .sky div { width: 34px; height: 8px; border-radius: 4px; background: #2f4a5e }
+  .range {
+    height: 90px;
+    background: #1d3550;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  .range div {
+    width: 50px; height: 62px;
+    background: #26364a;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+  .range div:nth-child(odd) { height: 90px; background: #2c3e4f }
+  .lake {
+    height: 60px;
+    background: #2f6f8f;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+  }
+  .lake div { width: 120px; height: 5px; background: #4a8fae }
+  .lake div:nth-child(odd) { width: 180px }
+</style>
+
+<div class="scene">
+  <div class="sky">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="range">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="lake">
+    <div></div><div></div><div></div><div></div><div></div>
+  </div>
+</div>`, scaffold: `<style>
+  /* the whole canvas is one flex column of three bands. Nothing in this
+     part is placed by hand: 50 + 90 + 60 = 200, so they stack to fill it. */
+  .scene {
+    position: absolute;
+    left: 0; top: 0;
+    width: 300px; height: 200px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* band 1 of 3, finished, and the shape of the other two. */
+  .sky {
+    height: 50px;
+    background: #17293a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+  .sky div { width: 34px; height: 8px; border-radius: 4px; background: #2f4a5e }
+
+  /* band 2 of 3: six peaks, no gap at all, sitting on the band's floor.
+     6 x 50px = 300px, so they fill the width exactly. The short peak is
+     below; the tall ones are 90px and #2c3e4f and they alternate. */
+  .range {
+    height: 90px;
+    background: #1d3550;
+    /* ... */
+  }
+  .range div {
+    width: 50px; height: 62px;
+    background: #26364a;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+
+  /* band 3 of 3: five ripples STACKED, centred both ways, 6px apart.
+     The narrow one is below; every other ripple is 180px wide. */
+  .lake {
+    height: 60px;
+    background: #2f6f8f;
+    /* ... */
+  }
+  .lake div { width: 120px; height: 5px; background: #4a8fae }
+</style>
+
+<!-- 6 clouds, 6 peaks, 5 ripples. -->
+<div class="scene">
+  <div class="sky">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="range">
+    <div></div>
+  </div>
+
+  <div class="lake">
+    <div></div>
+  </div>
+</div>`},
+
+		{title: "Orchard", target: `<style>
+  .orchard {
+    position: absolute;
+    left: 0; top: 0;
+    width: 300px; height: 200px;
+    display: flex;
+    flex-direction: column;
+  }
+  .sky { height: 56px; background: #17293a }
+  .far, .mid, .near {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  .far { height: 40px; background: #1d3550; gap: 10px }
+  .mid { height: 48px; background: #16283a; gap: 12px }
+  .near {
+    height: 56px;
+    background: #122030;
+    gap: 18px;
+    box-sizing: border-box;
+    border-bottom: 14px solid #1b3326;
+  }
+  .far div {
+    width: 14px; height: 26px;
+    background: #2f5d45;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+  .mid div {
+    width: 20px; height: 34px;
+    background: #27523c;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+  .near div {
+    width: 28px; height: 40px;
+    background: #1d4a30;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+</style>
+
+<div class="orchard">
+  <div class="sky"></div>
+
+  <div class="far">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="mid">
+    <div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="near">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+  </div>
+</div>`, scaffold: `<style>
+  /* four bands: 56 + 40 + 48 + 56 = 200. The rows of trees get fewer,
+     bigger and darker as they come forward, which is the whole trick -
+     three rows of the same thing at three scales. */
+  .orchard {
+    position: absolute;
+    left: 0; top: 0;
+    width: 300px; height: 200px;
+    display: flex;
+    flex-direction: column;
+  }
+  .sky { height: 56px; background: #17293a }
+
+  /* all three rows share this - trees rooted on each band's floor. */
+  .far, .mid, .near {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+  }
+
+  .far { height: 40px; background: #1d3550; gap: 10px }
+  .mid { height: 48px; background: #16283a; gap: 12px }
+  .near {
+    height: 56px;
+    background: #122030;
+    gap: 18px;
+    box-sizing: border-box;
+    border-bottom: 14px solid #1b3326;
+  }
+
+  .far div {
+    width: 14px; height: 26px;
+    background: #2f5d45;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+
+  /* mid trees are 20x34 on #27523c, near trees 28x40 on #1d4a30, both
+     the same triangle. */
+</style>
+
+<!-- the far row is planted: 12 trees. The mid row has 9 and the near
+     row 6.
+       far:  12 x 14px + 11 x 10px of gap = 278px
+       mid:   9 x 20px +  8 x 12px of gap = 276px
+       near:  6 x 28px +  5 x 18px of gap = 258px
+     all centred in 300. -->
+<div class="orchard">
+  <div class="sky"></div>
+
+  <div class="far">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="mid">
+    <div></div>
+  </div>
+
+  <div class="near">
+    <div></div>
+  </div>
+</div>`},
+
+		{title: "Boreal lake", target: `<style>
+  .scene {
+    position: absolute;
+    left: 0; top: 0;
+    width: 300px; height: 200px;
+    display: flex;
+    flex-direction: column;
+  }
+  .sky {
+    height: 44px;
+    background: #17293a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+  .sky div { width: 32px; height: 7px; border-radius: 4px; background: #2a4055 }
+  .peaks {
+    height: 52px;
+    background: #1d3550;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  .peaks div {
+    width: 60px; height: 38px;
+    background: #26364a;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+  .peaks div:nth-child(odd) { height: 52px }
+  .trees {
+    height: 34px;
+    background: #1a2e24;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 5px;
+  }
+  .trees div {
+    width: 14px; height: 30px;
+    background: #235838;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+  .water {
+    height: 46px;
+    background: #2f6f8f;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+  }
+  .water div { width: 130px; height: 6px; background: #4a8fae }
+  .water div:nth-child(odd) { width: 190px }
+  .dock {
+    height: 24px;
+    background: #17293a;
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+  }
+  .dock div { width: 20px; background: #5a4632 }
+</style>
+
+<div class="scene">
+  <div class="sky">
+    <div></div><div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="peaks">
+    <div></div><div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="trees">
+    <div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="water">
+    <div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="dock">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+  </div>
+</div>`, scaffold: `<style>
+  /* five bands: 44 + 52 + 34 + 46 + 24 = 200. Sky, peaks, treeline,
+     water, dock - each one a row of the same thing repeated, and the
+     only band that stacks downwards is the water. */
+  .scene {
+    position: absolute;
+    left: 0; top: 0;
+    width: 300px; height: 200px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* band 1 of 5, finished. The other four are yours. */
+  .sky {
+    height: 44px;
+    background: #17293a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+  .sky div { width: 32px; height: 7px; border-radius: 4px; background: #2a4055 }
+
+  /* band 2: five peaks, no gap, 5 x 60px = 300px. The low peak is 38px,
+     every other one reaches the full 52px. */
+  .peaks { height: 52px; background: #1d3550 }
+  .peaks div {
+    width: 60px; height: 38px;
+    background: #26364a;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+
+  /* band 3: fifteen pines, 5px apart, centred, rooted on the floor.
+     15 x 14px + 14 x 5px of gap = 280px. */
+  .trees { height: 34px; background: #1a2e24 }
+  .trees div {
+    width: 14px; height: 30px;
+    background: #235838;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+
+  /* band 4: four ripples STACKED and centred, 7px apart. The short one
+     is 130px, every other one is 190px. */
+  .water { height: 46px; background: #2f6f8f }
+  .water div { width: 130px; height: 6px; background: #4a8fae }
+
+  /* band 5: twelve planks, 4px apart, centred, each one as tall as the
+     band - which is what a flex child does when you leave its height
+     alone. 12 x 20px + 11 x 4px of gap = 284px. */
+  .dock { height: 24px; background: #17293a }
+  .dock div { width: 20px; background: #5a4632 }
+</style>
+
+<div class="scene">
+  <div class="sky">
+    <div></div><div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="peaks">
+    <div></div>
+  </div>
+
+  <div class="trees">
+    <div></div>
+  </div>
+
+  <div class="water">
+    <div></div>
+  </div>
+
+  <div class="dock">
+    <div></div>
+  </div>
+</div>`},
 	}},
 }

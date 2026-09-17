@@ -72,6 +72,7 @@ export default function BattlePanel({
   const [picking, setPicking] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showExample, setShowExample] = useState(false);
   const [previewCode, setPreviewCode] = useState(code);
   // Tagged with the challenge it belongs to, so switching parts shows the
   // loading state rather than the previous part's target for a frame —
@@ -89,6 +90,7 @@ export default function BattlePanel({
     if (previewFor.current !== challenge.id) {
       previewFor.current = challenge.id;
       setPreviewCode(code);
+      setShowExample(false);
       return;
     }
     const t = setTimeout(() => setPreviewCode(code), PREVIEW_DEBOUNCE_MS);
@@ -479,6 +481,45 @@ export default function BattlePanel({
               )}
             </div>
           </div>
+
+          {/* Levels 7 and 8 ask for a technique nobody is expected to walk
+              in knowing, so they carry a worked example of it on a scene
+              that is not the part. Levels that teach nothing send an empty
+              string and get no panel. */}
+          {challenge.example && (
+            <div
+              className="bg-sched-bg-raised"
+              style={{ border: "1px solid var(--color-sched-hair)" }}
+            >
+              <div className="flex items-center gap-2.5 border-b border-sched-hair bg-[#16241c] px-4 py-3">
+                <span className="font-mono text-[11px] font-medium tracking-[0.16em] text-sched-cream">
+                  HOW IT WORKS
+                </span>
+                <span className="font-mono text-[10px] tracking-[0.1em] text-sched-text-muted">
+                  worked example · not this part
+                </span>
+                <div className="flex-1" />
+                <button
+                  type="button"
+                  onClick={() => setShowExample((v) => !v)}
+                  aria-expanded={showExample}
+                  className="min-h-[34px] px-3 font-mono text-[10px] font-medium tracking-[0.14em]"
+                  style={{
+                    background: showExample ? "#6ee787" : "none",
+                    border: `1px solid ${showExample ? "#6ee787" : "var(--color-sched-hair)"}`,
+                    color: showExample ? "#0b1310" : "#7f9482",
+                  }}
+                >
+                  {showExample ? "HIDE" : "SHOW"}
+                </button>
+              </div>
+              {showExample && (
+                <pre className="max-h-[420px] overflow-auto bg-[#0d1712] px-4 py-3.5 font-mono text-xs leading-[1.6] text-[#d7ecd2]">
+                  {challenge.example}
+                </pre>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

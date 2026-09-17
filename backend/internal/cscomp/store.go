@@ -100,7 +100,7 @@ func (s *Store) GetChallenge(ctx context.Context, id primitive.ObjectID) (*Chall
 }
 
 // UpsertChallenge writes a challenge keyed on its name, so the seeder can
-// be rerun without duplicating the 30 documents or minting new IDs that
+// be rerun without duplicating the challenge documents or minting new IDs that
 // would orphan existing submissions and claims.
 func (s *Store) UpsertChallenge(ctx context.Context, c Challenge) (*Challenge, error) {
 	update := bson.M{
@@ -109,6 +109,7 @@ func (s *Store) UpsertChallenge(ctx context.Context, c Challenge) (*Challenge, e
 			"part":        c.Part,
 			"points":      c.Points,
 			"starterCode": c.Starter,
+			"example":     c.Example,
 		},
 		"$setOnInsert": bson.M{
 			"name":      c.Name,
@@ -122,6 +123,41 @@ func (s *Store) UpsertChallenge(ctx context.Context, c Challenge) (*Challenge, e
 		return nil, err
 	}
 	return &out, nil
+}
+
+// PruneChallengesNotIn drops every challenge whose name is not in keep,
+// and reports which ones went. The seeder is the only definition of the
+// set, so a part that has been renamed or dropped there has to leave the
+// database too: UpsertChallenge is keyed on the name, so without this a
+// rename silently leaves the old document behind, sharing a level and a
+// part number with its replacement and pointing at an image nobody
+// regenerates.
+//
+// Submissions and claims against a pruned challenge are left where they
+// are. They refer to a challenge that no longer exists either way, and
+// the standings only count solved submissions whose challenge still
+// resolves.
+func (s *Store) PruneChallengesNotIn(ctx context.Context, keep []string) ([]string, error) {
+	cur, err := s.challenges.Find(ctx, bson.M{"name": bson.M{"$nin": keep}})
+	if err != nil {
+		return nil, err
+	}
+	var stale []Challenge
+	if err := cur.All(ctx, &stale); err != nil {
+		return nil, err
+	}
+	if len(stale) == 0 {
+		return nil, nil
+	}
+
+	names := make([]string, 0, len(stale))
+	for _, c := range stale {
+		names = append(names, c.Name)
+	}
+	if _, err := s.challenges.DeleteMany(ctx, bson.M{"name": bson.M{"$in": names}}); err != nil {
+		return nil, err
+	}
+	return names, nil
 }
 
 // ListTeams returns every sub-team, oldest first.

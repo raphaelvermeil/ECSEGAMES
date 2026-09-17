@@ -12,6 +12,10 @@ export interface Challenge {
   part: number;
   points: number;
   starterCode: string;
+  // The worked snippet for this challenge's level, shown in the editor's
+  // HOW IT WORKS panel. Empty on the levels that teach no technique, and
+  // the panel is hidden when it is.
+  example: string;
   createdAt: string;
 }
 
