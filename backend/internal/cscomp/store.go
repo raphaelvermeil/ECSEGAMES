@@ -230,9 +230,9 @@ func (s *Store) UpsertSubmission(ctx context.Context, sub Submission) (*Submissi
 		set["matchPercent"] = sub.MatchPercent
 		set["submittedAt"] = time.Now().UTC()
 	}
-	// The team and name snapshots follow the person rather than the best
-	// score, so a solve is credited to whichever roster they are on now.
-	set["teamId"] = sub.TeamID
+	// The name follows the person; the team is fixed at first submit so a
+	// solve stays credited to the roster it was made on (see Submission)
+	// rather than moving with them if they switch sub-teams.
 	set["name"] = sub.Name
 
 	update := bson.M{
@@ -241,6 +241,7 @@ func (s *Store) UpsertSubmission(ctx context.Context, sub Submission) (*Submissi
 		"$setOnInsert": bson.M{
 			"challengeId": sub.ChallengeID,
 			"clerkId":     sub.ClerkID,
+			"teamId":      sub.TeamID,
 		},
 	}
 	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)

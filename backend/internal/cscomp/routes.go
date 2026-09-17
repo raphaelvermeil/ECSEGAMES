@@ -702,6 +702,18 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Submissions only count while the round is running: the clock the
+	// exec drives is the rule, not just a display.
+	clock, err := h.store.GetClock(ctx, h.compSeconds)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	if clock.Status != ClockRunning || clock.RemainingAt(time.Now()) == 0 {
+		http.Error(w, "the comp is not running", http.StatusConflict)
+		return
+	}
+
 	c, err := h.store.GetChallenge(ctx, id)
 	if err == mongo.ErrNoDocuments {
 		http.Error(w, "not found", http.StatusNotFound)
@@ -835,6 +847,7 @@ func (h *Handler) Standings(w http.ResponseWriter, r *http.Request) {
 		points    int
 		parts     []string
 		lastLevel int
+		seen      map[primitive.ObjectID]bool
 	}
 	tallies := map[primitive.ObjectID]*tally{}
 	for _, s := range subs {
@@ -846,9 +859,15 @@ func (h *Handler) Standings(w http.ResponseWriter, r *http.Request) {
 		}
 		t := tallies[s.TeamID]
 		if t == nil {
-			t = &tally{}
+			t = &tally{seen: map[primitive.ObjectID]bool{}}
 			tallies[s.TeamID] = t
 		}
+		// Claims are advisory, so two teammates can both solve the same
+		// part; it counts once for the team.
+		if t.seen[s.ChallengeID] {
+			continue
+		}
+		t.seen[s.ChallengeID] = true
 		t.points += c.Points
 		t.parts = append(t.parts, fmt.Sprintf("%d-%d", c.Level, c.Part))
 		if c.Level > t.lastLevel {
