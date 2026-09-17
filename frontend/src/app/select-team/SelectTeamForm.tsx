@@ -2,7 +2,7 @@
 
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
 import { Zap, Cpu, CodeXml, Users } from "@/components/icons";
 import type { Team } from "@/lib/scores";
@@ -19,7 +19,7 @@ const inputClass =
 
 export default function SelectTeamForm() {
   const { getToken } = useAuth();
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser, isLoaded: clerkLoaded } = useUser();
   const router = useRouter();
   const [name, setName] = useState("");
   const [major, setMajor] = useState("");
@@ -36,29 +36,36 @@ export default function SelectTeamForm() {
     undefined,
   );
 
+  // The backend sends "" for no team, so `||` rather than `??`.
+  const fetchExistingTeam = useCallback(async (): Promise<Team | null> => {
+    try {
+      const token = await getToken();
+      const res = await api.get<{ team: Team | "" | null }>("/api/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.data.team || null;
+    } catch {
+      return null;
+    }
+  }, [getToken]);
+
   useEffect(() => {
     let cancelled = false;
-    async function checkExisting() {
-      try {
-        const token = await getToken();
-        const res = await api.get<{ team: Team | null }>("/api/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!cancelled) setExistingTeam(res.data.team ?? null);
-      } catch {
-        if (!cancelled) setExistingTeam(null);
-      }
-    }
-    checkExisting();
+    fetchExistingTeam().then((team) => {
+      if (!cancelled) setExistingTeam(team);
+    });
     return () => {
       cancelled = true;
     };
-  }, [getToken]);
+  }, [fetchExistingTeam]);
 
   const profileComplete = name.trim() !== "" && major.trim() !== "";
+  // Clerk must have loaded the user, or the email we send would be empty
+  // and the backend would reject the request.
+  const canSubmit = profileComplete && clerkLoaded;
 
   async function join(team: string) {
-    if (!profileComplete) return;
+    if (!canSubmit) return;
     const email = clerkUser?.primaryEmailAddress?.emailAddress ?? "";
     setSubmitting(team);
     setError(null);
@@ -77,8 +84,12 @@ export default function SelectTeamForm() {
           ? (err as { response?: { status?: number } }).response?.status
           : undefined;
       if (status === 409) {
-        router.push("/schedule");
-        router.refresh();
+        // A different team is already on file, so nothing was saved —
+        // including the name and major. Re-check, which switches the form
+        // to finishing the profile against the team that is on file.
+        setError("A different team is already on file for this account.");
+        setSubmitting(null);
+        setExistingTeam(await fetchExistingTeam());
         return;
       }
       setError("Could not save. Please try again.");
@@ -124,6 +135,12 @@ export default function SelectTeamForm() {
     </div>
   );
 
+  // Still checking whether a team is on file. Showing the picker here would
+  // invite a click that 409s if one is.
+  if (existingTeam === undefined) {
+    return <p className="text-ecsess-300">Checking your profile…</p>;
+  }
+
   // A team is already on file: just finish the profile against it, no
   // picker (changing teams isn't something this screen does).
   if (existingTeam) {
@@ -132,7 +149,7 @@ export default function SelectTeamForm() {
         {profileFields}
         <button
           onClick={() => join(existingTeam)}
-          disabled={!profileComplete || submitting !== null}
+          disabled={!canSubmit || submitting !== null}
           className="rounded-lg bg-ecsess-600 px-8 py-3 text-lg font-bold text-ecsess-50 transition-colors hover:bg-ecsess-700 disabled:opacity-50"
         >
           Save and continue
@@ -151,7 +168,7 @@ export default function SelectTeamForm() {
           <button
             key={t.slug}
             onClick={() => join(t.slug)}
-            disabled={!profileComplete || submitting !== null}
+            disabled={!canSubmit || submitting !== null}
             className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-lg border border-ecsess-700 bg-ecsess-800 px-3 py-3
               transition-colors hover:border-ecsess-400 hover:bg-ecsess-750 disabled:opacity-50
               sm:aspect-auto sm:w-60 sm:gap-4 sm:rounded-xl sm:px-6 sm:py-8"
