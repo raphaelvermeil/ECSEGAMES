@@ -61,6 +61,14 @@ func (s *Store) List(ctx context.Context, f ListFilter) ([]Event, error) {
 	return list, nil
 }
 
+// Exists reports whether an event with this ID is stored. The scores
+// handler uses it so points can't be awarded against a made-up or deleted
+// event.
+func (s *Store) Exists(ctx context.Context, id primitive.ObjectID) (bool, error) {
+	n, err := s.coll.CountDocuments(ctx, bson.M{"_id": id}, options.Count().SetLimit(1))
+	return n > 0, err
+}
+
 // Get returns a single event by ID. Returns mongo.ErrNoDocuments if it
 // doesn't exist.
 func (s *Store) Get(ctx context.Context, id primitive.ObjectID) (*Event, error) {

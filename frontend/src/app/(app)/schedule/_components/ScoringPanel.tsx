@@ -22,6 +22,9 @@ function pointsText(value: number): string {
   return String(value);
 }
 
+// Mirrors the backend's bound on a single award (scores.maxScoreValue).
+const MAX_POINTS = 10000;
+
 function pointsColor(value: number): string {
   if (value > 0) return "var(--color-sched-accent)";
   if (value < 0) return "var(--color-sched-coral)";
@@ -133,8 +136,13 @@ export default function ScoringPanel({
   async function handleAward() {
     const trimmed = awardPoints.trim();
     const value = Number(trimmed);
-    if (trimmed === "" || Number.isNaN(value)) {
-      setAwardError("Enter a number of points.");
+    // The backend stores points as an integer and rejects anything else.
+    if (trimmed === "" || !Number.isInteger(value)) {
+      setAwardError("Enter a whole number of points.");
+      return;
+    }
+    if (Math.abs(value) > MAX_POINTS) {
+      setAwardError(`Points must be between -${MAX_POINTS} and ${MAX_POINTS}.`);
       return;
     }
     setAwarding(true);
@@ -444,6 +452,9 @@ export default function ScoringPanel({
                 <input
                   id="award-points"
                   type="number"
+                  step={1}
+                  min={-MAX_POINTS}
+                  max={MAX_POINTS}
                   value={awardPoints}
                   onChange={(e) => setAwardPoints(e.target.value)}
                   placeholder="e.g. 250 or -50"

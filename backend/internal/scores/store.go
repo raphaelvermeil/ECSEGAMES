@@ -28,6 +28,26 @@ func NewStore(database *mongo.Database) *Store {
 	return &Store{coll: database.Collection(collectionName)}
 }
 
+// EnsureIndexes creates the unique (eventId, team) index. Upsert is only
+// race-safe with it: without a unique index, two concurrent awards to the
+// same team can both insert, and the leaderboard would count the team
+// twice. Call once at startup.
+func (s *Store) EnsureIndexes(ctx context.Context) error {
+	_, err := s.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "eventId", Value: 1}, {Key: "team", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	})
+	return err
+}
+
+// ClearByEvent soft-deletes every entry for an event, for when the event
+// itself is deleted: otherwise its points would keep counting toward the
+// leaderboard with no way left to reach them.
+func (s *Store) ClearByEvent(ctx context.Context, eventID primitive.ObjectID) error {
+	_, err := s.coll.UpdateMany(ctx, bson.M{"eventId": eventID}, bson.M{"$set": bson.M{"cleared": true}})
+	return err
+}
+
 // ListByEvent returns every score entry for an event, including cleared
 // ones, oldest first.
 func (s *Store) ListByEvent(ctx context.Context, eventID primitive.ObjectID) ([]ScoreEntry, error) {

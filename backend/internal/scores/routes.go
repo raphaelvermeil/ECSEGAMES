@@ -24,12 +24,16 @@ type Handler struct {
 	store *Store
 	audit *audit.Store
 	users *users.Repository
+	// eventExists checks the event an award is for is real, so points can't
+	// be attached to a made-up or deleted event ID.
+	eventExists func(context.Context, primitive.ObjectID) (bool, error)
 }
 
 // NewHandler builds the handler backed by the given score and audit stores.
-// userRepo resolves an actor's display name for the audit trail.
-func NewHandler(store *Store, auditStore *audit.Store, userRepo *users.Repository) *Handler {
-	return &Handler{store: store, audit: auditStore, users: userRepo}
+// userRepo resolves an actor's display name for the audit trail; eventExists
+// is the events store's lookup.
+func NewHandler(store *Store, auditStore *audit.Store, userRepo *users.Repository, eventExists func(context.Context, primitive.ObjectID) (bool, error)) *Handler {
+	return &Handler{store: store, audit: auditStore, users: userRepo, eventExists: eventExists}
 }
 
 // actorName resolves clerkID to the name on their profile, for the audit
@@ -144,15 +148,31 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, list)
 }
 
+// Value is a pointer so an omitted field is rejected rather than silently
+// decoding to 0 and overwriting a live award.
 type scoreRequest struct {
 	Team        models.Team `json:"team"`
-	Value       int         `json:"value"`
+	Value       *int        `json:"value"`
 	Description string      `json:"description"`
 }
+
+const (
+	maxScoreValue     = 10000
+	maxDescriptionLen = 500
+)
 
 func (req scoreRequest) validate() string {
 	if !models.IsValidTeam(req.Team) {
 		return "invalid team"
+	}
+	if req.Value == nil {
+		return "value is required"
+	}
+	if *req.Value < -maxScoreValue || *req.Value > maxScoreValue {
+		return "value out of range"
+	}
+	if len(req.Description) > maxDescriptionLen {
+		return "description is too long"
 	}
 	return ""
 }
@@ -186,13 +206,23 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
+	exists, err := h.eventExists(ctx, eventID)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	if !exists {
+		http.Error(w, "event not found", http.StatusNotFound)
+		return
+	}
+
 	before, err := h.store.GetByTeam(ctx, eventID, req.Team)
 	if err != nil && err != mongo.ErrNoDocuments {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
 
-	updated, err := h.store.Upsert(ctx, eventID, req.Team, req.Value, req.Description)
+	updated, err := h.store.Upsert(ctx, eventID, req.Team, *req.Value, req.Description)
 	if err != nil {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return

@@ -23,6 +23,18 @@ func NewRepository(database *mongo.Database) *Repository {
 	return &Repository{coll: database.Collection(collectionName)}
 }
 
+// EnsureIndexes creates the unique clerkId index. GetOrCreate's upsert is
+// only race-safe with it: without a unique index, two concurrent first
+// requests from a new user can both insert, and the duplicate defeats the
+// set-once team rule. Call once at startup.
+func (r *Repository) EnsureIndexes(ctx context.Context) error {
+	_, err := r.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "clerkId", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	})
+	return err
+}
+
 // GetOrCreate returns the user for clerkID, inserting a minimal record (role
 // student, no team) if none exists yet. This is how users first land in Mongo:
 // the record is created on their first authenticated request rather than by a

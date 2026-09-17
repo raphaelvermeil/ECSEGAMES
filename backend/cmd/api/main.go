@@ -43,6 +43,15 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
+	// Cap request bodies so a client can't make the server buffer an
+	// arbitrarily large JSON payload. The largest legitimate body is a CS
+	// comp submission, bounded at 64 KB, so 1 MB is generous.
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+			next.ServeHTTP(w, r)
+		})
+	})
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{cfg.FrontendOrigin},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -59,9 +68,22 @@ func main() {
 		userRepo := users.NewRepository(database)
 		auditStore := audit.NewStore(database)
 		eventStore := events.NewStore(database)
-		eventHandler := events.NewHandler(eventStore, auditStore, userRepo)
 		scoreStore := scores.NewStore(database)
-		scoreHandler := scores.NewHandler(scoreStore, auditStore, userRepo)
+		eventHandler := events.NewHandler(eventStore, auditStore, userRepo, scoreStore.ClearByEvent)
+		scoreHandler := scores.NewHandler(scoreStore, auditStore, userRepo, eventStore.Exists)
+
+		// Unique indexes are what make the upserts in users, scores and the
+		// comp race-safe (and, for the comp, enforce the claim rules), so a
+		// failure to build them is fatal rather than logged. Bounded so a
+		// stalled build can't leave the process hanging before it listens.
+		idxCtx, cancelIdx := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancelIdx()
+		if err := userRepo.EnsureIndexes(idxCtx); err != nil {
+			log.Fatalf("users: ensure indexes: %v", err)
+		}
+		if err := scoreStore.EnsureIndexes(idxCtx); err != nil {
+			log.Fatalf("scores: ensure indexes: %v", err)
+		}
 
 		// Authenticated user API. Users are created in Mongo lazily on their
 		// first request here, so no Clerk webhook is needed.
@@ -85,10 +107,8 @@ func main() {
 			log.Printf("cscomp: renderer unavailable, submissions disabled: %v", err)
 		}
 		cscompStore := cscomp.NewStore(database)
-		// The claim rules are enforced by unique indexes rather than by
-		// checking before writing, so this is not just an optimisation.
-		if err := cscompStore.EnsureIndexes(context.Background()); err != nil {
-			log.Printf("cscomp: ensure indexes: %v", err)
+		if err := cscompStore.EnsureIndexes(idxCtx); err != nil {
+			log.Fatalf("cscomp: ensure indexes: %v", err)
 		}
 		cscompHandler := cscomp.NewHandler(cscompStore, userRepo, renderer, cfg.CSCompSolutionsDir, cfg.CSCompMinutes*60)
 		cscomp.Mount(r, cscompHandler, userRepo, cfg.ClerkSecretKey)

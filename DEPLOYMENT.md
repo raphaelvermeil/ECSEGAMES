@@ -35,11 +35,12 @@ Network Access likely set to `0.0.0.0/0` for convenience.
 - **Tighten Network Access**: restrict to the backend host's egress IPs instead of
   `0.0.0.0/0` where the host supports it.
 - Consider a separate database/cluster for prod vs. dev so test data stays out of prod.
-- (Optional hardening) add a unique index on `users.clerkId` — the upsert already prevents
-  duplicates logically, but the index enforces it at the DB level.
-- (Optional hardening) same for a compound unique index on `scoreEntries (eventId, team)` —
-  a team's points-per-event upsert relies on the same "logically enforced, not DB-enforced"
-  pattern.
+- **Unique indexes are created at boot** (`users.clerkId`, `scoreEntries (eventId, team)`,
+  and the CS comp's challenge/submission/claim indexes) and the API refuses to start if any
+  fails to build. They are not optional: a Mongo upsert is only race-safe against
+  concurrent inserts when a unique index backs its filter. If a boot log shows
+  `ensure indexes: ... duplicate key`, the collection already holds duplicates from before
+  the index existed — remove them and restart.
 
 ## 3. 🌐 URLs, ports & CORS
 

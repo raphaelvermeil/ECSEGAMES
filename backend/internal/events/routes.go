@@ -22,12 +22,16 @@ type Handler struct {
 	store *Store
 	audit *audit.Store
 	users *users.Repository
+	// clearScores retires an event's score entries when the event is
+	// deleted, so they stop counting toward the leaderboard.
+	clearScores func(context.Context, primitive.ObjectID) error
 }
 
 // NewHandler builds the handler backed by the given event and audit stores.
-// userRepo resolves an actor's display name for the audit trail.
-func NewHandler(store *Store, auditStore *audit.Store, userRepo *users.Repository) *Handler {
-	return &Handler{store: store, audit: auditStore, users: userRepo}
+// userRepo resolves an actor's display name for the audit trail; clearScores
+// is the scores store's per-event clear.
+func NewHandler(store *Store, auditStore *audit.Store, userRepo *users.Repository, clearScores func(context.Context, primitive.ObjectID) error) *Handler {
+	return &Handler{store: store, audit: auditStore, users: userRepo, clearScores: clearScores}
 }
 
 // actorName resolves clerkID to the name on their profile, for the audit
@@ -360,6 +364,10 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	if !deleted {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
+	}
+
+	if err := h.clearScores(ctx, id); err != nil {
+		log.Printf("events: clear scores for deleted event failed: %v", err)
 	}
 
 	if err := h.audit.Record(ctx, audit.Entry{
