@@ -10,7 +10,7 @@ const eslintConfig = defineConfig([
   // Enforce that protected route resources guard themselves with
   // `await auth.protect()`.
   //
-  // Most of the app is public: the schedule, standings, sponsors and team
+  // Most of the app is public: the schedule, standings and team
   // pages are readable without an account, and the backend enforces the same
   // split (GET /api/events and /api/leaderboard are unauthenticated; writes,
   // scores, event history and the whole CS comp surface are not). What stays

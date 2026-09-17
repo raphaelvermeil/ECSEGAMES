@@ -6,7 +6,7 @@ import { Show, SignInButton, UserButton } from "@clerk/nextjs";
 // signed in, a compact "Sign in" otherwise.
 //
 // It exists because the pages these banners sit on — schedule, leaderboard,
-// sponsors, meet-the-team, home — are public now, so the avatar can't be
+// meet-the-team, home — are public now, so the avatar can't be
 // assumed. Sign in is the only affordance anywhere in the app: Clerk's own
 // card carries the "Don't have an account? Sign up" link, so a separate
 // register button would just duplicate a route the modal already offers.

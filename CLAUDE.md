@@ -103,7 +103,7 @@ anyone who can read the event, since it's a historical record, not the live scor
 
 Next.js 16 App Router — folders under `app/` are URL routes.
 - `app/(app)/` — the authenticated app shell, grouped behind `layout.tsx` +
-  `Navbar.tsx`. Pages: `schedule`, `leaderboard`, `events`, `cs-comp`, `sponsors`,
+  `Navbar.tsx`. Pages: `schedule`, `leaderboard`, `events`, `cs-comp`,
   `meet-the-team`.
 - `app/(app)/schedule/_components/` — the schedule feature's components (event list/detail
   modals, scoring panel, history view); `_` prefix keeps the folder out of routing.

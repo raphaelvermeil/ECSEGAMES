@@ -56,8 +56,6 @@ const HIGHLIGHTS = [
   },
 ];
 
-const SPONSOR_SLOTS = 6;
-
 function SectionHeading({
   eyebrow,
   title,
@@ -152,25 +150,6 @@ export default function LandingSections() {
             See the full three-day schedule
             <ArrowRight width={14} height={14} strokeWidth={2} />
           </Link>
-        </div>
-      </section>
-
-      <section className="border-t border-sched-hair bg-sched-bg-raised px-5 py-14 lg:px-10 lg:py-20">
-        <div className="mx-auto max-w-5xl">
-          <SectionHeading eyebrow="With support from" title="Our sponsors" />
-          {/* Empty tiles on purpose: drop logos in as they are confirmed. */}
-          <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {Array.from({ length: SPONSOR_SLOTS }, (_, i) => (
-              <li
-                key={i}
-                className="flex h-24 items-center justify-center rounded-sm border border-dashed border-sched-hair bg-sched-bg"
-              >
-                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-sched-text-muted">
-                  Sponsor {i + 1}
-                </span>
-              </li>
-            ))}
-          </ul>
         </div>
       </section>
 

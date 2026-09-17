@@ -5,7 +5,7 @@ import ViewportFloor from "./ViewportFloor";
 //
 // It used to call auth.protect() and fetch /api/me here, which gated the
 // whole group behind a signed-in account with completed onboarding. The
-// Games schedule, standings, sponsors and team pages are now public — you
+// Games schedule, standings and team pages are now public — you
 // shouldn't need an account to find out where Scunts starts — so the gate
 // moved to the two places that actually need it: /cs-comp, and the exec
 // controls inside the schedule.

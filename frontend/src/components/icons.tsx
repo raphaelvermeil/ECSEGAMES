@@ -113,12 +113,6 @@ export const Users = (p: SVGProps<SVGSVGElement>) => (
     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
   </svg>
 );
-export const Briefcase = (p: SVGProps<SVGSVGElement>) => (
-  <svg {...base(p)}>
-    <rect width="20" height="14" x="2" y="7" rx="2" />
-    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-  </svg>
-);
 export const Play = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)} fill="currentColor" stroke="none">
     <path d="M7 4.5v15l13-7.5-13-7.5Z" />
