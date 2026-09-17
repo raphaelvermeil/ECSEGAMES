@@ -1,9 +1,9 @@
 package main
 
-// The 30 challenges, ported from the design mock's LEVELS array
-// (frontend/ECSESS CS Comp (offline).html). Every shape is an absolutely
-// positioned <i>; a challenge is that list of shapes over the level's
-// background colour.
+// The challenges. Levels 1-6 were ported from the original design mock's
+// LEVELS array; 7-8 were authored here. In the rect levels every shape is
+// an absolutely positioned <i>, and a challenge is that list of shapes over
+// the level's background colour.
 //
 // This is the only definition of the targets. The PNGs in
 // images/cs-comp/solutions are rendered from it (see main.go) rather than
