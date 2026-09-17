@@ -80,10 +80,20 @@ export default function BattlePanel({
     null,
   );
 
+  // The debounce is there to stop an iframe reload per keystroke, and a part
+  // switch is not typing: it swapped the whole scene at once, so waiting the
+  // full delay just leaves the previous part's render on screen. Flush
+  // immediately when the challenge changes, debounce only within one.
+  const previewFor = useRef(challenge.id);
   useEffect(() => {
+    if (previewFor.current !== challenge.id) {
+      previewFor.current = challenge.id;
+      setPreviewCode(code);
+      return;
+    }
     const t = setTimeout(() => setPreviewCode(code), PREVIEW_DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [code]);
+  }, [code, challenge.id]);
 
   // The target is the exact PNG the server diffs against, fetched rather
   // than rebuilt locally — a target drawn from a second copy of the scene
