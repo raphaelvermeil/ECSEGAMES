@@ -98,7 +98,12 @@ export interface ChartData {
 // comparable at any x rather than each starting and stopping at its own
 // first and last award.
 export function buildSeries(board: Leaderboard): ChartData {
-  const times = board.points.map((p) => new Date(p.at).getTime());
+  // Running sums depend on order, so sort here rather than trusting the
+  // backend's ordering to hold forever.
+  const ordered = [...board.points].sort(
+    (a, b) => new Date(a.at).getTime() - new Date(b.at).getTime(),
+  );
+  const times = ordered.map((p) => new Date(p.at).getTime());
   const tMin = times.length ? Math.min(...times) : 0;
   // A single award (or several at the same instant) would collapse the
   // domain to zero width and divide by zero when scaling x. Give it an
@@ -109,7 +114,7 @@ export function buildSeries(board: Leaderboard): ChartData {
   const series = TEAMS.map(({ value: team }) => {
     const points: SeriesPoint[] = [{ t: tMin, total: 0 }];
     let running = 0;
-    for (const p of board.points) {
+    for (const p of ordered) {
       if (p.team !== team) continue;
       running += p.value;
       points.push({ t: new Date(p.at).getTime(), total: running });

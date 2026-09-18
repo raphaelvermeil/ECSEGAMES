@@ -3,7 +3,7 @@ import { LEVEL_META, levelMeta, partKey } from "@/lib/cs-comp";
 import type { Challenge, Leaderboard } from "@/lib/cscomp-api";
 
 // The comp's own board. It is deliberately not the Games leaderboard: this
-// ranks the comp's sub-teams on the 30 challenges and resets with the comp,
+// ranks the comp's sub-teams on the comp's challenges and resets with it,
 // while /leaderboard totals score entries across every event. The callout
 // says so on the page, because the two boards sitting one nav link apart is
 // exactly the confusion worth heading off.

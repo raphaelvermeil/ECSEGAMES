@@ -175,11 +175,13 @@ export function formatModalDate(d: Date): string {
   return `${WD_TITLE[p.weekday]} ${p.day} ${MO_TITLE[p.month]} ${p.year}`;
 }
 
-// "Fri 25 – Sun 27 Sep 2026" — ongoing event detail date line.
+// "Fri 25 – Sun 27 Sep 2026" — ongoing event detail date line. The start
+// keeps its own month when the range crosses one ("Wed 30 Sep – Thu 1 Oct").
 export function formatModalDateRange(start: Date, end: Date): string {
   const s = zonedParts(start);
   const e = zonedParts(end);
-  return `${WD_TITLE[s.weekday]} ${s.day} – ${WD_TITLE[e.weekday]} ${e.day} ${MO_TITLE[e.month]} ${e.year}`;
+  const startMonth = s.month === e.month ? "" : ` ${MO_TITLE[s.month]}`;
+  return `${WD_TITLE[s.weekday]} ${s.day}${startMonth} – ${WD_TITLE[e.weekday]} ${e.day} ${MO_TITLE[e.month]} ${e.year}`;
 }
 
 // "Fri 25 – Sun 27 September" — mobile schedule banner subtitle.
@@ -192,6 +194,7 @@ export function formatBannerDateRange(start: Date, end: Date): string {
 // "3 Aug 2026, 14:22" — event detail footer ("Created by"/"Last edited by").
 export function formatFooterTimestamp(iso: string): string {
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
   const p = zonedParts(d);
   return `${p.day} ${MO_TITLE[p.month]} ${p.year}, ${formatTime(d)}`;
 }

@@ -24,7 +24,9 @@ export default function MobileNavMenu({
   const pathname = usePathname();
   const { user } = useUser();
   const { getToken, isLoaded, isSignedIn } = useAuth();
-  const [team, setTeam] = useState<Team | null>(null);
+  // null = not fetched yet; "" = fetched, no team on file. Keeping the two
+  // apart is what stops a teamless user from re-fetching on every open.
+  const [team, setTeam] = useState<Team | "" | null>(null);
   // Same rule as the desktop Navbar: signed-in only tabs are hidden signed
   // out, and the public set is shown while Clerk is still resolving.
   const links =
@@ -43,15 +45,15 @@ export default function MobileNavMenu({
   useEffect(() => {
     // Signed-out visitors have no team to show, and /api/me would 401 —
     // so the drawer opens with no network call at all for them.
-    if (!open || team || !user) return;
+    if (!open || team !== null || !user) return;
     let cancelled = false;
     (async () => {
       try {
         const token = await getToken();
-        const res = await api.get<{ team: Team }>("/api/me", {
+        const res = await api.get<{ team: Team | "" }>("/api/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!cancelled) setTeam(res.data.team);
+        if (!cancelled) setTeam(res.data.team ?? "");
       } catch {
         // Footer just omits the team line if this fails.
       }

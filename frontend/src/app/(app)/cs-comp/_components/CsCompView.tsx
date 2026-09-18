@@ -79,6 +79,20 @@ export default function CsCompView() {
   const [clock, setClock] = useState<ClockView | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [clockBusy, setClockBusy] = useState(false);
+  // When the server last told us the remaining time, and what it said. The
+  // local countdown is derived from wall-clock time since then rather than
+  // by decrementing once per interval tick, which drifts (and stalls under
+  // background-tab throttling) and then snaps on the next poll.
+  const [anchor, setAnchor] = useState<{
+    at: number;
+    remaining: number;
+  } | null>(null);
+
+  function syncClock(next: ClockView) {
+    setClock(next);
+    setSecondsLeft(next.remainingSeconds);
+    setAnchor({ at: Date.now(), remaining: next.remainingSeconds });
+  }
 
   // The clock is the server's, shared by everyone in the room and driven
   // by an exec. Poll it for authority, then tick down locally in between
@@ -90,8 +104,7 @@ export default function CsCompView() {
         const token = await getToken();
         const next = await fetchClock(token);
         if (cancelled) return;
-        setClock(next);
-        setSecondsLeft(next.remainingSeconds);
+        syncClock(next);
       } catch {
         // A dropped poll keeps the last known clock ticking locally.
       }
@@ -105,13 +118,19 @@ export default function CsCompView() {
   }, [getToken]);
 
   useEffect(() => {
-    if (clock?.status !== "running") return;
+    if (clock?.status !== "running" || !anchor) return;
     const t = setInterval(
-      () => setSecondsLeft((s) => (s > 0 ? s - 1 : 0)),
+      () =>
+        setSecondsLeft(
+          Math.max(
+            0,
+            anchor.remaining - Math.floor((Date.now() - anchor.at) / 1000),
+          ),
+        ),
       1000,
     );
     return () => clearInterval(t);
-  }, [clock?.status]);
+  }, [clock?.status, anchor]);
 
   // Exec-only, and enforced server-side too — hiding the controls is
   // convenience, not the gate.
@@ -121,8 +140,7 @@ export default function CsCompView() {
     try {
       const token = await getToken();
       const next = await controlClock(token, action, seconds);
-      setClock(next);
-      setSecondsLeft(next.remainingSeconds);
+      syncClock(next);
     } catch (err) {
       setActionError(errorText(err, "Could not change the clock."));
     } finally {

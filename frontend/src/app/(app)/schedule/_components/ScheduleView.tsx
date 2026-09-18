@@ -94,7 +94,13 @@ export default function ScheduleView({
     };
   }, []);
 
-  const now = useMemo(() => new Date(), []);
+  // Re-evaluated every minute so an event that has started drops out of the
+  // upcoming rail while the tab is open, rather than only on reload.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
   const allFiltered = CATEGORIES.every((c) => filters[c]);
   const filtered = useMemo(
     () => events.filter((e) => filters[e.category]),
@@ -165,7 +171,7 @@ export default function ScheduleView({
             {dayBuckets.length > 0 && (
               <div
                 role="tablist"
-                aria-label="Games days"
+                aria-label="Games days (mobile)"
                 // Pins directly under ScheduleBanner's sticky chrome bar
                 // rather than at the true top of the screen, which is now
                 // behind the notch. --app-chrome-h is that bar's height;
@@ -183,6 +189,7 @@ export default function ScheduleView({
                       type="button"
                       role="tab"
                       aria-selected={active}
+                      aria-controls="schedule-day-panel"
                       onClick={() => setSelectedDay(b.key)}
                       className="flex min-h-[60px] flex-col items-center justify-center gap-[3px] px-1 py-[9px]"
                       style={{
@@ -297,7 +304,9 @@ export default function ScheduleView({
                   message={
                     events.length === 0
                       ? "No events scheduled yet."
-                      : "No events match these filters."
+                      : allFiltered
+                        ? "Everything on the schedule runs all weekend — see the strip above."
+                        : "No events match these filters."
                   }
                   showClear={events.length > 0 && !allFiltered}
                   onClear={clearFilters}
@@ -320,6 +329,7 @@ export default function ScheduleView({
                           type="button"
                           role="tab"
                           aria-selected={active}
+                          aria-controls="schedule-day-panel"
                           onClick={() => setSelectedDay(b.key)}
                           className="flex flex-col items-start gap-[7px] border-r border-sched-hair px-5 py-[18px] text-left transition-colors last:border-r-0"
                           style={{
@@ -359,7 +369,13 @@ export default function ScheduleView({
                   </div>
 
                   <div
+                    id="schedule-day-panel"
                     role="tabpanel"
+                    aria-label={
+                      activeBucket
+                        ? formatDayLabel(activeBucket.date)
+                        : undefined
+                    }
                     className="pb-[18px] pt-4 lg:px-[22px] lg:pb-[26px] lg:pt-[22px]"
                   >
                     {activeBucket && activeBucket.events.length > 0 ? (

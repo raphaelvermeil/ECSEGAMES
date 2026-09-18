@@ -184,7 +184,7 @@ export default function EventFormModal({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const panelRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLFormElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const shortRef = useRef<HTMLInputElement>(null);
   const startRef = useRef<HTMLInputElement>(null);
@@ -329,13 +329,19 @@ export default function EventFormModal({
       onClick={onClose}
       className="fixed inset-0 z-[70] flex flex-col overflow-hidden bg-sched-bg lg:flex-row lg:items-start lg:justify-center lg:overflow-y-auto lg:bg-[rgba(4,9,7,.72)] lg:px-5 lg:py-12 lg:backdrop-blur-[4px] lg:animate-sched-fade"
     >
-      <div
+      {/* A real form, so Enter in any text field saves. */}
+      <form
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={mode === "create" ? "New event" : "Edit event"}
         tabIndex={-1}
+        noValidate
         onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSave();
+        }}
         className="animate-sched-sheet flex h-full w-full flex-col bg-sched-bg-raised font-mono outline-none lg:animate-sched-pop lg:h-auto lg:max-w-[700px] lg:border lg:border-sched-accent-dim"
       >
         <div className="flex flex-none items-center justify-between border-b border-sched-hair px-5 pb-6 pt-[calc(1.5rem+var(--app-safe-top))] lg:px-[30px] lg:pt-6">
@@ -629,8 +635,7 @@ export default function EventFormModal({
 
         <div className="flex flex-none items-center gap-4 border-t border-sched-hair px-5 pb-[26px] pt-5 lg:border-t-0 lg:px-[30px]">
           <button
-            type="button"
-            onClick={handleSave}
+            type="submit"
             disabled={submitting}
             className="flex-1 bg-sched-accent px-6 py-[13px] font-display text-sm font-semibold tracking-[0.07em] text-sched-fill transition-[filter] hover:brightness-[1.12] disabled:opacity-60 lg:flex-none"
           >
@@ -654,7 +659,7 @@ export default function EventFormModal({
             </button>
           )}
         </div>
-      </div>
+      </form>
     </div>
   );
 }

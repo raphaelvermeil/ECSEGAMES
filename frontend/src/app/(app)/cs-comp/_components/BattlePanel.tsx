@@ -228,7 +228,7 @@ export default function BattlePanel({
         </span>
       </div>
 
-      {/* Claims are how a squad splits the 30 parts without two people
+      {/* Claims are how a squad splits the parts without two people
           building the same scene. One per person per level, so the button
           is also the only place that rule becomes visible. */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -285,10 +285,12 @@ export default function BattlePanel({
             </span>
             <div className="flex-1" />
             <span className="font-mono text-[10px] tracking-[0.14em] text-sched-text-muted">
-              CHARS
+              BYTES
             </span>
+            {/* Bytes, not characters: the server's 64 KB limit is on the
+                encoded size, and non-ASCII text would otherwise read under. */}
             <span className="font-mono text-sm font-medium text-sched-cream">
-              {code.length}
+              {new TextEncoder().encode(code).length}
             </span>
           </div>
           <div className="flex min-h-0">

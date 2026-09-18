@@ -60,6 +60,7 @@ const CampSceneMobile = forwardRef<
   const lastStateUpdateRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const pausedRef = useRef(false);
+  const progressRef = useRef(0);
 
   const [paused, setPausedState] = useState(false);
   const [sun, setSun] = useState({
@@ -101,6 +102,10 @@ const CampSceneMobile = forwardRef<
   // stable (refs and setters only) so the frame loop effect can list
   // applyProgress as a dependency without restarting every render.
   const syncState = useCallback((t: number) => {
+    // Unthrottled copy of the position for keyboard seeks: reading the
+    // throttled `progress` state made held arrow keys recompute the same
+    // target and stall.
+    progressRef.current = t;
     const now = performance.now();
     if (now - lastStateUpdateRef.current >= STATE_UPDATE_INTERVAL_MS) {
       lastStateUpdateRef.current = now;
@@ -252,10 +257,10 @@ const CampSceneMobile = forwardRef<
           onKeyDown={(e) => {
             if (e.key === "ArrowLeft") {
               pauseForManualInteraction();
-              applyProgress(Math.max(0, progress - 0.05));
+              applyProgress(Math.max(0, progressRef.current - 0.05));
             } else if (e.key === "ArrowRight") {
               pauseForManualInteraction();
-              applyProgress(Math.min(1, progress + 0.05));
+              applyProgress(Math.min(1, progressRef.current + 0.05));
             }
           }}
           className="relative h-[6px] flex-1 cursor-pointer bg-sched-hair"
