@@ -80,7 +80,11 @@ export default function EventDetailModal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[60] flex items-end justify-center overflow-y-auto p-0 backdrop-blur-[4px] lg:items-start lg:px-5 lg:py-14"
+      // The blur is desktop-only, like EventFormModal's: a full-screen
+      // backdrop-filter is re-composited on every frame of the sheet's
+      // slide-up, which on a phone is what made opening an event feel slow.
+      // The dimmed background is enough to read as modal there.
+      className="fixed inset-0 z-[60] flex items-end justify-center overflow-y-auto p-0 lg:items-start lg:px-5 lg:py-14 lg:backdrop-blur-[4px]"
       style={{ background: "rgba(4,9,7,.72)" }}
     >
       <div

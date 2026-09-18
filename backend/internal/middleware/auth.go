@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/clerk/clerk-sdk-go/v2/jwt"
@@ -36,6 +37,40 @@ func authorizedParty(azp string) bool {
 	return false
 }
 
+// jwkCache holds Clerk's signing keys by key ID. Without it jwt.Verify
+// fetches the whole key set from Clerk's API on every request, so each
+// authenticated call paid a Clerk round trip before it touched Mongo —
+// measured at 100–400 ms, on top of every /api/me, scores and CS comp
+// poll. Keys rotate rarely, and a token signed by an unknown key simply
+// misses the cache and fetches, so nothing here needs to expire.
+var jwkCache = struct {
+	sync.Mutex
+	keys map[string]*clerk.JSONWebKey
+}{keys: map[string]*clerk.JSONWebKey{}}
+
+// signingKey returns the key that signed token, fetching it from Clerk
+// only the first time a key ID is seen.
+func signingKey(ctx context.Context, token string) (*clerk.JSONWebKey, error) {
+	unverified, err := jwt.Decode(ctx, &jwt.DecodeParams{Token: token})
+	if err != nil {
+		return nil, err
+	}
+	jwkCache.Lock()
+	key, ok := jwkCache.keys[unverified.KeyID]
+	jwkCache.Unlock()
+	if ok {
+		return key, nil
+	}
+	key, err = jwt.GetJSONWebKey(ctx, &jwt.GetJSONWebKeyParams{KeyID: unverified.KeyID})
+	if err != nil {
+		return nil, err
+	}
+	jwkCache.Lock()
+	jwkCache.keys[unverified.KeyID] = key
+	jwkCache.Unlock()
+	return key, nil
+}
+
 // RequireAuth verifies a Clerk session token from the Authorization header.
 // On success it stores the Clerk user ID (the token subject) in the request
 // context. On failure it responds 401. secretKey configures the Clerk client;
@@ -56,8 +91,14 @@ func RequireAuth(secretKey string) func(http.Handler) http.Handler {
 				http.Error(w, "missing bearer token", http.StatusUnauthorized)
 				return
 			}
+			key, err := signingKey(r.Context(), token)
+			if err != nil {
+				http.Error(w, "invalid token", http.StatusUnauthorized)
+				return
+			}
 			claims, err := jwt.Verify(r.Context(), &jwt.VerifyParams{
 				Token:                  token,
+				JWK:                    key,
 				AuthorizedPartyHandler: authorizedParty,
 			})
 			if err != nil {

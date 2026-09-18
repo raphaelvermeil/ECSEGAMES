@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, type CSSProperties } from "react";
+import { Fragment, memo, type CSSProperties } from "react";
 import Image from "next/image";
 import {
   type CrewId,
@@ -625,12 +625,19 @@ function Avatar({
           animationDelay: delay,
         }}
       >
+        {/* Photos are pre-sized 272px thumbnails (see Coords/), served as-is
+            rather than through the image optimizer: the modal shows the same
+            file at 136px, so opening it is a browser-cache hit instead of a
+            request for a freshly resized variant. Eager so every photo is
+            already loaded before a head is tapped, including the ones the
+            phone strip has panned out of view. */}
         {member.photoPath ? (
           <Image
             src={member.photoPath}
             alt=""
             fill
-            sizes="66px"
+            unoptimized
+            loading="eager"
             style={{ objectFit: "cover", borderRadius: "50%" }}
           />
         ) : (
@@ -738,7 +745,15 @@ function Caption({ color, children }: { color: string; children: string }) {
   );
 }
 
-export default function CampScene({
+// Memoized: this tree is ~60 decorative elements plus every avatar, and on
+// a phone CampSceneMobile's frame loop updates its own state ~22 times a
+// second to move the slider thumb. Without memo each of those re-rendered
+// all of this, which is what made taps on the mobile scene feel sluggish —
+// the tap had to wait behind whichever render was in flight. The sun is
+// driven through the --sun-left/--sun-top variables (set on an ancestor by
+// the phone's frame loop) for the same reason, so animating it never
+// touches props.
+const CampScene = memo(function CampScene({
   members,
   selectedId,
   onSelect,
@@ -776,8 +791,8 @@ export default function CampScene({
       {/* Sun — behind the mountains/buildings/ground below, in front of only
           the sky bands above. */}
       <Dec
-        left={`${sun.leftPct}%`}
-        top={`${sun.topPct}%`}
+        left={`var(--sun-left, ${sun.leftPct}%)`}
+        top={`var(--sun-top, ${sun.topPct}%)`}
         width={92}
         height={92}
         background="#ffd98a"
@@ -1606,4 +1621,6 @@ export default function CampScene({
       </div>
     </div>
   );
-}
+});
+
+export default CampScene;

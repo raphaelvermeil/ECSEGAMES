@@ -10,7 +10,11 @@ import {
 } from "react";
 import { Pause, Play } from "@/components/icons";
 import type { TeamMember } from "@/lib/team";
-import CampScene, { SCENE_HEIGHT, SCENE_WIDTH } from "./CampScene";
+import CampScene, {
+  SCENE_HEIGHT,
+  SCENE_WIDTH,
+  type SunState,
+} from "./CampScene";
 
 // The camp scene is a hand-placed 1436x786 canvas — too wide to fit a phone
 // screen at full size, so on mobile it's scaled down to a strip and panned
@@ -30,6 +34,17 @@ const SUN_LEFT_MAX = 96;
 const SUN_TOP_BASE = 30;
 const SUN_ARC = 16;
 const STATE_UPDATE_INTERVAL_MS = 45;
+
+// What CampScene gets as its sun. The frame loop positions the real sun
+// through the --sun-left/--sun-top variables on the strip (see
+// applyProgress), so this never changes — which is what lets CampScene's
+// memo hold and keeps the scene from re-rendering on every tick.
+const MOBILE_SUN: SunState = {
+  leftPct: SUN_LEFT_MIN,
+  topPct: SUN_TOP_BASE,
+  animated: false,
+  periodSeconds: 0,
+};
 
 // Triangle wave: 0 -> 1 -> 0 over one period, so the pan and the sun reverse
 // direction at the ends instead of snapping back.
@@ -63,10 +78,6 @@ const CampSceneMobile = forwardRef<
   const progressRef = useRef(0);
 
   const [paused, setPausedState] = useState(false);
-  const [sun, setSun] = useState({
-    leftPct: SUN_LEFT_MIN,
-    topPct: SUN_TOP_BASE,
-  });
   const [progress, setProgress] = useState(0);
   const [thumbWidthPct, setThumbWidthPct] = useState(100);
   const [sceneHeight, setSceneHeight] = useState(FALLBACK_SCENE_HEIGHT);
@@ -97,10 +108,10 @@ const CampSceneMobile = forwardRef<
     setThumbWidthPct(Math.min(100, (el.clientWidth / el.scrollWidth) * 100));
   }, [scaledWidth, sceneHeight]);
 
-  // Pushes the slider thumb and the sun to match position t, throttled so
-  // the animation frame loop doesn't re-render on every frame. Both are
-  // stable (refs and setters only) so the frame loop effect can list
-  // applyProgress as a dependency without restarting every render.
+  // Pushes the slider thumb to match position t, throttled so the animation
+  // frame loop doesn't re-render on every frame. Stable (refs and setters
+  // only) so the frame loop effect can list applyProgress as a dependency
+  // without restarting every render.
   const syncState = useCallback((t: number) => {
     // Unthrottled copy of the position for keyboard seeks: reading the
     // throttled `progress` state made held arrow keys recompute the same
@@ -110,17 +121,25 @@ const CampSceneMobile = forwardRef<
     if (now - lastStateUpdateRef.current >= STATE_UPDATE_INTERVAL_MS) {
       lastStateUpdateRef.current = now;
       setProgress(t);
-      setSun({
-        leftPct: SUN_LEFT_MIN + (SUN_LEFT_MAX - SUN_LEFT_MIN) * t,
-        topPct: SUN_TOP_BASE - SUN_ARC * Math.sin(Math.PI * t),
-      });
     }
   }, []);
 
   const applyProgress = useCallback(
     (t: number) => {
       const el = containerRef.current;
-      if (el) el.scrollLeft = t * maxScrollRef.current;
+      if (el) {
+        el.scrollLeft = t * maxScrollRef.current;
+        // The sun rides along as two CSS variables rather than React state:
+        // CampScene reads them, so it moves every frame without a render.
+        el.style.setProperty(
+          "--sun-left",
+          `${SUN_LEFT_MIN + (SUN_LEFT_MAX - SUN_LEFT_MIN) * t}%`,
+        );
+        el.style.setProperty(
+          "--sun-top",
+          `${SUN_TOP_BASE - SUN_ARC * Math.sin(Math.PI * t)}%`,
+        );
+      }
       syncState(t);
     },
     [syncState],
@@ -218,7 +237,7 @@ const CampSceneMobile = forwardRef<
               members={members}
               selectedId={selectedId}
               onSelect={onSelect}
-              sun={{ ...sun, animated: false, periodSeconds: 0 }}
+              sun={MOBILE_SUN}
             />
           </div>
         </div>

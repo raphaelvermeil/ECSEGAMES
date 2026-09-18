@@ -71,12 +71,14 @@ export default function TeamMemberModal({
             color: crew.color,
           }}
         >
+          {/* Same pre-sized file the scene's avatar already loaded, so this
+              paints from the browser cache — see CampScene's Avatar. */}
           {member.photoPath ? (
             <Image
               src={member.photoPath}
               alt=""
               fill
-              sizes="136px"
+              unoptimized
               style={{ objectFit: "cover" }}
             />
           ) : (
