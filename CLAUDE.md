@@ -27,8 +27,10 @@ and Next.js frontend live side by side in this monorepo. See [README.md](README.
 from-scratch explanation of every technology used, and [DEPLOYMENT.md](DEPLOYMENT.md) for what
 is currently dev-only and must change before production.
 
-No test suite exists yet in either backend or frontend (no `*_test.go` files, no JS test
-runner configured) — don't invent test commands.
+The only tests are the Mongo integration tests in `backend/internal/users/repository_test.go`,
+which run under `go test ./...` only when `TEST_MONGO_URI` is set (they insert and delete
+user documents, so they never fall back to `MONGO_URI`). The frontend has no test runner —
+don't invent test commands.
 
 ## Commands
 

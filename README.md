@@ -251,30 +251,31 @@ real login only works once you plug in real keys.
 ```
 backend/
 ├── cmd/
-│   └── api/
-│       └── main.go          ← THE ENTRY POINT. Running the backend runs this file.
-│                              It loads config, connects to Mongo (if configured),
-│                              sets up the chi router + middleware, and starts
-│                              listening on port 8082.
+│   ├── api/
+│   │   └── main.go          ← THE ENTRY POINT. Loads config, connects to Mongo (if
+│   │                          configured), builds the indexes each store relies on,
+│   │                          mounts every route group, and listens on port 8082 until
+│   │                          SIGINT/SIGTERM, then drains and shuts down.
+│   ├── seed/                ← `go run ./cmd/seed`: replaces the fake events used for
+│   │                          local testing (times authored in Montreal time).
+│   └── seedcscomp/          ← `go run ./cmd/seedcscomp`: renders the CS comp target
+│                              images through headless Chrome and upserts the challenges.
+├── images/cs-comp/solutions ← The rendered target PNGs the scorer diffs against.
 ├── internal/                ← Private packages. "internal" is a Go convention meaning
 │   │                          "only importable by this module" — our own code.
-│   ├── config/
-│   │   └── config.go        ← Reads settings from environment variables (port, Mongo
-│   │                          URI, Clerk key, allowed frontend origin) into one struct.
-│   ├── db/
-│   │   └── mongo.go         ← Opens and verifies the MongoDB connection. One function,
-│   │                          Connect(), returns a database handle or an error.
-│   ├── middleware/
-│   │   └── auth.go          ← The Clerk auth middleware. Checks the token on incoming
-│   │                          requests and attaches the user's ID, or rejects with 401.
-│   ├── handlers/
-│   │   └── health.go        ← Request handlers (the code that answers a route). Right
-│   │                          now just /health, which returns {"status":"ok"} — a
-│   │                          simple "is the server alive?" check.
-│   └── models/
-│       └── .gitkeep         ← Empty placeholder folder. Will hold data shapes (User,
-│                              Team, Competition, …) once we build features. (.gitkeep
-│                              exists only so Git tracks the otherwise-empty folder.)
+│   ├── config/              ← Reads settings from environment variables into one struct.
+│   ├── db/                  ← Opens and verifies the MongoDB connection.
+│   ├── middleware/          ← RequireAuth (Clerk token → user ID) and RequireRole (RBAC).
+│   ├── models/              ← Shared domain types: User, Role, Team.
+│   ├── users/               ← User repository (lazy create on first request, team
+│   │                          selection, CS comp roster) and its integration tests.
+│   ├── handlers/            ← /health, /ready, /api/me, /api/team.
+│   ├── events/              ← Schedule events: store, types, routes.
+│   ├── scores/              ← Per-event points and the public leaderboard.
+│   ├── audit/               ← The before/after history behind events and scores.
+│   └── cscomp/              ← The CS comp: sub-teams, claims, submissions scored by
+│                              rendering them in headless Chrome, and the shared clock.
+├── Dockerfile               ← Build + slim runtime image with Chromium for the comp.
 ├── .air.toml                ← Config for the "air" auto-reload dev tool.
 ├── .env                     ← YOUR local secrets/config (git-ignored, never committed).
 ├── .env.example             ← Committed, secret-free template showing which vars to set.
@@ -283,8 +284,9 @@ backend/
 ```
 
 The layout follows a common Go convention: `cmd/` holds entry points (programs you can run),
-and `internal/` holds the private packages those programs are built from. The chain of
-dependencies flows `main.go → config → db / middleware / handlers`.
+and `internal/` holds the private packages those programs are built from. Each feature
+package (`events`, `scores`, `cscomp`) is self-contained: a `store.go` for Mongo access, a
+types file, and a `routes.go` whose `Mount` registers its own routes with their own gates.
 
 ### Frontend — `frontend/`
 
@@ -399,7 +401,13 @@ ready to connect real services; leave them blank/dummy for basic local developme
 | `MONGO_URI`         | MongoDB Atlas connection string. Blank = run without a database.|
 | `MONGO_DB`          | Which database name to use (default `ecsegames`).               |
 | `CLERK_SECRET_KEY`  | Clerk secret key (`sk_...`) — backend token verification.       |
-| `FRONTEND_ORIGIN`   | The frontend's URL, for CORS (default `http://localhost:3000`). |
+| `FRONTEND_ORIGIN`   | The frontend's URL, for CORS and as the only accepted token audience (default `http://localhost:3000`; required with `sk_live_` keys). |
+| `CSCOMP_SOLUTIONS_DIR` | Where the CS comp target PNGs live (default `./images/cs-comp/solutions`). |
+| `CHROME_PATH`       | Path to a Chrome/Chromium binary for the comp renderer (blank = let chromedp find one). |
+| `CHROME_NO_SANDBOX` | `1` to run Chrome without its sandbox (needed in most hosted containers). |
+| `CSCOMP_RENDER_CONCURRENCY` | How many submissions may render at once (default `4`). |
+| `CSCOMP_MINUTES`    | Length of a fresh comp round (default `45`).                     |
+| `TEST_MONGO_URI` / `TEST_MONGO_DB` | A throwaway database for `go test ./...`; the integration tests skip when unset and never touch `MONGO_URI`. |
 
 **Frontend (`frontend/.env.local`):**
 
@@ -432,7 +440,9 @@ ready to connect real services; leave them blank/dummy for basic local developme
 
 ## 11. Status
 
-This is the **foundation scaffold only** — the plumbing is wired up and everything builds and
-runs, but there is no game logic yet (no real accounts, teams, competitions, or leaderboards).
-The design specs and the step-by-step build plan live in
-[`docs/superpowers/`](docs/superpowers/).
+The core of the app is built: accounts and team selection through Clerk, a public schedule
+with exec-only editing and per-event scoring, a public leaderboard with score-over-time
+chart, the meet-the-team page, and the CS comp (sub-teams, claims, server-scored CSS
+submissions, and a shared exec-driven clock). Sponsors is still a placeholder. See
+[`DEPLOYMENT.md`](DEPLOYMENT.md) for what must change before production and
+[`docs/superpowers/`](docs/superpowers/) for the design specs.
