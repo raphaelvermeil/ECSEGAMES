@@ -22,6 +22,15 @@ func NewStore(database *mongo.Database) *Store {
 	return &Store{coll: database.Collection(collectionName)}
 }
 
+// EnsureIndexes backs the schedule's chronological listing with an index,
+// so it stays a range scan rather than an in-memory sort as events grow.
+func (s *Store) EnsureIndexes(ctx context.Context) error {
+	_, err := s.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "startsAt", Value: 1}},
+	})
+	return err
+}
+
 // ListFilter narrows List to a date range and/or category. Zero values are
 // unfiltered: a zero From/To means unbounded, an empty Category means all.
 type ListFilter struct {

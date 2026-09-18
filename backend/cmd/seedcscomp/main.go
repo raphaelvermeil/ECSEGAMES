@@ -1,5 +1,5 @@
 // Command seedcscomp builds the CS competition: it renders every target
-// images to disk and upserts the matching challenge documents. Run with
+// image to disk and upserts the matching challenge documents. Run with
 // `go run ./cmd/seedcscomp` (needs MONGO_URI and a Chrome on the host).
 //
 // The targets are rendered here, through the same cscomp.Renderer the

@@ -39,7 +39,8 @@ func authorizedParty(azp string) bool {
 // RequireAuth verifies a Clerk session token from the Authorization header.
 // On success it stores the Clerk user ID (the token subject) in the request
 // context. On failure it responds 401. secretKey configures the Clerk client;
-// when empty the middleware rejects every request so misconfiguration is loud.
+// when empty the middleware rejects every request with 503 — a server
+// misconfiguration, not a client that should be told to sign in again.
 func RequireAuth(secretKey string) func(http.Handler) http.Handler {
 	if secretKey != "" {
 		clerk.SetKey(secretKey)
@@ -47,7 +48,7 @@ func RequireAuth(secretKey string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if secretKey == "" {
-				http.Error(w, "auth not configured", http.StatusUnauthorized)
+				http.Error(w, "auth not configured", http.StatusServiceUnavailable)
 				return
 			}
 			token := bearerToken(r)

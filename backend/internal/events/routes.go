@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -123,7 +124,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	e, err := h.store.Get(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -282,7 +283,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	before, err := h.store.Get(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -292,7 +293,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updated, err := h.store.Update(ctx, id, set)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}

@@ -33,9 +33,14 @@ func NewStore(database *mongo.Database) *Store {
 // same team can both insert, and the leaderboard would count the team
 // twice. Call once at startup.
 func (s *Store) EnsureIndexes(ctx context.Context) error {
-	_, err := s.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys:    bson.D{{Key: "eventId", Value: 1}, {Key: "team", Value: 1}},
-		Options: options.Index().SetUnique(true),
+	_, err := s.coll.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "eventId", Value: 1}, {Key: "team", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+		// The leaderboard reads every active entry oldest-first; this keeps
+		// that a scan in index order rather than an in-memory sort.
+		{Keys: bson.D{{Key: "awardedAt", Value: 1}}},
 	})
 	return err
 }
@@ -141,12 +146,14 @@ func (s *Store) Upsert(ctx context.Context, eventID primitive.ObjectID, team mod
 // exist at all.
 func (s *Store) Clear(ctx context.Context, id primitive.ObjectID) (*ScoreEntry, error) {
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
-	filter := bson.M{"_id": id, "cleared": false}
+	// $ne rather than false, matching ListAllActive: an entry with no
+	// cleared field at all is live, not already cleared.
+	filter := bson.M{"_id": id, "cleared": bson.M{"$ne": true}}
 	update := bson.M{"$set": bson.M{"cleared": true}}
 
 	var e ScoreEntry
 	err := s.coll.FindOneAndUpdate(ctx, filter, update, opts).Decode(&e)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		if _, getErr := s.Get(ctx, id); getErr == nil {
 			return nil, ErrAlreadyCleared
 		}

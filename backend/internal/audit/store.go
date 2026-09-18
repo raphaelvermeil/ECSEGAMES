@@ -22,6 +22,14 @@ func NewStore(database *mongo.Database) *Store {
 	return &Store{coll: database.Collection(collectionName)}
 }
 
+// EnsureIndexes backs ListByEvent's per-event, newest-first query.
+func (s *Store) EnsureIndexes(ctx context.Context) error {
+	_, err := s.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "eventId", Value: 1}, {Key: "at", Value: -1}},
+	})
+	return err
+}
+
 // Record inserts an entry. At is set to now if the caller left it zero.
 //
 // The write is detached from the caller's cancellation: callers record

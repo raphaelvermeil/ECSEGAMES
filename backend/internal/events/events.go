@@ -39,8 +39,8 @@ type Event struct {
 	LongDescription  string             `bson:"longDescription" json:"longDescription"`
 	// Access and Captain are the two notices shown in event detail: access/
 	// sustainability info, and what the team captain needs to do.
-	Access       string    `bson:"access" json:"access"`
-	Captain      string    `bson:"captain" json:"captain"`
+	Access    string    `bson:"access" json:"access"`
+	Captain   string    `bson:"captain" json:"captain"`
 	StartsAt  time.Time `bson:"startsAt" json:"startsAt"`
 	EndsAt    time.Time `bson:"endsAt" json:"endsAt"`
 	Location  string    `bson:"location" json:"location"`

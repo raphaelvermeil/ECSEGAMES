@@ -3,6 +3,7 @@ package scores
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -97,7 +98,7 @@ type Leaderboard struct {
 }
 
 // Leaderboard returns standings across every event. Unlike the rest of
-// this package it is readable by any authenticated user (see Mount).
+// this package it is public — no auth at all (see Mount).
 func (h *Handler) Leaderboard(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
@@ -217,7 +218,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	before, err := h.store.GetByTeam(ctx, eventID, req.Team)
-	if err != nil && err != mongo.ErrNoDocuments {
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
@@ -299,7 +300,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	existing, err := h.store.Get(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -313,11 +314,11 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cleared, err := h.store.Clear(ctx, id)
-	if err == ErrAlreadyCleared {
+	if errors.Is(err, ErrAlreadyCleared) {
 		http.Error(w, "already cleared", http.StatusConflict)
 		return
 	}
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}

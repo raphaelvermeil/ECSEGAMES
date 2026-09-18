@@ -102,6 +102,12 @@ func main() {
 		if err := scoreStore.EnsureIndexes(idxCtx); err != nil {
 			log.Fatalf("scores: ensure indexes: %v", err)
 		}
+		if err := eventStore.EnsureIndexes(idxCtx); err != nil {
+			log.Fatalf("events: ensure indexes: %v", err)
+		}
+		if err := auditStore.EnsureIndexes(idxCtx); err != nil {
+			log.Fatalf("audit: ensure indexes: %v", err)
+		}
 
 		// Authenticated user API. Users are created in Mongo lazily on their
 		// first request here, so no Clerk webhook is needed.

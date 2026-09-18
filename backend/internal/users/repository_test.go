@@ -12,21 +12,24 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// testRepo connects to the dev Mongo database configured in backend/.env,
-// skipping the test entirely if none is set. This is an integration test
+// testRepo connects to the Mongo database named by TEST_MONGO_URI (read
+// from backend/.env or the environment), skipping the test entirely if it
+// is not set. It deliberately does not fall back to MONGO_URI: this test
+// inserts and deletes user documents, and a machine whose .env points at
+// production must not run it by accident. This is an integration test
 // rather than a mock: the bug it guards against — SetTeam silently
 // no-op'ing for a user that already has a team on file — only shows up
 // against a real filter match, which a mocked collection wouldn't exercise.
 func testRepo(t *testing.T) *Repository {
 	t.Helper()
 	_ = godotenv.Load("../../.env")
-	uri := os.Getenv("MONGO_URI")
+	uri := os.Getenv("TEST_MONGO_URI")
 	if uri == "" {
-		t.Skip("MONGO_URI not set; skipping Mongo integration test")
+		t.Skip("TEST_MONGO_URI not set; skipping Mongo integration test")
 	}
-	dbName := os.Getenv("MONGO_DB")
+	dbName := os.Getenv("TEST_MONGO_DB")
 	if dbName == "" {
-		dbName = "ecsegames"
+		dbName = "ecsegames_test"
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

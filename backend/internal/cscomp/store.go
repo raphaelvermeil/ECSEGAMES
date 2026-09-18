@@ -55,9 +55,15 @@ func (s *Store) EnsureIndexes(ctx context.Context) error {
 	}); err != nil {
 		return err
 	}
-	if _, err := s.submissions.Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys:    bson.D{{Key: "challengeId", Value: 1}, {Key: "clerkId", Value: 1}},
-		Options: options.Index().SetUnique(true),
+	if _, err := s.submissions.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "challengeId", Value: 1}, {Key: "clerkId", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+		// The standings scan solved submissions on every poll; a team's
+		// progress board reads by teamId.
+		{Keys: bson.D{{Key: "matchPercent", Value: 1}}},
+		{Keys: bson.D{{Key: "teamId", Value: 1}}},
 	}); err != nil {
 		return err
 	}
@@ -74,7 +80,7 @@ func (s *Store) EnsureIndexes(ctx context.Context) error {
 	return err
 }
 
-// ListChallenges returns all 30 challenges in play order.
+// ListChallenges returns every challenge in play order.
 func (s *Store) ListChallenges(ctx context.Context) ([]Challenge, error) {
 	opts := options.Find().SetSort(bson.D{{Key: "level", Value: 1}, {Key: "part", Value: 1}})
 	cur, err := s.challenges.Find(ctx, bson.M{}, opts)
@@ -308,7 +314,7 @@ func (s *Store) DeleteClaimsByMember(ctx context.Context, teamID primitive.Objec
 // threshold, across all sub-teams — the raw material for the standings.
 //
 // The filter is the same PassThreshold the Submission.Solved method uses,
-// applied in the query so the board does not pull down 30 challenges ×
+// applied in the query so the board does not pull down every challenge ×
 // every roster's worth of failed attempts just to throw most of them away.
 func (s *Store) ListSolvedSubmissions(ctx context.Context) ([]Submission, error) {
 	cur, err := s.submissions.Find(ctx, bson.M{"matchPercent": bson.M{"$gte": PassThreshold}})
@@ -330,7 +336,7 @@ func (s *Store) ListSolvedSubmissions(ctx context.Context) ([]Submission, error)
 func (s *Store) GetClock(ctx context.Context, defaultSeconds int) (*Clock, error) {
 	var c Clock
 	err := s.clock.FindOne(ctx, bson.M{"_id": clockID}).Decode(&c)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		fresh := NewClock(defaultSeconds)
 		return &fresh, nil
 	}

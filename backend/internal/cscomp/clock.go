@@ -46,12 +46,13 @@ func NewClock(seconds int) Clock {
 
 // RemainingAt is the seconds left, whichever field currently holds the
 // truth. A running clock that has passed its end time reads as zero rather
-// than going negative.
+// than going negative. Whole seconds are truncated, not rounded: a client
+// ticking down locally between polls must never see the number go up.
 func (c Clock) RemainingAt(now time.Time) int {
 	if c.Status != ClockRunning {
 		return max(0, c.Remaining)
 	}
-	return max(0, int(c.EndsAt.Sub(now).Round(time.Second)/time.Second))
+	return max(0, int(c.EndsAt.Sub(now)/time.Second))
 }
 
 // Start begins or resumes the countdown. Starting a stopped clock begins a

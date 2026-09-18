@@ -43,7 +43,7 @@ func NewHandler(store *Store, userRepo *users.Repository, renderer *Renderer, so
 }
 
 // Mount registers the comp routes on r. Everything here is student-facing,
-// so RequireAuth is the only gate — there is no exec surface: the 30
+// so RequireAuth is the only gate — there is no exec surface: the
 // challenges come from cmd/seedcscomp, and a student's own submissions and
 // claims are the only things they can write.
 //
@@ -194,7 +194,7 @@ func (h *Handler) ControlClock(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, view(&next, now))
 }
 
-// ListChallenges returns all 30 challenges: level, part, name, points and
+// ListChallenges returns every challenge: level, part, name, points and
 // starter code. The starter is the scaffold the editor opens with, not an
 // answer.
 func (h *Handler) ListChallenges(w http.ResponseWriter, r *http.Request) {
@@ -225,7 +225,7 @@ func (h *Handler) Target(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	c, err := h.store.GetChallenge(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -244,9 +244,10 @@ func (h *Handler) Target(w http.ResponseWriter, r *http.Request) {
 }
 
 // solution reads a challenge's target image off disk. The path is derived
-// from the name via Slug, never from anything on the wire.
+// from the name via Slug, never from anything on the wire; Base is belt
+// and braces so a name could never reach outside the solutions dir.
 func (h *Handler) solution(name string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(h.solutionsDir, Slug(name)+".png"))
+	return os.ReadFile(filepath.Join(h.solutionsDir, filepath.Base(Slug(name))+".png"))
 }
 
 // TeamView is a sub-team with its roster, the shape both the team list and
@@ -373,7 +374,7 @@ func (h *Handler) JoinTeam(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	team, err := h.store.GetTeam(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -489,7 +490,7 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	teamID := *u.CSCompTeamID
 
 	team, err := h.store.GetTeam(ctx, teamID)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		// The team document is gone but the user still points at it —
 		// report them as unteamed rather than failing the whole screen.
 		writeJSON(w, http.StatusOK, view)
@@ -573,7 +574,7 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c, err := h.store.GetChallenge(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -623,7 +624,7 @@ func (h *Handler) Unclaim(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.store.DeleteClaim(ctx, teamID, id, clerkID)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -716,7 +717,7 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c, err := h.store.GetChallenge(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -811,7 +812,7 @@ type Standing struct {
 
 // Leaderboard is the comp's own standings. It is deliberately not the
 // Games leaderboard: this ranks the comp's sub-teams by points earned on
-// the 30 challenges and resets with the comp, while the Games board totals
+// the challenges and resets with the comp, while the Games board totals
 // scoreEntries across every event. Nothing here touches scoreEntries.
 //
 // Total is the points a team would have for solving everything, so the
@@ -888,17 +889,20 @@ func (h *Handler) Standings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// One round-trip for every roster size rather than one per team; every
+	// viewer polls this every few seconds.
+	counts, err := h.users.CountByCSCompTeams(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+
 	rows := make([]Standing, 0, len(teams))
 	for _, team := range teams {
-		count, err := h.users.CountByCSCompTeam(ctx, team.ID)
-		if err != nil {
-			http.Error(w, "storage error", http.StatusInternalServerError)
-			return
-		}
 		row := Standing{
 			TeamID:      team.ID,
 			Name:        team.Name,
-			MemberCount: int(count),
+			MemberCount: counts[team.ID],
 			SolvedParts: []string{},
 		}
 		if t := tallies[team.ID]; t != nil {

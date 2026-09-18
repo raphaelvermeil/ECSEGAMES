@@ -29,7 +29,7 @@ const (
 //
 // Whatever this is, targets and submissions must share it: MatchPercent
 // diffs them pixel for pixel and rejects a size mismatch outright, so
-// changing it means re-rendering all 30 targets (cmd/seedcscomp).
+// changing it means re-rendering every target (cmd/seedcscomp).
 const canvasScale = 3
 
 // renderWidth/renderHeight are the dimensions that actually come back: what

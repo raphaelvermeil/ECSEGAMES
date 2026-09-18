@@ -59,10 +59,11 @@ func getenv(key, fallback string) string {
 	return fallback
 }
 
-// getenvInt reads an integer setting, falling back if it is unset or not a
-// number.
+// getenvInt reads a positive integer setting, falling back if it is unset,
+// not a number, or not positive — a zero render concurrency would block
+// every submission forever, and a non-positive round length is meaningless.
 func getenvInt(key string, fallback int) int {
-	if v, err := strconv.Atoi(os.Getenv(key)); err == nil {
+	if v, err := strconv.Atoi(os.Getenv(key)); err == nil && v > 0 {
 		return v
 	}
 	return fallback
