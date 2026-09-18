@@ -2,8 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/ecsegames/backend/internal/audit"
@@ -23,6 +28,15 @@ import (
 
 func main() {
 	cfg := config.Load()
+
+	// FRONTEND_ORIGIN falls back to localhost for dev. With production Clerk
+	// keys that fallback would boot fine and then fail every browser call on
+	// CORS with nothing in the server log, so refuse to start instead.
+	if os.Getenv("FRONTEND_ORIGIN") == "" && strings.HasPrefix(cfg.ClerkSecretKey, "sk_live_") {
+		log.Fatal("FRONTEND_ORIGIN must be set when running with production Clerk keys")
+	}
+	// Session tokens must have been minted for our frontend.
+	appmw.SetAuthorizedParties(cfg.FrontendOrigin)
 
 	// Mongo is optional at boot so the scaffold runs without a cluster.
 	// When MONGO_URI is set we connect and ping; otherwise we log and continue.
@@ -52,15 +66,19 @@ func main() {
 			next.ServeHTTP(w, r)
 		})
 	})
+	// Auth is a Bearer header, not a cookie, so credentials are not needed
+	// on the CORS grant.
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{cfg.FrontendOrigin},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
-		AllowCredentials: true,
+		AllowedOrigins: []string{cfg.FrontendOrigin},
+		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
 	}))
 
 	r.Get("/health", handlers.Health)
 	r.Get("/ready", handlers.Readiness(database))
+
+	// The renderer outlives the route setup so shutdown can close Chrome.
+	var renderer *cscomp.Renderer
 
 	// Data routes need MongoDB. When it isn't connected (dev without a cluster),
 	// the user API is disabled.
@@ -102,9 +120,11 @@ func main() {
 		// Mongo does: the module still mounts, and only submitting is
 		// disabled (Handler.Submit returns 503 on a nil renderer). Reads,
 		// teams and claims keep working.
-		renderer, err := cscomp.NewRenderer(cfg.ChromePath, cfg.ChromeNoSandbox, cfg.CSCompRenderConcurrency)
+		rd, err := cscomp.NewRenderer(cfg.ChromePath, cfg.ChromeNoSandbox, cfg.CSCompRenderConcurrency)
 		if err != nil {
 			log.Printf("cscomp: renderer unavailable, submissions disabled: %v", err)
+		} else {
+			renderer = rd
 		}
 		cscompStore := cscomp.NewStore(database)
 		if err := cscompStore.EnsureIndexes(idxCtx); err != nil {
@@ -116,9 +136,41 @@ func main() {
 		log.Printf("database not connected: user API disabled")
 	}
 
-	addr := ":" + cfg.Port
-	log.Printf("listening on %s", addr)
-	if err := http.ListenAndServe(addr, r); err != nil {
-		log.Fatal(err)
+	// Timeouts so a client holding a connection open can't pin a goroutine
+	// forever; the write timeout leaves room for a CS comp render (30s).
+	srv := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+
+	// On SIGINT/SIGTERM finish in-flight requests, then close Chrome and
+	// Mongo, so a deploy doesn't cut a score write mid-request or leave an
+	// orphaned Chromium tree behind.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	go func() {
+		log.Printf("listening on %s", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err)
+		}
+	}()
+	<-ctx.Done()
+	log.Printf("shutting down")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("shutdown: %v", err)
+	}
+	if renderer != nil {
+		renderer.Close()
+	}
+	if database != nil {
+		if err := database.Client().Disconnect(shutdownCtx); err != nil {
+			log.Printf("mongo disconnect: %v", err)
+		}
 	}
 }

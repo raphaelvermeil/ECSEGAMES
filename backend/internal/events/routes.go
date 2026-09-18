@@ -68,7 +68,7 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 		wr.Use(appmw.RequireRole(userRepo, models.RoleExec))
 		wr.Get("/api/events/{id}/history", h.History)
 		wr.Post("/api/events", h.Create)
-		wr.Patch("/api/events/{id}", h.Update)
+		wr.Put("/api/events/{id}", h.Update)
 		wr.Delete("/api/events/{id}", h.Delete)
 	})
 }

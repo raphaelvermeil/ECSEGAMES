@@ -153,9 +153,23 @@ func fakeAwards() []seedAward {
 	}
 }
 
-// d builds a UTC timestamp on the fixed Games weekend (25-27 September 2026).
+// games is the timezone the Games run in. Times below are wall-clock
+// Montreal times; storing them as if they were UTC made every seeded event
+// render four hours early.
+var games = mustLocation("America/Toronto")
+
+func mustLocation(name string) *time.Location {
+	loc, err := time.LoadLocation(name)
+	if err != nil {
+		log.Fatalf("load timezone %s: %v", name, err)
+	}
+	return loc
+}
+
+// d builds a timestamp on the fixed Games weekend (25-27 September 2026)
+// from a Montreal wall-clock time.
 func d(day, hour, minute int) time.Time {
-	return time.Date(2026, time.September, day, hour, minute, 0, 0, time.UTC)
+	return time.Date(2026, time.September, day, hour, minute, 0, 0, games).UTC()
 }
 
 func fakeEvents() []events.Event {

@@ -23,11 +23,18 @@ func NewStore(database *mongo.Database) *Store {
 }
 
 // Record inserts an entry. At is set to now if the caller left it zero.
+//
+// The write is detached from the caller's cancellation: callers record
+// after the data change has already landed, and a client that disconnects
+// in between must not leave a score or event change with no history row.
+// The deadline is kept short so a stuck insert still can't pin a goroutine.
 func (s *Store) Record(ctx context.Context, e Entry) error {
 	e.ID = primitive.NewObjectID()
 	if e.At.IsZero() {
 		e.At = time.Now().UTC()
 	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
 	_, err := s.coll.InsertOne(ctx, e)
 	return err
 }
