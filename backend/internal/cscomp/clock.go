@@ -54,16 +54,21 @@ func (c Clock) RemainingAt(now time.Time) int {
 	return max(0, int(c.EndsAt.Sub(now).Round(time.Second)/time.Second))
 }
 
-// Start begins or resumes the countdown. Starting a clock with no time on
-// it begins a fresh full round, so an exec can hit start after a stop
-// without a separate reset.
+// Start begins or resumes the countdown. Starting a stopped clock begins a
+// fresh full round, so an exec can hit start after a stop without a
+// separate reset. A paused clock resumes from where it was — and if it was
+// paused after running out, there is nothing to resume, so this is a no-op
+// rather than a surprise fresh round; Stop is the way to reset it.
 func (c Clock) Start(now time.Time) Clock {
 	if c.Status == ClockRunning {
 		return c
 	}
 	left := max(0, c.Remaining)
-	if left == 0 {
+	if c.Status == ClockStopped {
 		left = c.Duration
+	}
+	if left == 0 {
+		return c
 	}
 	c.Status = ClockRunning
 	c.EndsAt = now.Add(time.Duration(left) * time.Second)
@@ -95,12 +100,17 @@ func (c Clock) Stop() Clock {
 
 // Adjust adds delta seconds (negative to take time away), clamped at zero.
 // It works in whichever mode the clock is in: a running clock moves its
-// end time, a paused one moves its stored remainder.
+// end time, a paused one moves its stored remainder, and a stopped one
+// changes the length of the next round — so an exec who sets up a
+// 20-minute round before starting keeps it through a Stop.
 func (c Clock) Adjust(now time.Time, delta int) Clock {
 	left := max(0, c.RemainingAt(now)+delta)
 	c.Remaining = left
-	if c.Status == ClockRunning {
+	switch c.Status {
+	case ClockRunning:
 		c.EndsAt = now.Add(time.Duration(left) * time.Second)
+	case ClockStopped:
+		c.Duration = left
 	}
 	return c
 }

@@ -2,6 +2,7 @@ package cscomp
 
 import (
 	"context"
+	"errors"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -737,8 +738,14 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 
 	gotBytes, err := h.renderer.Render(ctx, req.Code)
 	if err != nil {
-		// A render failure is the submission's fault far more often than
-		// ours — markup that hangs the page, or exceeds the timeout.
+		// Running out of time — waiting for a render slot at the start of a
+		// round, or a render that didn't finish in time — is the server
+		// being saturated, not the submission being wrong, and the student
+		// should be told to retry rather than to fix their CSS.
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			http.Error(w, "the server is busy, try again in a few seconds", http.StatusServiceUnavailable)
+			return
+		}
 		http.Error(w, "could not render submission", http.StatusBadRequest)
 		return
 	}

@@ -212,42 +212,40 @@ func (s *Store) ListSubmissionsByTeam(ctx context.Context, teamID primitive.Obje
 
 // UpsertSubmission records an attempt, keeping the best result. Attempts
 // always increments; code, percent and timestamp only move when the new
-// attempt beats the stored one — which is why this reads before it writes
-// rather than using $max: the code has to travel with the percentage.
+// attempt beats the stored one. The comparison happens inside a single
+// pipeline update so two submits landing at once can't both read the old
+// best and let the worse one overwrite the better — the code has to travel
+// with the percentage, which is why this is a $cond rather than a $max.
+//
+// The name follows the person; the team is fixed at first submit so a
+// solve stays credited to the roster it was made on (see Submission)
+// rather than moving with them if they switch sub-teams.
 func (s *Store) UpsertSubmission(ctx context.Context, sub Submission) (*Submission, error) {
 	filter := bson.M{"challengeId": sub.ChallengeID, "clerkId": sub.ClerkID}
+	now := time.Now().UTC()
 
-	var existing Submission
-	err := s.submissions.FindOne(ctx, filter).Decode(&existing)
-	if err != nil && err != mongo.ErrNoDocuments {
-		return nil, err
-	}
-	improved := err == mongo.ErrNoDocuments || sub.MatchPercent > existing.MatchPercent
-
-	set := bson.M{}
-	if improved {
-		set["code"] = sub.Code
-		set["matchPercent"] = sub.MatchPercent
-		set["submittedAt"] = time.Now().UTC()
-	}
-	// The name follows the person; the team is fixed at first submit so a
-	// solve stays credited to the roster it was made on (see Submission)
-	// rather than moving with them if they switch sub-teams.
-	set["name"] = sub.Name
-
-	update := bson.M{
-		"$set": set,
-		"$inc": bson.M{"attempts": 1},
-		"$setOnInsert": bson.M{
-			"challengeId": sub.ChallengeID,
-			"clerkId":     sub.ClerkID,
-			"teamId":      sub.TeamID,
-		},
-	}
+	// A missing matchPercent (first attempt) reads as -1, so it always loses.
+	improved := bson.M{"$gt": bson.A{sub.MatchPercent, bson.M{"$ifNull": bson.A{"$matchPercent", -1}}}}
+	// $literal keeps a code string that happens to start with "$" from being
+	// read as a field path.
+	update := bson.A{bson.M{"$set": bson.M{
+		"teamId":       bson.M{"$ifNull": bson.A{"$teamId", sub.TeamID}},
+		"name":         bson.M{"$literal": sub.Name},
+		"attempts":     bson.M{"$add": bson.A{bson.M{"$ifNull": bson.A{"$attempts", 0}}, 1}},
+		"code":         bson.M{"$cond": bson.A{improved, bson.M{"$literal": sub.Code}, "$code"}},
+		"matchPercent": bson.M{"$cond": bson.A{improved, sub.MatchPercent, "$matchPercent"}},
+		"submittedAt":  bson.M{"$cond": bson.A{improved, now, "$submittedAt"}},
+	}}}
 	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
 
 	var out Submission
-	if err := s.submissions.FindOneAndUpdate(ctx, filter, update, opts).Decode(&out); err != nil {
+	err := s.submissions.FindOneAndUpdate(ctx, filter, update, opts).Decode(&out)
+	if mongo.IsDuplicateKeyError(err) {
+		// Two first attempts raced the unique index; the loser just retries
+		// against the document the winner inserted.
+		err = s.submissions.FindOneAndUpdate(ctx, filter, update, opts).Decode(&out)
+	}
+	if err != nil {
 		return nil, err
 	}
 	return &out, nil
