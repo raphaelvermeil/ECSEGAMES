@@ -77,6 +77,9 @@ export default function BattlePanel({
   // Tagged with the challenge it belongs to, so switching parts shows the
   // loading state rather than the previous part's target for a frame —
   // without clearing state synchronously inside the effect below.
+  // The challenge whose target failed to load, so the panel can say so
+  // instead of showing "Loading…" forever.
+  const [targetFailed, setTargetFailed] = useState<string | null>(null);
   const [target, setTarget] = useState<{ id: string; url: string } | null>(
     null,
   );
@@ -114,8 +117,12 @@ export default function BattlePanel({
         }
         url = next;
         setTarget({ id: challenge.id, url: next });
+        setTargetFailed(null);
       } catch {
-        if (!cancelled) setTarget(null);
+        if (!cancelled) {
+          setTarget(null);
+          setTargetFailed(challenge.id);
+        }
       }
     }
     load();
@@ -420,7 +427,9 @@ export default function BattlePanel({
                 />
               ) : (
                 <span className="font-mono text-[11px] text-sched-text-muted">
-                  Loading target…
+                  {targetFailed === challenge.id
+                    ? "Target image unavailable — tell an exec."
+                    : "Loading target…"}
                 </span>
               )}
             </div>

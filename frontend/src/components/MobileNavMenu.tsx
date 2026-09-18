@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignInButton, useAuth, useUser } from "@clerk/nextjs";
 import api from "@/lib/api";
 import { NAV_LINKS } from "@/lib/nav";
-import { useScrollLock } from "@/lib/overlay";
+import { useFocusTrap, useScrollLock } from "@/lib/overlay";
 import { teamLabel, type Team } from "@/lib/scores";
 
 // Right-side slide-in drawer for mobile nav — the shared Navbar's link row
@@ -37,6 +37,8 @@ export default function MobileNavMenu({
   // the screen are already --color-sched-chrome — exactly what the layout
   // declares as the default theme-color. There is nothing left to override.
   useScrollLock(open);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(panelRef, open);
 
   useEffect(() => {
     // Signed-out visitors have no team to show, and /api/me would 401 —
@@ -85,10 +87,12 @@ export default function MobileNavMenu({
         className="animate-sched-fade absolute inset-0 bg-[rgba(4,9,7,.7)]"
       />
       <div
+        ref={panelRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label="Navigation menu"
-        className="animate-sched-slide absolute inset-y-0 right-0 flex w-[76%] max-w-xs flex-col border-l border-sched-accent-dim bg-sched-bg-raised"
+        className="animate-sched-slide absolute inset-y-0 right-0 flex w-[76%] max-w-xs flex-col border-l border-sched-accent-dim bg-sched-bg-raised outline-none"
         // The panel's first 40px start at exactly the header's colour and
         // dissolve into its own, so the drawer phases out of the bar above
         // instead of butting against it with a hard horizontal edge. Written
@@ -109,8 +113,7 @@ export default function MobileNavMenu({
           {links.map((link) => {
             const active = link.exact
               ? pathname === link.href
-              : pathname === link.href ||
-                pathname.startsWith(link.href + "/");
+              : pathname === link.href || pathname.startsWith(link.href + "/");
             const Icon = link.icon;
             return (
               <Link

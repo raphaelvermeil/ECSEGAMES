@@ -2,6 +2,7 @@
 
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -95,9 +96,11 @@ const CampSceneMobile = forwardRef<
     setThumbWidthPct(Math.min(100, (el.clientWidth / el.scrollWidth) * 100));
   }, [scaledWidth, sceneHeight]);
 
-  function applyProgress(t: number) {
-    const el = containerRef.current;
-    if (el) el.scrollLeft = t * maxScrollRef.current;
+  // Pushes the slider thumb and the sun to match position t, throttled so
+  // the animation frame loop doesn't re-render on every frame. Both are
+  // stable (refs and setters only) so the frame loop effect can list
+  // applyProgress as a dependency without restarting every render.
+  const syncState = useCallback((t: number) => {
     const now = performance.now();
     if (now - lastStateUpdateRef.current >= STATE_UPDATE_INTERVAL_MS) {
       lastStateUpdateRef.current = now;
@@ -107,6 +110,25 @@ const CampSceneMobile = forwardRef<
         topPct: SUN_TOP_BASE - SUN_ARC * Math.sin(Math.PI * t),
       });
     }
+  }, []);
+
+  const applyProgress = useCallback(
+    (t: number) => {
+      const el = containerRef.current;
+      if (el) el.scrollLeft = t * maxScrollRef.current;
+      syncState(t);
+    },
+    [syncState],
+  );
+
+  // A manual drag of the strip moves scrollLeft without going through
+  // applyProgress, so follow it here — otherwise the thumb stays where the
+  // auto-pan left it and pressing play snaps the scene back there.
+  function onScroll() {
+    if (!pausedRef.current) return;
+    const el = containerRef.current;
+    if (!el || maxScrollRef.current === 0) return;
+    syncState(el.scrollLeft / maxScrollRef.current);
   }
 
   useEffect(() => {
@@ -126,7 +148,7 @@ const CampSceneMobile = forwardRef<
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [paused]);
+  }, [paused, applyProgress]);
 
   function pauseForManualInteraction() {
     pausedRef.current = true;
@@ -168,6 +190,7 @@ const CampSceneMobile = forwardRef<
         ref={containerRef}
         onPointerDown={pauseForManualInteraction}
         onWheel={pauseForManualInteraction}
+        onScroll={onScroll}
         className="min-h-0 grow shrink basis-0 overflow-x-auto overflow-y-hidden"
       >
         <div

@@ -30,8 +30,12 @@ export default function ClockControls({
 
   const running = clock.status === "running";
   // Start doubles as resume, and reads as such once time has been put on
-  // the clock and paused.
+  // the clock and paused. A clock paused after running out has nothing to
+  // resume (the server ignores the request), so the button is off until
+  // STOP resets the round.
   const startLabel = clock.status === "paused" ? "RESUME" : "START";
+  const expiredPause =
+    clock.status === "paused" && clock.remainingSeconds === 0;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -42,7 +46,8 @@ export default function ClockControls({
       <button
         type="button"
         onClick={() => onAction(running ? "pause" : "start")}
-        disabled={busy}
+        disabled={busy || expiredPause}
+        title={expiredPause ? "Time ran out — press STOP to reset" : undefined}
         className="min-h-9 px-3.5 font-mono text-[10px] font-medium tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-50"
         style={{
           background: running ? "none" : "#6ee787",

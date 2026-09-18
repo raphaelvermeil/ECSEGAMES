@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, Clock, Pin, X } from "@/components/icons";
 import type { ScheduleEvent } from "@/lib/events";
-import { useScrollLock } from "@/lib/overlay";
+import { useFocusTrap, useScrollLock } from "@/lib/overlay";
 import {
   categoryColor,
   formatFooterTimestamp,
@@ -15,9 +15,6 @@ import {
 } from "@/lib/schedule";
 import EventHistoryView from "./EventHistoryView";
 import ScoringPanel from "./ScoringPanel";
-
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export default function EventDetailModal({
   event,
@@ -42,63 +39,27 @@ export default function EventDetailModal({
   // dimmed blend of header-under-backdrop, which is no longer what is there.
   useScrollLock();
 
-  // Focus the panel on open, and hand focus back to whatever triggered it
-  // (the calendar row/rail item) on close.
+  // Focus lands on the panel on open and returns to the trigger (the
+  // calendar row/rail item) on close; Tab stays inside meanwhile.
   //
-  // preventScroll matters here. On a phone this is a bottom sheet that
-  // animates up from translateY(100%), so at the instant focus lands the
-  // panel is still entirely below the viewport — and a plain focus() makes
-  // the browser scroll its scrollable ancestors to reveal it, which parks
-  // the overlay at the panel's bottom. The result was a flash of the end of
-  // the description at the top of the screen before the animation finished
-  // and everything snapped back. The sheet is positioned by CSS; focus has
-  // no business moving it.
-  useEffect(() => {
-    const trigger = document.activeElement as HTMLElement | null;
-    panelRef.current?.focus({ preventScroll: true });
-    return () => trigger?.focus?.();
-  }, []);
+  // The hook focuses with preventScroll, which matters here. On a phone this
+  // is a bottom sheet that animates up from translateY(100%), so at the
+  // instant focus lands the panel is still entirely below the viewport — and
+  // a plain focus() makes the browser scroll its scrollable ancestors to
+  // reveal it, which parks the overlay at the panel's bottom. The sheet is
+  // positioned by CSS; focus has no business moving it.
+  useFocusTrap(panelRef);
 
   // Re-focus the panel whenever the detail/history content swaps out from
   // under the user, so keyboard/screen-reader users don't lose their place.
-  // Same reasoning on preventScroll — and note this also runs on mount, so
-  // without it the panel was being scrolled into view twice.
+  // Same reasoning on preventScroll.
   useEffect(() => {
     panelRef.current?.focus({ preventScroll: true });
   }, [tab]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
-      if (e.key !== "Tab" || !panelRef.current) return;
-      // Filter to actually-visible elements: ScoringPanel renders a desktop
-      // and a mobile block for every row (one hidden via `display:none` at
-      // the current breakpoint), so the raw query below matches each
-      // focusable twice — .focus() on a hidden one is a silent no-op that
-      // would otherwise let focus escape the trap.
-      const focusables = Array.from(
-        panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE),
-      ).filter((el) => el.offsetWidth || el.offsetHeight);
-      if (focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      // Initial focus lands on the panel container itself (see the mount
-      // effect above), not on `first` — treat that as the start of the
-      // sequence too, or a Shift+Tab from there escapes the trap entirely.
-      const active = document.activeElement;
-      if (e.shiftKey && (active === first || active === panelRef.current)) {
-        e.preventDefault();
-        last.focus();
-      } else if (
-        !e.shiftKey &&
-        (active === last || active === panelRef.current)
-      ) {
-        e.preventDefault();
-        first.focus();
-      }
+      if (e.key === "Escape") onClose();
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);

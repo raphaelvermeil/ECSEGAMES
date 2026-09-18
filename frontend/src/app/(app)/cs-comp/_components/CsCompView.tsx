@@ -69,7 +69,13 @@ export default function CsCompView() {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [result, setResult] = useState<SubmitResult | null>(null);
+  // The last submit's verdict, tagged with the challenge it was for so it
+  // can't linger on the editor after the current part changes underneath it
+  // (releasing a claim, for one, moves `current` without a pick).
+  const [result, setResult] = useState<{
+    id: string;
+    res: SubmitResult;
+  } | null>(null);
   const [clock, setClock] = useState<ClockView | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [clockBusy, setClockBusy] = useState(false);
@@ -354,7 +360,7 @@ export default function CsCompView() {
     run(async () => {
       const token = await getToken();
       const res = await submitCode(token, current.id, code);
-      setResult(res);
+      setResult({ id: current.id, res });
       await refreshMe();
     }, "Could not submit that solution.");
   }
@@ -461,7 +467,7 @@ export default function CsCompView() {
           solved={!!solved[partKey(current.level, current.part)]}
           best={mineForCurrent?.matchPercent ?? null}
           attempts={mineForCurrent?.attempts ?? 0}
-          result={result}
+          result={result && result.id === current.id ? result.res : null}
           claimedByMe={myClaim !== null}
           claimedByName={claimedByOther?.name ?? null}
           busy={busy}

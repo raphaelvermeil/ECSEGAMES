@@ -186,14 +186,17 @@ export default function StandingsPanel({
                     </span>
                   </span>
 
+                  {/* Ten pips per row (two levels), so forty parts stay
+                      legible in the fixed column instead of shrinking to
+                      slivers. */}
                   <span
-                    className="relative hidden w-[300px] flex-none gap-[5px] lg:flex"
+                    className="relative hidden w-[300px] flex-none grid-cols-10 gap-[3px] lg:grid"
                     aria-label={`${row.solved} of ${board.totalParts} parts solved`}
                   >
                     {pips(row.solvedParts, ordered).map((p) => (
                       <span
                         key={p.key}
-                        className="h-5 w-2"
+                        className="h-2 w-full"
                         style={{ background: p.fill }}
                       />
                     ))}
