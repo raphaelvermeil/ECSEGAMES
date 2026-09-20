@@ -47,7 +47,7 @@ export default function CsCompBanner({
   clockUrgent: boolean;
   canControlClock: boolean;
   clockBusy: boolean;
-  onClockAction: (action: ClockAction, seconds?: number) => void;
+  onClockAction: (action: ClockAction, endsAt?: number) => void;
   solvedCount: number;
   totalParts: number;
   onSelectView: (v: View) => void;
@@ -108,6 +108,19 @@ export default function CsCompBanner({
               >
                 {clockText}
               </div>
+
+              {/* The moment the comp is due to finish, so the room can see
+                  what it is working towards rather than only how much is
+                  left. Rendered in each viewer's own timezone. */}
+              {clock?.endsAt && (
+                <div className="mt-1 font-mono text-[9px] tracking-[0.1em] text-sched-text-muted">
+                  UNTIL{" "}
+                  {new Date(clock.endsAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

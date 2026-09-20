@@ -99,10 +99,13 @@ export interface ClockView {
   status: "stopped" | "running" | "paused";
   remainingSeconds: number;
   durationSeconds: number;
+  // The moment the round is due to finish, RFC3339 in UTC, or "" when no
+  // end has been set. Rendered in the viewer's own zone.
+  endsAt: string;
   updatedBy: string;
 }
 
-export type ClockAction = "start" | "pause" | "stop" | "adjust";
+export type ClockAction = "start" | "pause" | "stop" | "setEnd";
 
 export interface SubmitResult {
   matchPercent: number;
@@ -116,6 +119,13 @@ export interface SubmitResult {
 // Mirrors cscomp.PassThreshold — the server is what actually decides, this
 // is only so the editor can phrase a near miss.
 export const PASS_THRESHOLD = 98;
+
+// The challenge canvas, in CSS pixels. Mirrors cscomp's canvasWidth and
+// canvasHeight. Every challenge is authored in this coordinate space, so it
+// is the space the editor reports a cursor position in — the numbers that go
+// straight into a left and a top.
+export const CANVAS_WIDTH = 300;
+export const CANVAS_HEIGHT = 200;
 
 // How often the standings re-poll. Submissions land far apart even at full
 // tilt — a team of five writing CSS by hand is not a per-second event —
@@ -230,16 +240,17 @@ export async function fetchClock(token: Token): Promise<ClockView> {
   return res.data;
 }
 
-// Exec-only. `seconds` is read for "adjust" alone, and is signed: positive
-// adds time, negative takes it away.
+// Exec-only. `endsAt` is read for "setEnd" alone: a Unix timestamp in
+// seconds for the moment the comp runs until, resolved from the exec's own
+// timezone before it is sent.
 export async function controlClock(
   token: Token,
   action: ClockAction,
-  seconds = 0,
+  endsAt = 0,
 ): Promise<ClockView> {
   const res = await api.post<ClockView>(
     "/api/cscomp/clock",
-    { action, seconds },
+    { action, endsAt },
     auth(token),
   );
   return res.data;

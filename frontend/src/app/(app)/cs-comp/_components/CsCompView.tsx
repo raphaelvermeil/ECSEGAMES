@@ -134,12 +134,12 @@ export default function CsCompView() {
 
   // Exec-only, and enforced server-side too — hiding the controls is
   // convenience, not the gate.
-  async function onClockAction(action: ClockAction, seconds = 0) {
+  async function onClockAction(action: ClockAction, endsAt = 0) {
     setClockBusy(true);
     setActionError(null);
     try {
       const token = await getToken();
-      const next = await controlClock(token, action, seconds);
+      const next = await controlClock(token, action, endsAt);
       syncClock(next);
     } catch (err) {
       setActionError(errorText(err, "Could not change the clock."));

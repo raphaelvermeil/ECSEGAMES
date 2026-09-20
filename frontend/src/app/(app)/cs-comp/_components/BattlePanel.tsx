@@ -4,6 +4,8 @@ import { useAuth } from "@clerk/nextjs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { levelMeta } from "@/lib/cs-comp";
 import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
   fetchTargetURL,
   PASS_THRESHOLD,
   type Challenge,
@@ -71,6 +73,9 @@ export default function BattlePanel({
   const targetRef = useRef<HTMLImageElement>(null);
   const [picking, setPicking] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
+  // Where the pointer is on the target, in the challenge's own 300x200
+  // space. Null when the pointer is not over the image.
+  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const [copied, setCopied] = useState(false);
   const [showExample, setShowExample] = useState(false);
   const [previewCode, setPreviewCode] = useState(code);
@@ -146,23 +151,51 @@ export default function BattlePanel({
     }
   }
 
+  // Where the pointer sits inside the target, as a 0..1 fraction of each
+  // axis, or null when it is outside. The image is transform-scaled, so this
+  // goes through its visual box rather than offsetX/offsetY, which are not in
+  // the scaled coordinate space. Both the dropper and the coordinate readout
+  // start here, so there is one mapping to get right rather than two.
+  function targetFraction(e: React.MouseEvent<HTMLImageElement>) {
+    const img = targetRef.current;
+    if (!img || !img.complete || img.naturalWidth === 0) return null;
+    const rect = img.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return null;
+    const fx = (e.clientX - rect.left) / rect.width;
+    const fy = (e.clientY - rect.top) / rect.height;
+    if (fx < 0 || fy < 0 || fx >= 1 || fy >= 1) return null;
+    return { fx, fy };
+  }
+
+  // Reports the cursor in canvas coordinates, so a student can read a left
+  // and a top off the target instead of guessing them. Colours already come
+  // off the image exactly; this is the other half of that.
+  function trackTarget(e: React.MouseEvent<HTMLImageElement>) {
+    const at = targetFraction(e);
+    setCursor(
+      at === null
+        ? null
+        : {
+            x: Math.floor(at.fx * CANVAS_WIDTH),
+            y: Math.floor(at.fy * CANVAS_HEIGHT),
+          },
+    );
+  }
+
   // Samples a pixel out of the target image itself, rather than out of any
   // local copy of the scene: this is the same PNG the server diffs against,
   // so the colour the dropper reports is the colour that scores.
   function sampleTarget(e: React.MouseEvent<HTMLImageElement>) {
     const img = targetRef.current;
-    if (!img || !img.complete || img.naturalWidth === 0) return;
+    const at = targetFraction(e);
+    if (!img || at === null) return;
 
-    // The image is transform-scaled, so go through its visual box instead
-    // of offsetX/offsetY, which are not in the scaled coordinate space.
-    // Both ends of the mapping are the PNG's own pixels: drawing it at
+    // Both ends of this mapping are the PNG's own pixels: drawing it at
     // anything but its natural size would resample it, and a colour read
     // back out of a resampled copy is not the colour that scores.
     const { naturalWidth: w, naturalHeight: h } = img;
-    const rect = img.getBoundingClientRect();
-    const x = Math.floor(((e.clientX - rect.left) / rect.width) * w);
-    const y = Math.floor(((e.clientY - rect.top) / rect.height) * h);
-    if (x < 0 || y < 0 || x >= w || y >= h) return;
+    const x = Math.floor(at.fx * w);
+    const y = Math.floor(at.fy * h);
 
     const canvas = document.createElement("canvas");
     canvas.width = w;
@@ -373,6 +406,20 @@ export default function BattlePanel({
               <span className="font-mono text-[11px] font-medium tracking-[0.16em] text-sched-cream">
                 TARGET
               </span>
+
+              {/* Cursor position in the challenge's own coordinate space, so
+                  a left and a top can be read off the target rather than
+                  guessed. Dim placeholder keeps the header from reflowing
+                  when the pointer leaves. */}
+              <span
+                className="font-mono text-[10px] tracking-[0.1em]"
+                style={{ color: cursor ? "#e9f5cd" : "#4d6455" }}
+              >
+                {cursor
+                  ? `LEFT ${cursor.x} · TOP ${cursor.y}`
+                  : "LEFT — · TOP —"}
+              </span>
+
               <div className="flex-1" />
 
               {/* Last sampled colour. Clicking re-copies it, for when the
@@ -422,10 +469,9 @@ export default function BattlePanel({
                   width={300}
                   height={200}
                   onClick={picking ? sampleTarget : undefined}
-                  style={{
-                    transform: "scale(1.5)",
-                    cursor: picking ? "crosshair" : "default",
-                  }}
+                  onMouseMove={trackTarget}
+                  onMouseLeave={() => setCursor(null)}
+                  style={{ transform: "scale(1.5)", cursor: "crosshair" }}
                 />
               ) : (
                 <span className="font-mono text-[11px] text-sched-text-muted">

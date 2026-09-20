@@ -1,4 +1,4 @@
-// Package cscomp runs the CS competition: 30 CSS challenges a student
+// Package cscomp runs the CS competition: 40 CSS challenges a student
 // replicates by writing HTML and CSS, scored on how closely the result
 // matches a target image.
 //

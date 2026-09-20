@@ -90,14 +90,23 @@ type ClockView struct {
 	Status           string `json:"status"`
 	RemainingSeconds int    `json:"remainingSeconds"`
 	DurationSeconds  int    `json:"durationSeconds"`
-	UpdatedBy        string `json:"updatedBy"`
+	// EndsAt is the wall-clock moment the round is due to finish, RFC3339
+	// in UTC, or empty when no end has been set. The client renders it in
+	// the viewer's own zone, so the server never guesses at one.
+	EndsAt    string `json:"endsAt"`
+	UpdatedBy string `json:"updatedBy"`
 }
 
 func view(c *Clock, now time.Time) ClockView {
+	ends := ""
+	if e := c.EndTime(); !e.IsZero() {
+		ends = e.UTC().Format(time.RFC3339)
+	}
 	return ClockView{
 		Status:           c.Status,
 		RemainingSeconds: c.RemainingAt(now),
 		DurationSeconds:  c.Duration,
+		EndsAt:           ends,
 		UpdatedBy:        c.UpdatedBy,
 	}
 }
@@ -116,16 +125,18 @@ func (h *Handler) GetClock(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, view(c, time.Now().UTC()))
 }
 
-// clockRequest is one control action. Seconds is read only by "adjust",
-// where it is signed: positive adds time, negative takes it away.
+// clockRequest is one control action. EndsAt is read only by "setEnd", as
+// a Unix timestamp in seconds. The client resolves the exec's chosen time
+// of day into an absolute moment in their own zone before sending it, so
+// nothing here has to guess which day or which timezone was meant.
 type clockRequest struct {
-	Action  string `json:"action"`
-	Seconds int    `json:"seconds"`
+	Action string `json:"action"`
+	EndsAt int64  `json:"endsAt"`
 }
 
-// maxAdjustSeconds bounds a single adjustment so a typo cannot push the
-// comp hours out. Repeated presses still get you anywhere you need.
-const maxAdjustSeconds = 60 * 60
+// maxRoundLength bounds how far out an end may be set, so a mistyped hour
+// cannot park the comp half a day away.
+const maxRoundLength = 12 * time.Hour
 
 // ControlClock applies an exec's start/pause/stop/adjust to the shared
 // clock. The transitions themselves live on Clock (see clock.go); this
@@ -170,17 +181,22 @@ func (h *Handler) ControlClock(w http.ResponseWriter, r *http.Request) {
 	case "pause":
 		next = next.Pause(now)
 	case "stop":
-		next = next.Stop()
-	case "adjust":
-		if req.Seconds == 0 {
-			http.Error(w, "seconds is required", http.StatusBadRequest)
+		next = next.Stop(now)
+	case "setEnd":
+		if req.EndsAt == 0 {
+			http.Error(w, "an end time is required", http.StatusBadRequest)
 			return
 		}
-		if req.Seconds > maxAdjustSeconds || req.Seconds < -maxAdjustSeconds {
-			http.Error(w, "adjustment is too large", http.StatusBadRequest)
+		target := time.Unix(req.EndsAt, 0).UTC()
+		if !target.After(now) {
+			http.Error(w, "that end time has already passed", http.StatusBadRequest)
 			return
 		}
-		next = next.Adjust(now, req.Seconds)
+		if target.After(now.Add(maxRoundLength)) {
+			http.Error(w, "that end time is too far out", http.StatusBadRequest)
+			return
+		}
+		next = next.SetEnd(now, target)
 	default:
 		http.Error(w, "unknown action", http.StatusBadRequest)
 		return

@@ -28,49 +28,49 @@ export const LEVEL_META: LevelMeta[] = [
     n: 1,
     name: "WARM UP",
     color: "#6ee787",
-    note: "Flat blocks only — position, size, colour.",
+    note: "Basic exercises to get you started.",
   },
   {
     n: 2,
     name: "FIELD DAY",
     color: "#4cc9f0",
-    note: "Five or six blocks — stacking and border-radius.",
+    note: "Introduction of stacking and border-radius.",
   },
   {
     n: 3,
     name: "GOLDEN HOUR",
     color: "#ffd166",
-    note: "Seven blocks — clip-path triangles and rotation.",
+    note: "Introduction of clip-path triangles and rotation.",
   },
   {
     n: 4,
     name: "SCUNTS",
     color: "#c792ea",
-    note: "Nine or ten blocks — borders, overlap, transforms.",
+    note: "Introduction of borders, overlap and transforms.",
   },
   {
     n: 5,
-    name: "FINAL BOSS",
+    name: "AFTER DARK",
     color: "#ff7b54",
-    note: "Eleven blocks and up — full scenes, shadows, layering.",
+    note: "Full scenes with shadows and layering.",
   },
   {
     n: 6,
     name: "THE LANDSCAPE",
     color: "#58d6a8",
-    note: "One whole scene, fifteen blocks and up. No shortcuts.",
+    note: "Bigger scenes that put every technique together.",
   },
   {
     n: 7,
     name: "ASSEMBLY LINE",
     color: "#f48fb1",
-    note: "Flexbox. Paste the children, then count them with :nth-child.",
+    note: "Introduction of flexbox and repeated children.",
   },
   {
     n: 8,
-    name: "THE LONG VIEW",
+    name: "THE BIG BUILD",
     color: "#e9f5cd",
-    note: "Landscapes built out of repeats. Bands of rows, nested.",
+    note: "Introduction of nested rows and deeper layouts.",
   },
 ];
 
@@ -113,10 +113,16 @@ export function partKey(level: number, part: number): string {
   return `${level}-${part}`;
 }
 
+// Rolls into hours past the hour mark, so a long round reads 01:25:39
+// rather than 85:39. Under an hour it stays MM:SS: a five minute finish
+// should read 05:00, not 00:05:00.
 export function formatClock(seconds: number): string {
-  const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
-  const ss = String(seconds % 60).padStart(2, "0");
-  return `${mm}:${ss}`;
+  const total = Math.max(0, Math.floor(seconds));
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const hh = Math.floor(total / 3600);
+  const mm = Math.floor((total % 3600) / 60);
+  const ss = total % 60;
+  return hh > 0 ? `${pad(hh)}:${pad(mm)}:${pad(ss)}` : `${pad(mm)}:${pad(ss)}`;
 }
 
 export function initialsOf(name: string): string {
