@@ -50,12 +50,19 @@ function stepPath(
 }
 
 // Nudges end-labels apart when two teams finish on close totals, so they
-// never overlap into an unreadable pile.
+// never overlap into an unreadable pile — and keeps the pile inside the
+// plot, so four teams finishing together near the bottom don't push the
+// last label out of the SVG.
 function spreadLabels(rows: { team: Team; y: number }[]): Map<Team, number> {
   const sorted = [...rows].sort((a, b) => a.y - b.y);
   for (let i = 1; i < sorted.length; i++) {
     const gap = sorted[i].y - sorted[i - 1].y;
     if (gap < MIN_LABEL_GAP) sorted[i].y = sorted[i - 1].y + MIN_LABEL_GAP;
+  }
+  const bottom = HEIGHT - PAD.bottom;
+  const overflow = sorted.length ? sorted[sorted.length - 1].y - bottom : 0;
+  if (overflow > 0) {
+    for (const r of sorted) r.y = Math.max(PAD.top, r.y - overflow);
   }
   return new Map(sorted.map((r) => [r.team, r.y]));
 }
@@ -109,7 +116,9 @@ export default function ScoreChart({ data }: { data: ChartData }) {
     });
   }, [hoverT, data.series]);
 
-  function onMove(e: React.MouseEvent<SVGSVGElement>) {
+  // Pointer rather than mouse events, so a finger on the chart gets the
+  // same per-instant tooltip a cursor does.
+  function onMove(e: React.PointerEvent<SVGSVGElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
     const px = e.clientX - rect.left;
     const ratio = (px - PAD.left) / plotW;
@@ -129,8 +138,9 @@ export default function ScoreChart({ data }: { data: ChartData }) {
         aria-label={`Score over time. ${data.series
           .map((s) => `${teamLabel(s.team)} ${s.total}`)
           .join(", ")}.`}
-        onMouseMove={onMove}
-        onMouseLeave={() => setHoverT(null)}
+        onPointerMove={onMove}
+        onPointerDown={onMove}
+        onPointerLeave={() => setHoverT(null)}
         className="touch-none select-none"
       >
         {ticks.map((v) => (

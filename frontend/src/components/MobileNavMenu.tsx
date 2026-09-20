@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignInButton, useAuth, useUser } from "@clerk/nextjs";
 import api from "@/lib/api";
 import { NAV_LINKS } from "@/lib/nav";
-import { useScrollLock } from "@/lib/overlay";
+import { useFocusTrap, useScrollLock } from "@/lib/overlay";
 import { teamLabel, type Team } from "@/lib/scores";
 
 // Right-side slide-in drawer for mobile nav — the shared Navbar's link row
@@ -24,7 +24,9 @@ export default function MobileNavMenu({
   const pathname = usePathname();
   const { user } = useUser();
   const { getToken, isLoaded, isSignedIn } = useAuth();
-  const [team, setTeam] = useState<Team | null>(null);
+  // null = not fetched yet; "" = fetched, no team on file. Keeping the two
+  // apart is what stops a teamless user from re-fetching on every open.
+  const [team, setTeam] = useState<Team | "" | null>(null);
   // Same rule as the desktop Navbar: signed-in only tabs are hidden signed
   // out, and the public set is shown while Clerk is still resolving.
   const links =
@@ -37,19 +39,21 @@ export default function MobileNavMenu({
   // the screen are already --color-sched-chrome — exactly what the layout
   // declares as the default theme-color. There is nothing left to override.
   useScrollLock(open);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(panelRef, open);
 
   useEffect(() => {
     // Signed-out visitors have no team to show, and /api/me would 401 —
     // so the drawer opens with no network call at all for them.
-    if (!open || team || !user) return;
+    if (!open || team !== null || !user) return;
     let cancelled = false;
     (async () => {
       try {
         const token = await getToken();
-        const res = await api.get<{ team: Team }>("/api/me", {
+        const res = await api.get<{ team: Team | "" }>("/api/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!cancelled) setTeam(res.data.team);
+        if (!cancelled) setTeam(res.data.team ?? "");
       } catch {
         // Footer just omits the team line if this fails.
       }
@@ -85,10 +89,12 @@ export default function MobileNavMenu({
         className="animate-sched-fade absolute inset-0 bg-[rgba(4,9,7,.7)]"
       />
       <div
+        ref={panelRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label="Navigation menu"
-        className="animate-sched-slide absolute inset-y-0 right-0 flex w-[76%] max-w-xs flex-col border-l border-sched-accent-dim bg-sched-bg-raised"
+        className="animate-sched-slide absolute inset-y-0 right-0 flex w-[76%] max-w-xs flex-col border-l border-sched-accent-dim bg-sched-bg-raised outline-none"
         // The panel's first 40px start at exactly the header's colour and
         // dissolve into its own, so the drawer phases out of the bar above
         // instead of butting against it with a hard horizontal edge. Written
@@ -109,8 +115,7 @@ export default function MobileNavMenu({
           {links.map((link) => {
             const active = link.exact
               ? pathname === link.href
-              : pathname === link.href ||
-                pathname.startsWith(link.href + "/");
+              : pathname === link.href || pathname.startsWith(link.href + "/");
             const Icon = link.icon;
             return (
               <Link

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { X } from "@/components/icons";
+import { useFocusTrap, useScrollLock } from "@/lib/overlay";
 import type { TeamMember } from "@/lib/team";
 import { crewFor, initials } from "@/lib/team";
 
@@ -17,6 +18,12 @@ export default function TeamMemberModal({
   member: TeamMember | null;
   onClose: () => void;
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Same overlay behaviour as the schedule's sheets: the scene behind holds
+  // still and Tab stays inside the dialog.
+  useScrollLock(member !== null);
+  useFocusTrap(panelRef, member !== null);
+
   useEffect(() => {
     if (!member) return;
     function onKeyDown(e: KeyboardEvent) {
@@ -39,6 +46,8 @@ export default function TeamMemberModal({
       style={{ background: "rgba(4,9,7,.72)" }}
     >
       <div
+        ref={panelRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={member.name}
@@ -62,12 +71,14 @@ export default function TeamMemberModal({
             color: crew.color,
           }}
         >
+          {/* Same pre-sized file the scene's avatar already loaded, so this
+              paints from the browser cache — see CampScene's Avatar. */}
           {member.photoPath ? (
             <Image
               src={member.photoPath}
               alt=""
               fill
-              sizes="136px"
+              unoptimized
               style={{ objectFit: "cover" }}
             />
           ) : (

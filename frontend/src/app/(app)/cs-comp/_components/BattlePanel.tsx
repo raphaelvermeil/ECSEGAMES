@@ -4,6 +4,8 @@ import { useAuth } from "@clerk/nextjs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { levelMeta } from "@/lib/cs-comp";
 import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
   fetchTargetURL,
   PASS_THRESHOLD,
   type Challenge,
@@ -71,19 +73,37 @@ export default function BattlePanel({
   const targetRef = useRef<HTMLImageElement>(null);
   const [picking, setPicking] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
+  // Where the pointer is on the target, in the challenge's own 300x200
+  // space. Null when the pointer is not over the image.
+  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showExample, setShowExample] = useState(false);
   const [previewCode, setPreviewCode] = useState(code);
   // Tagged with the challenge it belongs to, so switching parts shows the
   // loading state rather than the previous part's target for a frame —
   // without clearing state synchronously inside the effect below.
+  // The challenge whose target failed to load, so the panel can say so
+  // instead of showing "Loading…" forever.
+  const [targetFailed, setTargetFailed] = useState<string | null>(null);
   const [target, setTarget] = useState<{ id: string; url: string } | null>(
     null,
   );
 
+  // The debounce is there to stop an iframe reload per keystroke, and a part
+  // switch is not typing: it swapped the whole scene at once, so waiting the
+  // full delay just leaves the previous part's render on screen. Flush
+  // immediately when the challenge changes, debounce only within one.
+  const previewFor = useRef(challenge.id);
   useEffect(() => {
+    if (previewFor.current !== challenge.id) {
+      previewFor.current = challenge.id;
+      setPreviewCode(code);
+      setShowExample(false);
+      return;
+    }
     const t = setTimeout(() => setPreviewCode(code), PREVIEW_DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [code]);
+  }, [code, challenge.id]);
 
   // The target is the exact PNG the server diffs against, fetched rather
   // than rebuilt locally — a target drawn from a second copy of the scene
@@ -102,8 +122,12 @@ export default function BattlePanel({
         }
         url = next;
         setTarget({ id: challenge.id, url: next });
+        setTargetFailed(null);
       } catch {
-        if (!cancelled) setTarget(null);
+        if (!cancelled) {
+          setTarget(null);
+          setTargetFailed(challenge.id);
+        }
       }
     }
     load();
@@ -127,23 +151,51 @@ export default function BattlePanel({
     }
   }
 
+  // Where the pointer sits inside the target, as a 0..1 fraction of each
+  // axis, or null when it is outside. The image is transform-scaled, so this
+  // goes through its visual box rather than offsetX/offsetY, which are not in
+  // the scaled coordinate space. Both the dropper and the coordinate readout
+  // start here, so there is one mapping to get right rather than two.
+  function targetFraction(e: React.MouseEvent<HTMLImageElement>) {
+    const img = targetRef.current;
+    if (!img || !img.complete || img.naturalWidth === 0) return null;
+    const rect = img.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return null;
+    const fx = (e.clientX - rect.left) / rect.width;
+    const fy = (e.clientY - rect.top) / rect.height;
+    if (fx < 0 || fy < 0 || fx >= 1 || fy >= 1) return null;
+    return { fx, fy };
+  }
+
+  // Reports the cursor in canvas coordinates, so a student can read a left
+  // and a top off the target instead of guessing them. Colours already come
+  // off the image exactly; this is the other half of that.
+  function trackTarget(e: React.MouseEvent<HTMLImageElement>) {
+    const at = targetFraction(e);
+    setCursor(
+      at === null
+        ? null
+        : {
+            x: Math.floor(at.fx * CANVAS_WIDTH),
+            y: Math.floor(at.fy * CANVAS_HEIGHT),
+          },
+    );
+  }
+
   // Samples a pixel out of the target image itself, rather than out of any
   // local copy of the scene: this is the same PNG the server diffs against,
   // so the colour the dropper reports is the colour that scores.
   function sampleTarget(e: React.MouseEvent<HTMLImageElement>) {
     const img = targetRef.current;
-    if (!img || !img.complete || img.naturalWidth === 0) return;
+    const at = targetFraction(e);
+    if (!img || at === null) return;
 
-    // The image is transform-scaled, so go through its visual box instead
-    // of offsetX/offsetY, which are not in the scaled coordinate space.
-    // Both ends of the mapping are the PNG's own pixels: drawing it at
+    // Both ends of this mapping are the PNG's own pixels: drawing it at
     // anything but its natural size would resample it, and a colour read
     // back out of a resampled copy is not the colour that scores.
     const { naturalWidth: w, naturalHeight: h } = img;
-    const rect = img.getBoundingClientRect();
-    const x = Math.floor(((e.clientX - rect.left) / rect.width) * w);
-    const y = Math.floor(((e.clientY - rect.top) / rect.height) * h);
-    if (x < 0 || y < 0 || x >= w || y >= h) return;
+    const x = Math.floor(at.fx * w);
+    const y = Math.floor(at.fy * h);
 
     const canvas = document.createElement("canvas");
     canvas.width = w;
@@ -209,7 +261,7 @@ export default function BattlePanel({
         </span>
       </div>
 
-      {/* Claims are how a squad splits the 30 parts without two people
+      {/* Claims are how a squad splits the parts without two people
           building the same scene. One per person per level, so the button
           is also the only place that rule becomes visible. */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -266,10 +318,12 @@ export default function BattlePanel({
             </span>
             <div className="flex-1" />
             <span className="font-mono text-[10px] tracking-[0.14em] text-sched-text-muted">
-              CHARS
+              BYTES
             </span>
+            {/* Bytes, not characters: the server's 64 KB limit is on the
+                encoded size, and non-ASCII text would otherwise read under. */}
             <span className="font-mono text-sm font-medium text-sched-cream">
-              {code.length}
+              {new TextEncoder().encode(code).length}
             </span>
           </div>
           <div className="flex min-h-0">
@@ -352,6 +406,20 @@ export default function BattlePanel({
               <span className="font-mono text-[11px] font-medium tracking-[0.16em] text-sched-cream">
                 TARGET
               </span>
+
+              {/* Cursor position in the challenge's own coordinate space, so
+                  a left and a top can be read off the target rather than
+                  guessed. Dim placeholder keeps the header from reflowing
+                  when the pointer leaves. */}
+              <span
+                className="font-mono text-[10px] tracking-[0.1em]"
+                style={{ color: cursor ? "#e9f5cd" : "#4d6455" }}
+              >
+                {cursor
+                  ? `LEFT ${cursor.x} · TOP ${cursor.y}`
+                  : "LEFT — · TOP —"}
+              </span>
+
               <div className="flex-1" />
 
               {/* Last sampled colour. Clicking re-copies it, for when the
@@ -401,14 +469,15 @@ export default function BattlePanel({
                   width={300}
                   height={200}
                   onClick={picking ? sampleTarget : undefined}
-                  style={{
-                    transform: "scale(1.5)",
-                    cursor: picking ? "crosshair" : "default",
-                  }}
+                  onMouseMove={trackTarget}
+                  onMouseLeave={() => setCursor(null)}
+                  style={{ transform: "scale(1.5)", cursor: "crosshair" }}
                 />
               ) : (
                 <span className="font-mono text-[11px] text-sched-text-muted">
-                  Loading target…
+                  {targetFailed === challenge.id
+                    ? "Target image unavailable — tell an exec."
+                    : "Loading target…"}
                 </span>
               )}
             </div>
@@ -469,6 +538,45 @@ export default function BattlePanel({
               )}
             </div>
           </div>
+
+          {/* Levels 7 and 8 ask for a technique nobody is expected to walk
+              in knowing, so they carry a worked example of it on a scene
+              that is not the part. Levels that teach nothing send an empty
+              string and get no panel. */}
+          {challenge.example && (
+            <div
+              className="bg-sched-bg-raised"
+              style={{ border: "1px solid var(--color-sched-hair)" }}
+            >
+              <div className="flex items-center gap-2.5 border-b border-sched-hair bg-[#16241c] px-4 py-3">
+                <span className="font-mono text-[11px] font-medium tracking-[0.16em] text-sched-cream">
+                  HOW IT WORKS
+                </span>
+                <span className="font-mono text-[10px] tracking-[0.1em] text-sched-text-muted">
+                  worked example · not this part
+                </span>
+                <div className="flex-1" />
+                <button
+                  type="button"
+                  onClick={() => setShowExample((v) => !v)}
+                  aria-expanded={showExample}
+                  className="min-h-[34px] px-3 font-mono text-[10px] font-medium tracking-[0.14em]"
+                  style={{
+                    background: showExample ? "#6ee787" : "none",
+                    border: `1px solid ${showExample ? "#6ee787" : "var(--color-sched-hair)"}`,
+                    color: showExample ? "#0b1310" : "#7f9482",
+                  }}
+                >
+                  {showExample ? "HIDE" : "SHOW"}
+                </button>
+              </div>
+              {showExample && (
+                <pre className="max-h-[420px] overflow-auto bg-[#0d1712] px-4 py-3.5 font-mono text-xs leading-[1.6] text-[#d7ecd2]">
+                  {challenge.example}
+                </pre>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

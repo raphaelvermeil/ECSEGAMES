@@ -50,18 +50,38 @@ type setTeamRequest struct {
 	Email string      `json:"email"`
 }
 
+// Bounds on the free-text profile fields. Name in particular is rendered
+// verbatim as the actor in every audit entry, so it shouldn't be unbounded.
+const (
+	maxNameLen  = 100
+	maxMajorLen = 100
+	maxEmailLen = 254
+)
+
 func (req setTeamRequest) validate() string {
 	if !models.IsValidTeam(req.Team) {
 		return "invalid team"
 	}
-	if strings.TrimSpace(req.Name) == "" {
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
 		return "name is required"
 	}
-	if strings.TrimSpace(req.Major) == "" {
+	if len(name) > maxNameLen {
+		return "name is too long"
+	}
+	major := strings.TrimSpace(req.Major)
+	if major == "" {
 		return "major is required"
 	}
-	if strings.TrimSpace(req.Email) == "" {
+	if len(major) > maxMajorLen {
+		return "major is too long"
+	}
+	email := strings.TrimSpace(req.Email)
+	if email == "" {
 		return "email is required"
+	}
+	if len(email) > maxEmailLen || !strings.Contains(email, "@") {
+		return "invalid email"
 	}
 	return ""
 }

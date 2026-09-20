@@ -1,1 +1,8 @@
-graphify-out/graph.json merge=graphify
+# Check source out with LF line endings on every platform, so gofmt -l and
+# prettier --check report real formatting problems rather than CRLF noise.
+# An existing checkout keeps its current endings until the files are next
+# checked out (git checkout -- . after a stash, or a fresh clone).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

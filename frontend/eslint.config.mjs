@@ -45,6 +45,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Design mockups and scratch exports, not part of the app.
+    "MockupUI/**",
+    "designs/**",
   ]),
 ]);
 

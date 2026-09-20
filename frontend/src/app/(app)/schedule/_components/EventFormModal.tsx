@@ -11,12 +11,15 @@ import {
   SHORT_DESCRIPTION_MAX,
   categoryColor,
   formatDayLabel,
+  formatModalDate,
   formatTime,
   withAlpha,
+  zonedDate,
+  zonedParts,
 } from "@/lib/schedule";
 
 const FOCUSABLE =
-  'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 // The Games run one fixed weekend — events can only start on one of these
 // three days. Change GAMES_YEAR when the Games move to a new year.
@@ -46,7 +49,12 @@ interface FormFields {
   access: string;
   captain: string;
   category: EventCategory;
-  day: number; // day-of-month within GAMES_MONTH/GAMES_YEAR — one of GAMES_DAYS
+  // The start date. New events are always on the Games weekend; an existing
+  // event keeps whatever date it has, even off-weekend, so editing its title
+  // can't silently move it.
+  year: number;
+  month: number; // 0-based
+  day: number;
   st: string; // start time, "HH:mm"
   durationHours: string; // free text so the field can be empty mid-edit
   location: string;
@@ -64,7 +72,10 @@ function initialFields(event: ScheduleEvent | null): FormFields {
   if (event) {
     const start = new Date(event.startsAt);
     const end = new Date(event.endsAt);
-    const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+    // Whole minutes, so a 25-minute event round-trips as exactly 25 minutes
+    // instead of drifting a few seconds on every save.
+    const minutes = Math.round((end.getTime() - start.getTime()) / 60000);
+    const p = zonedParts(start);
     return {
       title: event.title,
       shortDescription: event.shortDescription,
@@ -72,9 +83,11 @@ function initialFields(event: ScheduleEvent | null): FormFields {
       access: event.access,
       captain: event.captain,
       category: event.category,
-      day: start.getDate(),
+      year: p.year,
+      month: p.month,
+      day: p.day,
       st: formatTime(start),
-      durationHours: String(Math.round(hours * 100) / 100),
+      durationHours: String(Math.round((minutes / 60) * 10000) / 10000),
       location: event.location,
     };
   }
@@ -85,6 +98,8 @@ function initialFields(event: ScheduleEvent | null): FormFields {
     access: "",
     captain: "",
     category: CATEGORIES[0],
+    year: GAMES_YEAR,
+    month: GAMES_MONTH,
     day: GAMES_DAYS[0],
     st: "",
     durationHours: "",
@@ -92,13 +107,23 @@ function initialFields(event: ScheduleEvent | null): FormFields {
   };
 }
 
-// Builds the start instant from the fixed Games weekend + the chosen day,
-// hour and minute — there's no free-form date to parse.
-function buildStart(day: number, timeStr: string): Date | null {
-  if (!timeStr) return null;
-  const [h, m] = timeStr.split(":").map(Number);
+// Builds the start instant from the form's date and time fields, in the
+// Games' timezone — there's no free-form date to parse.
+function buildStart(f: FormFields): Date | null {
+  if (!f.st) return null;
+  const [h, m] = f.st.split(":").map(Number);
   if (Number.isNaN(h) || Number.isNaN(m)) return null;
-  return new Date(GAMES_YEAR, GAMES_MONTH, day, h, m);
+  return zonedDate(f.year, f.month, f.day, h, m);
+}
+
+// Whether the form's date is one of the Games days; an existing event may
+// sit elsewhere, and the picker shows that rather than hiding it.
+function onGamesWeekend(f: FormFields): boolean {
+  return (
+    f.year === GAMES_YEAR &&
+    f.month === GAMES_MONTH &&
+    GAMES_DAYS.includes(f.day)
+  );
 }
 
 function validate(f: FormFields): FormErrors {
@@ -116,8 +141,10 @@ function validate(f: FormFields): FormErrors {
     errors.start = "Set a start time.";
   }
   const hours = Number(f.durationHours);
-  if (!f.durationHours || Number.isNaN(hours) || hours <= 0) {
-    errors.duration = "Set how many hours this runs for.";
+  if (!f.durationHours || Number.isNaN(hours) || hours < 0.25) {
+    errors.duration = "Set how many hours this runs for (at least 0.25).";
+  } else if (hours > 72) {
+    errors.duration = "Keep this under 72 hours.";
   }
   if (!f.location.trim()) {
     errors.location = "Add a location, or write Online.";
@@ -157,7 +184,7 @@ export default function EventFormModal({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const panelRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLFormElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const shortRef = useRef<HTMLInputElement>(null);
   const startRef = useRef<HTMLInputElement>(null);
@@ -176,6 +203,12 @@ export default function EventFormModal({
 
   function set<K extends keyof FormFields>(key: K, value: FormFields[K]) {
     setFields((f) => ({ ...f, [key]: value }));
+  }
+
+  // Choosing a Games day also pins the year and month, which is what moves
+  // an off-weekend event onto the weekend on purpose rather than by accident.
+  function pickDay(day: number) {
+    setFields((f) => ({ ...f, year: GAMES_YEAR, month: GAMES_MONTH, day }));
   }
 
   // Full-screen and opaque below lg, so the top edge is the panel itself
@@ -238,9 +271,13 @@ export default function EventFormModal({
       return;
     }
 
-    const start = buildStart(fields.day, fields.st)!;
+    const start = buildStart(fields)!;
+    // Snap the end to a whole minute so the stored duration is exact.
     const end = new Date(
-      start.getTime() + Number(fields.durationHours) * 60 * 60 * 1000,
+      Math.round(
+        (start.getTime() + Number(fields.durationHours) * 60 * 60 * 1000) /
+          60000,
+      ) * 60000,
     );
     const body = {
       title: fields.title.trim(),
@@ -262,7 +299,7 @@ export default function EventFormModal({
       const res =
         mode === "create"
           ? await api.post<ScheduleEvent>("/api/events", body, { headers })
-          : await api.patch<ScheduleEvent>(`/api/events/${event!.id}`, body, {
+          : await api.put<ScheduleEvent>(`/api/events/${event!.id}`, body, {
               headers,
             });
       onSaved(res.data);
@@ -292,13 +329,19 @@ export default function EventFormModal({
       onClick={onClose}
       className="fixed inset-0 z-[70] flex flex-col overflow-hidden bg-sched-bg lg:flex-row lg:items-start lg:justify-center lg:overflow-y-auto lg:bg-[rgba(4,9,7,.72)] lg:px-5 lg:py-12 lg:backdrop-blur-[4px] lg:animate-sched-fade"
     >
-      <div
+      {/* A real form, so Enter in any text field saves. */}
+      <form
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={mode === "create" ? "New event" : "Edit event"}
         tabIndex={-1}
+        noValidate
         onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSave();
+        }}
         className="animate-sched-sheet flex h-full w-full flex-col bg-sched-bg-raised font-mono outline-none lg:animate-sched-pop lg:h-auto lg:max-w-[700px] lg:border lg:border-sched-accent-dim"
       >
         <div className="flex flex-none items-center justify-between border-b border-sched-hair px-5 pb-6 pt-[calc(1.5rem+var(--app-safe-top))] lg:px-[30px] lg:pt-6">
@@ -413,14 +456,14 @@ export default function EventFormModal({
                 className="flex border border-sched-hair"
               >
                 {GAMES_DAYS.map((day) => {
-                  const active = fields.day === day;
+                  const active = onGamesWeekend(fields) && fields.day === day;
                   return (
                     <button
                       key={day}
                       type="button"
                       role="radio"
                       aria-checked={active}
-                      onClick={() => set("day", day)}
+                      onClick={() => pickDay(day)}
                       className="flex-1 px-[6px] py-[11px] font-mono text-[11px] font-medium uppercase tracking-[0.08em]"
                       style={{
                         background: active ? ACCENT_WASH : "transparent",
@@ -430,10 +473,31 @@ export default function EventFormModal({
                         borderBottom: `2px solid ${active ? "var(--color-sched-accent)" : "transparent"}`,
                       }}
                     >
-                      {formatDayLabel(new Date(GAMES_YEAR, GAMES_MONTH, day))}
+                      {formatDayLabel(
+                        zonedDate(GAMES_YEAR, GAMES_MONTH, day, 12, 0),
+                      )}
                     </button>
                   );
                 })}
+                {/* An existing event that isn't on the Games weekend keeps
+                    its date, and shows it, so nothing is rewritten silently.
+                    Picking one of the days above moves it. */}
+                {!onGamesWeekend(fields) && (
+                  <span
+                    role="radio"
+                    aria-checked="true"
+                    className="flex-1 px-[6px] py-[11px] font-mono text-[11px] font-medium uppercase tracking-[0.08em]"
+                    style={{
+                      background: ACCENT_WASH,
+                      color: "var(--color-sched-accent)",
+                      borderBottom: "2px solid var(--color-sched-accent)",
+                    }}
+                  >
+                    {formatModalDate(
+                      zonedDate(fields.year, fields.month, fields.day, 12, 0),
+                    )}
+                  </span>
+                )}
               </div>
             </div>
             <div>
@@ -458,14 +522,17 @@ export default function EventFormModal({
                 id="f-duration"
                 ref={durationRef}
                 type="number"
-                min="0.5"
-                step="0.5"
+                min="0.25"
+                max="72"
+                step="0.25"
                 value={fields.durationHours}
                 onChange={(e) => set("durationHours", e.target.value)}
                 placeholder="2"
                 className={`${inputClass} w-full`}
               />
-              {errors.duration && <p className={errorClass}>{errors.duration}</p>}
+              {errors.duration && (
+                <p className={errorClass}>{errors.duration}</p>
+              )}
             </div>
           </div>
 
@@ -568,8 +635,7 @@ export default function EventFormModal({
 
         <div className="flex flex-none items-center gap-4 border-t border-sched-hair px-5 pb-[26px] pt-5 lg:border-t-0 lg:px-[30px]">
           <button
-            type="button"
-            onClick={handleSave}
+            type="submit"
             disabled={submitting}
             className="flex-1 bg-sched-accent px-6 py-[13px] font-display text-sm font-semibold tracking-[0.07em] text-sched-fill transition-[filter] hover:brightness-[1.12] disabled:opacity-60 lg:flex-none"
           >
@@ -593,7 +659,7 @@ export default function EventFormModal({
             </button>
           )}
         </div>
-      </div>
+      </form>
     </div>
   );
 }

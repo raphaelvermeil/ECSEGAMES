@@ -37,7 +37,10 @@ export default function ViewportFloor() {
     const mql = window.matchMedia(DESKTOP_QUERY);
 
     const measureFloor = () => {
-      root.style.setProperty("--app-floor-w", `${window.innerWidth}px`);
+      // clientWidth, not innerWidth: innerWidth includes the vertical
+      // scrollbar, and a floor that wide leaves every scrolling page a
+      // scrollbar's width too wide.
+      root.style.setProperty("--app-floor-w", `${root.clientWidth}px`);
       root.style.setProperty("--app-floor-h", `${window.innerHeight}px`);
     };
 

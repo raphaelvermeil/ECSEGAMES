@@ -1,6 +1,60 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, type RefObject } from "react";
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Keeps Tab and Shift+Tab inside a dialog while it is open, and moves focus
+ * into it on open so keyboard and screen-reader users land in the overlay
+ * rather than on whatever is behind it. The panel should have tabIndex={-1}
+ * so it can take that initial focus; a Tab from there goes to its first
+ * control.
+ *
+ * Only visible controls count: a panel that renders desktop and mobile
+ * variants of a row has one of them display:none, and .focus() on a hidden
+ * element is a silent no-op that would let focus escape.
+ */
+export function useFocusTrap(
+  panelRef: RefObject<HTMLElement | null>,
+  active = true,
+) {
+  useEffect(() => {
+    if (!active) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const trigger = document.activeElement as HTMLElement | null;
+    panel.focus({ preventScroll: true });
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Tab" || !panel) return;
+      const focusables = Array.from(
+        panel.querySelectorAll<HTMLElement>(FOCUSABLE),
+      ).filter((el) => el.offsetWidth || el.offsetHeight);
+      if (focusables.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const current = document.activeElement;
+      if (e.shiftKey && (current === first || current === panel)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (current === last || current === panel)) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      trigger?.focus?.({ preventScroll: true });
+    };
+  }, [panelRef, active]);
+}
 
 // Shared behaviour for the full-screen overlays — the event sheet, the event
 // form, the mobile nav drawer. Both hooks are no-ops when `active` is false,

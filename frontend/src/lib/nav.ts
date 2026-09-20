@@ -44,7 +44,7 @@ export const NAV_LINKS: NavLink[] = [
   {
     href: "/leaderboard",
     label: "Leaderboard",
-    description: "Coming soon.",
+    description: "Live standings across every event.",
     icon: Trophy,
   },
   {

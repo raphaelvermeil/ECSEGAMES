@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { API_TIMEOUT_MS, API_URL } from "@/lib/api";
 import { listEvents } from "@/lib/events";
 import ScheduleView from "./_components/ScheduleView";
 
@@ -11,7 +12,10 @@ export default async function SchedulePage() {
   // Events are public, so this runs either way. The role lookup only happens
   // for a signed-in visitor: there is no point asking /api/me who a
   // signed-out reader is, and the endpoint would 401 anyway.
-  const [events, role] = await Promise.all([listEvents(), roleFor(userId, getToken)]);
+  const [events, role] = await Promise.all([
+    listEvents(),
+    roleFor(userId, getToken),
+  ]);
 
   const canManage = role === "exec" || role === "admin";
 
@@ -28,9 +32,10 @@ async function roleFor(
   if (!userId) return null;
   try {
     const token = await getToken();
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
+    const res = await fetch(`${API_URL}/api/me`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     return (await res.json()).role ?? null;

@@ -27,8 +27,12 @@ and Next.js frontend live side by side in this monorepo. See [README.md](README.
 from-scratch explanation of every technology used, and [DEPLOYMENT.md](DEPLOYMENT.md) for what
 is currently dev-only and must change before production.
 
-No test suite exists yet in either backend or frontend (no `*_test.go` files, no JS test
-runner configured) — don't invent test commands.
+`backend/internal/cscomp/clock_test.go` covers the comp clock's transitions and needs no
+setup. The other tests are the Mongo integration tests in
+`backend/internal/users/repository_test.go`,
+which run under `go test ./...` only when `TEST_MONGO_URI` is set (they insert and delete
+user documents, so they never fall back to `MONGO_URI`). The frontend has no test runner —
+don't invent test commands.
 
 ## Commands
 
@@ -66,8 +70,9 @@ context. The frontend must never hold secrets or enforce rules — the backend i
 that talks to MongoDB and the only place authorization is enforced.
 
 MongoDB is optional at boot ([backend/cmd/api/main.go](backend/cmd/api/main.go)): if
-`MONGO_URI` is unset, the server starts with just `/health` and `/ready` — the Clerk webhook
-and all data routes (`users`, `events`, `scores`) are not mounted at all.
+`MONGO_URI` is unset, the server starts with just `/health` and `/ready` — all data routes
+(`users`, `events`, `scores`, `cscomp`) are not mounted at all. When it is set, the unique
+indexes each store depends on are created at boot and a failure to build them is fatal.
 
 ### Backend layout (`backend/`)
 
@@ -82,8 +87,8 @@ Standard Go layout: `cmd/` holds entry points, `internal/` holds private package
   and `RequireRole` (RBAC gate — see below). `RequireRole` must run after `RequireAuth`.
 - `internal/models` — shared domain types (`User`, `Role`, `Team`).
 - `internal/users` — user repository (`GetOrCreate` upserts a user from a Clerk ID).
-- `internal/handlers` — `/health`, `/ready`, the Clerk webhook (`user.created` → upserts a
-  `User`, verified by Svix signature rather than the JWT middleware), `/api/me`, `/api/team`.
+- `internal/handlers` — `/health`, `/ready`, `/api/me` (creates the user record lazily on
+  first call from the verified Clerk ID — there is no Clerk webhook), `/api/team`.
 - `internal/events`, `internal/scores` — each is a self-contained feature module: `store.go`
   (Mongo access), `events.go`/`scores.go` (domain types), `routes.go` (handler + `Mount(r, ...)`
   that registers its own route group with its own auth/RBAC requirements). New backend features
@@ -95,9 +100,12 @@ Standard Go layout: `cmd/` holds entry points, `internal/` holds private package
 **Role-based access (RBAC):** three roles, ranked `admin > exec > student`
 ([internal/models/user.go](backend/internal/models/user.go)). `RequireRole(repo, minimum)`
 looks up the caller's role and rejects (403) if it ranks below `minimum`. Current policy:
-event reads require any authenticated user; event writes and the entire scores surface
-(reads included) require `RoleExec` or above — event history is intentionally readable by
-anyone who can read the event, since it's a historical record, not the live scoring panel.
+the schedule (`GET /api/events`, `GET /api/events/{id}`) and `GET /api/leaderboard` are
+public with no auth at all — the leaderboard returns only aggregates, never event identity
+or actor. Event writes, event history, and the per-event scores surface (reads included)
+require `RoleExec` or above; history carries the who-awarded-what paper trail, so it sits
+behind the same gate as the scores it describes. The CS comp is any signed-in user, except
+`POST /api/cscomp/clock` which is exec-only.
 
 ### Frontend layout (`frontend/src/`)
 

@@ -1,5 +1,5 @@
-// Command seedcscomp builds the CS competition: it renders the 30 target
-// images to disk and upserts the matching challenge documents. Run with
+// Command seedcscomp builds the CS competition: it renders every target
+// image to disk and upserts the matching challenge documents. Run with
 // `go run ./cmd/seedcscomp` (needs MONGO_URI and a Chrome on the host).
 //
 // The targets are rendered here, through the same cscomp.Renderer the
@@ -57,8 +57,10 @@ func main() {
 	}
 
 	n := 0
+	var authored []string
 	for _, lv := range levels {
 		for i, pt := range lv.parts {
+			authored = append(authored, pt.title)
 			png, err := renderer.Render(ctx, targetDoc(lv, pt))
 			if err != nil {
 				log.Fatalf("render %q: %v", pt.title, err)
@@ -74,12 +76,25 @@ func main() {
 				Part:    i + 1,
 				Points:  points(lv.n),
 				Starter: starter(lv, pt),
+				Example: lv.example,
 			}); err != nil {
 				log.Fatalf("upsert challenge %q: %v", pt.title, err)
 			}
 			n++
 			log.Printf("level %d part %d: %s", lv.n, i+1, pt.title)
 		}
+	}
+
+	// levels.go is the only definition of the set, so anything left in the
+	// database under a name it no longer mentions is a part that was
+	// renamed or dropped. Left alone it keeps showing up in the picker,
+	// sharing a part number with whatever replaced it.
+	stale, err := store.PruneChallengesNotIn(ctx, authored)
+	if err != nil {
+		log.Fatalf("prune challenges: %v", err)
+	}
+	for _, name := range stale {
+		log.Printf("pruned stale challenge %q (its image, if any, is still on disk)", name)
 	}
 
 	log.Printf("seeded %d challenges and wrote %d target images to %s", n, n, cfg.CSCompSolutionsDir)
@@ -129,7 +144,15 @@ func shape(r rect, pretty bool) string {
 // targetDoc is the markup a challenge's target image is rendered from —
 // the answer, in other words. It never leaves this command: students get
 // the PNG, not this.
+//
+// A flow-layout part carries its own markup and only wants the background
+// prepended; the absolute rule the rect levels rely on would change how a
+// flex child lays out, so it is not written for them.
 func targetDoc(lv level, pt part) string {
+	if pt.target != "" {
+		return "<style>body{margin:0;background:" + lv.bg + "}</style>" + pt.target
+	}
+
 	var b strings.Builder
 	b.WriteString("<style>body{margin:0;background:" + lv.bg + "}i{position:absolute;display:block}</style>")
 	for _, r := range pt.rects {
@@ -143,6 +166,13 @@ func targetDoc(lv level, pt part) string {
 // the mock's starter() — levels 3 and up hand over two shapes because the
 // scenes get harder to get oriented in.
 func starter(lv level, pt part) string {
+	// A flow-layout part's scaffold is written by hand rather than derived:
+	// what a student is handed there is a container and one child, which is
+	// a shape no count of leading rects describes.
+	if pt.scaffold != "" {
+		return "<style>\n  body { margin: 0; background: " + lv.bg + " }\n</style>\n\n" + pt.scaffold
+	}
+
 	given := 1
 	if lv.n >= 3 {
 		given = 2

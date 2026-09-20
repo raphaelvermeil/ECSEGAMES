@@ -22,6 +22,15 @@ func NewStore(database *mongo.Database) *Store {
 	return &Store{coll: database.Collection(collectionName)}
 }
 
+// EnsureIndexes backs the schedule's chronological listing with an index,
+// so it stays a range scan rather than an in-memory sort as events grow.
+func (s *Store) EnsureIndexes(ctx context.Context) error {
+	_, err := s.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "startsAt", Value: 1}},
+	})
+	return err
+}
+
 // ListFilter narrows List to a date range and/or category. Zero values are
 // unfiltered: a zero From/To means unbounded, an empty Category means all.
 type ListFilter struct {
@@ -59,6 +68,14 @@ func (s *Store) List(ctx context.Context, f ListFilter) ([]Event, error) {
 		return nil, err
 	}
 	return list, nil
+}
+
+// Exists reports whether an event with this ID is stored. The scores
+// handler uses it so points can't be awarded against a made-up or deleted
+// event.
+func (s *Store) Exists(ctx context.Context, id primitive.ObjectID) (bool, error) {
+	n, err := s.coll.CountDocuments(ctx, bson.M{"_id": id}, options.Count().SetLimit(1))
+	return n > 0, err
 }
 
 // Get returns a single event by ID. Returns mongo.ErrNoDocuments if it

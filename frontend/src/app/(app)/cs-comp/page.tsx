@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { API_TIMEOUT_MS, API_URL } from "@/lib/api";
 import CsCompView from "./_components/CsCompView";
 
 // The one page in the group that still requires an account. Competing means
@@ -17,15 +18,15 @@ export default async function CsCompPage() {
   const { getToken } = await auth();
   const token = await getToken();
 
-  const meRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
+  // A backend hiccup (or a timeout) is treated the same as an incomplete
+  // profile: send them to onboarding, which is where they'd end up anyway,
+  // rather than throwing during render with no error boundary to catch it.
+  const meRes = await fetch(`${API_URL}/api/me`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
-  });
-  // Previously this did meRes.json() unguarded, so a backend hiccup threw
-  // during render with no error boundary to catch it. Treat anything other
-  // than a clean response as "profile not confirmed" and send them to
-  // onboarding, which is where they'd end up anyway.
-  if (!meRes.ok) {
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
+  }).catch(() => null);
+  if (!meRes || !meRes.ok) {
     redirect("/select-team");
   }
 

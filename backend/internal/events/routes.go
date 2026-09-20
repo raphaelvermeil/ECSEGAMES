@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -22,12 +23,16 @@ type Handler struct {
 	store *Store
 	audit *audit.Store
 	users *users.Repository
+	// clearScores retires an event's score entries when the event is
+	// deleted, so they stop counting toward the leaderboard.
+	clearScores func(context.Context, primitive.ObjectID) error
 }
 
 // NewHandler builds the handler backed by the given event and audit stores.
-// userRepo resolves an actor's display name for the audit trail.
-func NewHandler(store *Store, auditStore *audit.Store, userRepo *users.Repository) *Handler {
-	return &Handler{store: store, audit: auditStore, users: userRepo}
+// userRepo resolves an actor's display name for the audit trail; clearScores
+// is the scores store's per-event clear.
+func NewHandler(store *Store, auditStore *audit.Store, userRepo *users.Repository, clearScores func(context.Context, primitive.ObjectID) error) *Handler {
+	return &Handler{store: store, audit: auditStore, users: userRepo, clearScores: clearScores}
 }
 
 // actorName resolves clerkID to the name on their profile, for the audit
@@ -64,7 +69,7 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 		wr.Use(appmw.RequireRole(userRepo, models.RoleExec))
 		wr.Get("/api/events/{id}/history", h.History)
 		wr.Post("/api/events", h.Create)
-		wr.Patch("/api/events/{id}", h.Update)
+		wr.Put("/api/events/{id}", h.Update)
 		wr.Delete("/api/events/{id}", h.Delete)
 	})
 }
@@ -119,7 +124,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	e, err := h.store.Get(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -278,7 +283,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	before, err := h.store.Get(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -288,7 +293,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updated, err := h.store.Update(ctx, id, set)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -360,6 +365,10 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	if !deleted {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
+	}
+
+	if err := h.clearScores(ctx, id); err != nil {
+		log.Printf("events: clear scores for deleted event failed: %v", err)
 	}
 
 	if err := h.audit.Record(ctx, audit.Entry{

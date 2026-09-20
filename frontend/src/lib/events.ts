@@ -1,10 +1,7 @@
 import api from "@/lib/api";
 
 export type EventCategory =
-  | "Competition"
-  | "Meals"
-  | "Administration"
-  | "Custom";
+  "Competition" | "Meals" | "Administration" | "Custom";
 
 export interface ScheduleEvent {
   id: string;

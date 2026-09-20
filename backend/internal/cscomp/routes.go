@@ -3,6 +3,7 @@ package cscomp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -42,7 +43,7 @@ func NewHandler(store *Store, userRepo *users.Repository, renderer *Renderer, so
 }
 
 // Mount registers the comp routes on r. Everything here is student-facing,
-// so RequireAuth is the only gate — there is no exec surface: the 30
+// so RequireAuth is the only gate — there is no exec surface: the
 // challenges come from cmd/seedcscomp, and a student's own submissions and
 // claims are the only things they can write.
 //
@@ -89,14 +90,23 @@ type ClockView struct {
 	Status           string `json:"status"`
 	RemainingSeconds int    `json:"remainingSeconds"`
 	DurationSeconds  int    `json:"durationSeconds"`
-	UpdatedBy        string `json:"updatedBy"`
+	// EndsAt is the wall-clock moment the round is due to finish, RFC3339
+	// in UTC, or empty when no end has been set. The client renders it in
+	// the viewer's own zone, so the server never guesses at one.
+	EndsAt    string `json:"endsAt"`
+	UpdatedBy string `json:"updatedBy"`
 }
 
 func view(c *Clock, now time.Time) ClockView {
+	ends := ""
+	if e := c.EndTime(); !e.IsZero() {
+		ends = e.UTC().Format(time.RFC3339)
+	}
 	return ClockView{
 		Status:           c.Status,
 		RemainingSeconds: c.RemainingAt(now),
 		DurationSeconds:  c.Duration,
+		EndsAt:           ends,
 		UpdatedBy:        c.UpdatedBy,
 	}
 }
@@ -115,16 +125,18 @@ func (h *Handler) GetClock(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, view(c, time.Now().UTC()))
 }
 
-// clockRequest is one control action. Seconds is read only by "adjust",
-// where it is signed: positive adds time, negative takes it away.
+// clockRequest is one control action. EndsAt is read only by "setEnd", as
+// a Unix timestamp in seconds. The client resolves the exec's chosen time
+// of day into an absolute moment in their own zone before sending it, so
+// nothing here has to guess which day or which timezone was meant.
 type clockRequest struct {
-	Action  string `json:"action"`
-	Seconds int    `json:"seconds"`
+	Action string `json:"action"`
+	EndsAt int64  `json:"endsAt"`
 }
 
-// maxAdjustSeconds bounds a single adjustment so a typo cannot push the
-// comp hours out. Repeated presses still get you anywhere you need.
-const maxAdjustSeconds = 60 * 60
+// maxRoundLength bounds how far out an end may be set, so a mistyped hour
+// cannot park the comp half a day away.
+const maxRoundLength = 12 * time.Hour
 
 // ControlClock applies an exec's start/pause/stop/adjust to the shared
 // clock. The transitions themselves live on Clock (see clock.go); this
@@ -169,17 +181,22 @@ func (h *Handler) ControlClock(w http.ResponseWriter, r *http.Request) {
 	case "pause":
 		next = next.Pause(now)
 	case "stop":
-		next = next.Stop()
-	case "adjust":
-		if req.Seconds == 0 {
-			http.Error(w, "seconds is required", http.StatusBadRequest)
+		next = next.Stop(now)
+	case "setEnd":
+		if req.EndsAt == 0 {
+			http.Error(w, "an end time is required", http.StatusBadRequest)
 			return
 		}
-		if req.Seconds > maxAdjustSeconds || req.Seconds < -maxAdjustSeconds {
-			http.Error(w, "adjustment is too large", http.StatusBadRequest)
+		target := time.Unix(req.EndsAt, 0).UTC()
+		if !target.After(now) {
+			http.Error(w, "that end time has already passed", http.StatusBadRequest)
 			return
 		}
-		next = next.Adjust(now, req.Seconds)
+		if target.After(now.Add(maxRoundLength)) {
+			http.Error(w, "that end time is too far out", http.StatusBadRequest)
+			return
+		}
+		next = next.SetEnd(now, target)
 	default:
 		http.Error(w, "unknown action", http.StatusBadRequest)
 		return
@@ -193,7 +210,7 @@ func (h *Handler) ControlClock(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, view(&next, now))
 }
 
-// ListChallenges returns all 30 challenges: level, part, name, points and
+// ListChallenges returns every challenge: level, part, name, points and
 // starter code. The starter is the scaffold the editor opens with, not an
 // answer.
 func (h *Handler) ListChallenges(w http.ResponseWriter, r *http.Request) {
@@ -224,7 +241,7 @@ func (h *Handler) Target(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	c, err := h.store.GetChallenge(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -243,9 +260,10 @@ func (h *Handler) Target(w http.ResponseWriter, r *http.Request) {
 }
 
 // solution reads a challenge's target image off disk. The path is derived
-// from the name via Slug, never from anything on the wire.
+// from the name via Slug, never from anything on the wire; Base is belt
+// and braces so a name could never reach outside the solutions dir.
 func (h *Handler) solution(name string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(h.solutionsDir, Slug(name)+".png"))
+	return os.ReadFile(filepath.Join(h.solutionsDir, filepath.Base(Slug(name))+".png"))
 }
 
 // TeamView is a sub-team with its roster, the shape both the team list and
@@ -372,7 +390,7 @@ func (h *Handler) JoinTeam(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	team, err := h.store.GetTeam(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -488,7 +506,7 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	teamID := *u.CSCompTeamID
 
 	team, err := h.store.GetTeam(ctx, teamID)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		// The team document is gone but the user still points at it —
 		// report them as unteamed rather than failing the whole screen.
 		writeJSON(w, http.StatusOK, view)
@@ -572,7 +590,7 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c, err := h.store.GetChallenge(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -622,7 +640,7 @@ func (h *Handler) Unclaim(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.store.DeleteClaim(ctx, teamID, id, clerkID)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -702,8 +720,20 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Submissions only count while the round is running: the clock the
+	// exec drives is the rule, not just a display.
+	clock, err := h.store.GetClock(ctx, h.compSeconds)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	if clock.Status != ClockRunning || clock.RemainingAt(time.Now()) == 0 {
+		http.Error(w, "the comp is not running", http.StatusConflict)
+		return
+	}
+
 	c, err := h.store.GetChallenge(ctx, id)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -725,8 +755,14 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 
 	gotBytes, err := h.renderer.Render(ctx, req.Code)
 	if err != nil {
-		// A render failure is the submission's fault far more often than
-		// ours — markup that hangs the page, or exceeds the timeout.
+		// Running out of time — waiting for a render slot at the start of a
+		// round, or a render that didn't finish in time — is the server
+		// being saturated, not the submission being wrong, and the student
+		// should be told to retry rather than to fix their CSS.
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			http.Error(w, "the server is busy, try again in a few seconds", http.StatusServiceUnavailable)
+			return
+		}
 		http.Error(w, "could not render submission", http.StatusBadRequest)
 		return
 	}
@@ -792,7 +828,7 @@ type Standing struct {
 
 // Leaderboard is the comp's own standings. It is deliberately not the
 // Games leaderboard: this ranks the comp's sub-teams by points earned on
-// the 30 challenges and resets with the comp, while the Games board totals
+// the challenges and resets with the comp, while the Games board totals
 // scoreEntries across every event. Nothing here touches scoreEntries.
 //
 // Total is the points a team would have for solving everything, so the
@@ -835,6 +871,7 @@ func (h *Handler) Standings(w http.ResponseWriter, r *http.Request) {
 		points    int
 		parts     []string
 		lastLevel int
+		seen      map[primitive.ObjectID]bool
 	}
 	tallies := map[primitive.ObjectID]*tally{}
 	for _, s := range subs {
@@ -846,9 +883,15 @@ func (h *Handler) Standings(w http.ResponseWriter, r *http.Request) {
 		}
 		t := tallies[s.TeamID]
 		if t == nil {
-			t = &tally{}
+			t = &tally{seen: map[primitive.ObjectID]bool{}}
 			tallies[s.TeamID] = t
 		}
+		// Claims are advisory, so two teammates can both solve the same
+		// part; it counts once for the team.
+		if t.seen[s.ChallengeID] {
+			continue
+		}
+		t.seen[s.ChallengeID] = true
 		t.points += c.Points
 		t.parts = append(t.parts, fmt.Sprintf("%d-%d", c.Level, c.Part))
 		if c.Level > t.lastLevel {
@@ -862,17 +905,20 @@ func (h *Handler) Standings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// One round-trip for every roster size rather than one per team; every
+	// viewer polls this every few seconds.
+	counts, err := h.users.CountByCSCompTeams(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+
 	rows := make([]Standing, 0, len(teams))
 	for _, team := range teams {
-		count, err := h.users.CountByCSCompTeam(ctx, team.ID)
-		if err != nil {
-			http.Error(w, "storage error", http.StatusInternalServerError)
-			return
-		}
 		row := Standing{
 			TeamID:      team.ID,
 			Name:        team.Name,
-			MemberCount: int(count),
+			MemberCount: counts[team.ID],
 			SolvedParts: []string{},
 		}
 		if t := tallies[team.ID]; t != nil {

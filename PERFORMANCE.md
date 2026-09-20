@@ -4,10 +4,11 @@ Written up after investigating why switching navbar tabs feels laggy on a laptop
 (Ryzen 7 4800H, 16 GB) but not on a desktop. A record of the findings and the intended fix
 for each, ordered by expected impact.
 
-**Status: items 3, 4 and 5 are fixed** (client router cache via `experimental.staleTimes`,
-a shared `(app)/loading.tsx`, `prefetch` on the nav links, and `Promise.all` in
-`schedule/page.tsx`). Items 1, 2, 6 and 7 still stand. See the "Correction" note under
-item 4 — its original diagnosis was wrong.
+**Status: items 3, 4, 5 and 7 are fixed** (client router cache via `experimental.staleTimes`,
+a shared `(app)/loading.tsx`, `prefetch` on the nav links, `Promise.all` in
+`schedule/page.tsx`, and the meet-the-team work under item 7). Items 1, 2 and 6 still
+stand. See the "Correction" note under item 4 — its original diagnosis was wrong.
+Items 8 and 9 were found in a second pass (September 2026) and are fixed.
 
 The short version: the hardware gap explains why one machine feels worse than the other,
 but the latency itself is structural. Every tab switch is a blocking server round-trip to
@@ -191,8 +192,44 @@ Oversized source images, all rendered at 66×66:
 | `public/logo.png` | 209 KB |
 | `public/coords/raphael-vermeil.jpg` | 153 KB |
 
-**Fix:** downscale/recompress the oversized images, and look at whether the decorative
-scene needs to hydrate as a client component at all.
+**Fixed.** Three changes:
+- Every photo is now a pre-sized 272×272 WebP in `public/coords/` (2.3 MB → 140 KB for
+  the set) and both the scene avatar and the profile modal render the *same file* with
+  `unoptimized`, so tapping a head is a browser-cache hit rather than a request for a
+  freshly resized `/_next/image` variant — which was the visible delay on tap. The scene
+  loads them eagerly so photos panned out of view on a phone are ready too.
+- `CampScene` is wrapped in `React.memo`. The mobile pan loop was updating state ~22
+  times a second for the slider thumb, and every update re-rendered the whole 1,600-line
+  scene, so a tap had to wait behind whichever render was in flight.
+- The mobile sun is positioned through `--sun-left`/`--sun-top` CSS variables written
+  from the frame loop instead of React state, so it moves every frame without a render.
+
+The scene still hydrates as a client component; that cost is a one-time ~50 ms and was
+left alone.
+
+---
+
+## 8. The backend fetched Clerk's signing keys on every authenticated request
+
+`RequireAuth` called `jwt.Verify` with no `JWK`, and the Clerk Go SDK then fetches the
+whole JSON Web Key Set from Clerk's API before it can check the signature. So every
+`/api/me`, every scores/history call, and every CS comp poll (the clock polls every 5 s)
+paid a Clerk round trip on top of the Mongo one — the "94 ms to 604 ms" measured for
+`/api/me` under item 4 was mostly this.
+
+**Fixed:** `internal/middleware/auth.go` caches keys by key ID and only fetches on a miss,
+so a rotated key still resolves and a steady-state request never leaves the process
+before hitting Mongo.
+
+---
+
+## 9. The event sheet blurred the whole page behind it on phones
+
+`EventDetailModal` had an unconditional `backdrop-blur-[4px]` on its full-screen
+backdrop. A backdrop filter is re-composited every frame, and the sheet animates up over
+220 ms, so on a phone the open animation was doing a full-screen blur per frame — that
+was the "clicking an event takes a moment" feel. **Fixed** by making it `lg:` only, the
+same rule `EventFormModal` already used.
 
 ---
 

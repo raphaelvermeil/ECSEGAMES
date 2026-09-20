@@ -1,4 +1,4 @@
-// Package cscomp runs the CS competition: 30 CSS challenges a student
+// Package cscomp runs the CS competition: 40 CSS challenges a student
 // replicates by writing HTML and CSS, scored on how closely the result
 // matches a target image.
 //
@@ -31,17 +31,22 @@ const PassThreshold = 98.0
 // Chrome.
 const MaxCodeBytes = 64 * 1024
 
-// Challenge is one of the 30 tasks: level 1-6, part 1-5. The solution
+// Challenge is one of the 40 tasks: level 1-8, part 1-5. The solution
 // image is not stored on the document — it lives on disk at
 // <solutionsDir>/<Slug(Name)>.png, which is why Name is unique.
 type Challenge struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Name      string             `bson:"name" json:"name"`
-	Level     int                `bson:"level" json:"level"`
-	Part      int                `bson:"part" json:"part"`
-	Points    int                `bson:"points" json:"points"`
-	Starter   string             `bson:"starterCode" json:"starterCode"`
-	CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
+	ID      primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name    string             `bson:"name" json:"name"`
+	Level   int                `bson:"level" json:"level"`
+	Part    int                `bson:"part" json:"part"`
+	Points  int                `bson:"points" json:"points"`
+	Starter string             `bson:"starterCode" json:"starterCode"`
+	// Example is the worked snippet the editor shows beside the target: the
+	// level's technique demonstrated on a scene that is not one of the parts.
+	// Empty on the levels that teach no technique, and the panel is hidden
+	// when it is.
+	Example   string    `bson:"example" json:"example"`
+	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
 }
 
 // Slug turns a challenge name into its solution image's basename:

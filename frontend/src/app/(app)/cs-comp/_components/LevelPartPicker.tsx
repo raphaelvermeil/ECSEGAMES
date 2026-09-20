@@ -101,9 +101,7 @@ export default function LevelPartPicker({
 
   const meta = onParts ? levelMeta(picker) : null;
   const title = meta ? `LEVEL ${picker} · ${meta.name}` : "Choose a level";
-  const note = meta
-    ? `${meta.note} · pick a part — one per teammate`
-    : `${levels.length} levels · ${challenges.length} challenges in the set`;
+  const note = meta ? `${meta.note}` : null;
 
   return (
     <div
@@ -138,9 +136,11 @@ export default function LevelPartPicker({
             <div className="font-display text-[23px] font-semibold tracking-[0.03em] text-sched-cream">
               {title}
             </div>
-            <div className="mt-[5px] font-mono text-[11px] text-sched-text-muted">
-              {note}
-            </div>
+            {note && (
+              <div className="mt-[5px] font-mono text-[11px] text-sched-text-muted">
+                {note}
+              </div>
+            )}
           </div>
           <button
             type="button"

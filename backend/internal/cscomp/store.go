@@ -55,9 +55,15 @@ func (s *Store) EnsureIndexes(ctx context.Context) error {
 	}); err != nil {
 		return err
 	}
-	if _, err := s.submissions.Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys:    bson.D{{Key: "challengeId", Value: 1}, {Key: "clerkId", Value: 1}},
-		Options: options.Index().SetUnique(true),
+	if _, err := s.submissions.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "challengeId", Value: 1}, {Key: "clerkId", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+		// The standings scan solved submissions on every poll; a team's
+		// progress board reads by teamId.
+		{Keys: bson.D{{Key: "matchPercent", Value: 1}}},
+		{Keys: bson.D{{Key: "teamId", Value: 1}}},
 	}); err != nil {
 		return err
 	}
@@ -74,7 +80,7 @@ func (s *Store) EnsureIndexes(ctx context.Context) error {
 	return err
 }
 
-// ListChallenges returns all 30 challenges in play order.
+// ListChallenges returns every challenge in play order.
 func (s *Store) ListChallenges(ctx context.Context) ([]Challenge, error) {
 	opts := options.Find().SetSort(bson.D{{Key: "level", Value: 1}, {Key: "part", Value: 1}})
 	cur, err := s.challenges.Find(ctx, bson.M{}, opts)
@@ -100,7 +106,7 @@ func (s *Store) GetChallenge(ctx context.Context, id primitive.ObjectID) (*Chall
 }
 
 // UpsertChallenge writes a challenge keyed on its name, so the seeder can
-// be rerun without duplicating the 30 documents or minting new IDs that
+// be rerun without duplicating the challenge documents or minting new IDs that
 // would orphan existing submissions and claims.
 func (s *Store) UpsertChallenge(ctx context.Context, c Challenge) (*Challenge, error) {
 	update := bson.M{
@@ -109,6 +115,7 @@ func (s *Store) UpsertChallenge(ctx context.Context, c Challenge) (*Challenge, e
 			"part":        c.Part,
 			"points":      c.Points,
 			"starterCode": c.Starter,
+			"example":     c.Example,
 		},
 		"$setOnInsert": bson.M{
 			"name":      c.Name,
@@ -122,6 +129,41 @@ func (s *Store) UpsertChallenge(ctx context.Context, c Challenge) (*Challenge, e
 		return nil, err
 	}
 	return &out, nil
+}
+
+// PruneChallengesNotIn drops every challenge whose name is not in keep,
+// and reports which ones went. The seeder is the only definition of the
+// set, so a part that has been renamed or dropped there has to leave the
+// database too: UpsertChallenge is keyed on the name, so without this a
+// rename silently leaves the old document behind, sharing a level and a
+// part number with its replacement and pointing at an image nobody
+// regenerates.
+//
+// Submissions and claims against a pruned challenge are left where they
+// are. They refer to a challenge that no longer exists either way, and
+// the standings only count solved submissions whose challenge still
+// resolves.
+func (s *Store) PruneChallengesNotIn(ctx context.Context, keep []string) ([]string, error) {
+	cur, err := s.challenges.Find(ctx, bson.M{"name": bson.M{"$nin": keep}})
+	if err != nil {
+		return nil, err
+	}
+	var stale []Challenge
+	if err := cur.All(ctx, &stale); err != nil {
+		return nil, err
+	}
+	if len(stale) == 0 {
+		return nil, nil
+	}
+
+	names := make([]string, 0, len(stale))
+	for _, c := range stale {
+		names = append(names, c.Name)
+	}
+	if _, err := s.challenges.DeleteMany(ctx, bson.M{"name": bson.M{"$in": names}}); err != nil {
+		return nil, err
+	}
+	return names, nil
 }
 
 // ListTeams returns every sub-team, oldest first.
@@ -176,41 +218,40 @@ func (s *Store) ListSubmissionsByTeam(ctx context.Context, teamID primitive.Obje
 
 // UpsertSubmission records an attempt, keeping the best result. Attempts
 // always increments; code, percent and timestamp only move when the new
-// attempt beats the stored one — which is why this reads before it writes
-// rather than using $max: the code has to travel with the percentage.
+// attempt beats the stored one. The comparison happens inside a single
+// pipeline update so two submits landing at once can't both read the old
+// best and let the worse one overwrite the better — the code has to travel
+// with the percentage, which is why this is a $cond rather than a $max.
+//
+// The name follows the person; the team is fixed at first submit so a
+// solve stays credited to the roster it was made on (see Submission)
+// rather than moving with them if they switch sub-teams.
 func (s *Store) UpsertSubmission(ctx context.Context, sub Submission) (*Submission, error) {
 	filter := bson.M{"challengeId": sub.ChallengeID, "clerkId": sub.ClerkID}
+	now := time.Now().UTC()
 
-	var existing Submission
-	err := s.submissions.FindOne(ctx, filter).Decode(&existing)
-	if err != nil && err != mongo.ErrNoDocuments {
-		return nil, err
-	}
-	improved := err == mongo.ErrNoDocuments || sub.MatchPercent > existing.MatchPercent
-
-	set := bson.M{}
-	if improved {
-		set["code"] = sub.Code
-		set["matchPercent"] = sub.MatchPercent
-		set["submittedAt"] = time.Now().UTC()
-	}
-	// The team and name snapshots follow the person rather than the best
-	// score, so a solve is credited to whichever roster they are on now.
-	set["teamId"] = sub.TeamID
-	set["name"] = sub.Name
-
-	update := bson.M{
-		"$set": set,
-		"$inc": bson.M{"attempts": 1},
-		"$setOnInsert": bson.M{
-			"challengeId": sub.ChallengeID,
-			"clerkId":     sub.ClerkID,
-		},
-	}
+	// A missing matchPercent (first attempt) reads as -1, so it always loses.
+	improved := bson.M{"$gt": bson.A{sub.MatchPercent, bson.M{"$ifNull": bson.A{"$matchPercent", -1}}}}
+	// $literal keeps a code string that happens to start with "$" from being
+	// read as a field path.
+	update := bson.A{bson.M{"$set": bson.M{
+		"teamId":       bson.M{"$ifNull": bson.A{"$teamId", sub.TeamID}},
+		"name":         bson.M{"$literal": sub.Name},
+		"attempts":     bson.M{"$add": bson.A{bson.M{"$ifNull": bson.A{"$attempts", 0}}, 1}},
+		"code":         bson.M{"$cond": bson.A{improved, bson.M{"$literal": sub.Code}, "$code"}},
+		"matchPercent": bson.M{"$cond": bson.A{improved, sub.MatchPercent, "$matchPercent"}},
+		"submittedAt":  bson.M{"$cond": bson.A{improved, now, "$submittedAt"}},
+	}}}
 	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
 
 	var out Submission
-	if err := s.submissions.FindOneAndUpdate(ctx, filter, update, opts).Decode(&out); err != nil {
+	err := s.submissions.FindOneAndUpdate(ctx, filter, update, opts).Decode(&out)
+	if mongo.IsDuplicateKeyError(err) {
+		// Two first attempts raced the unique index; the loser just retries
+		// against the document the winner inserted.
+		err = s.submissions.FindOneAndUpdate(ctx, filter, update, opts).Decode(&out)
+	}
+	if err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -273,7 +314,7 @@ func (s *Store) DeleteClaimsByMember(ctx context.Context, teamID primitive.Objec
 // threshold, across all sub-teams — the raw material for the standings.
 //
 // The filter is the same PassThreshold the Submission.Solved method uses,
-// applied in the query so the board does not pull down 30 challenges ×
+// applied in the query so the board does not pull down every challenge ×
 // every roster's worth of failed attempts just to throw most of them away.
 func (s *Store) ListSolvedSubmissions(ctx context.Context) ([]Submission, error) {
 	cur, err := s.submissions.Find(ctx, bson.M{"matchPercent": bson.M{"$gte": PassThreshold}})
@@ -295,7 +336,7 @@ func (s *Store) ListSolvedSubmissions(ctx context.Context) ([]Submission, error)
 func (s *Store) GetClock(ctx context.Context, defaultSeconds int) (*Clock, error) {
 	var c Clock
 	err := s.clock.FindOne(ctx, bson.M{"_id": clockID}).Decode(&c)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		fresh := NewClock(defaultSeconds)
 		return &fresh, nil
 	}
