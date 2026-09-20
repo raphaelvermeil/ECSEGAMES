@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Show, SignInButton, UserButton, useAuth } from "@clerk/nextjs";
+import { Show, UserButton, useAuth } from "@clerk/nextjs";
 import { NAV_LINKS } from "@/lib/nav";
 
 // Desktop only — every page renders its own mobile header (ScheduleBanner
@@ -68,18 +68,23 @@ export default function Navbar() {
           <Show when="signed-in">
             <UserButton />
           </Show>
-          {/* Sign in only. Clerk's own card carries the "Don't have an
-              account? Sign up" link, so a second button here would just
-              duplicate a route the modal already offers. */}
+          {/* Plain links to the auth pages rather than Clerk's modal: the
+              modal ignores the pages' appearance config and renders in
+              Clerk's default white theme, so it looked like a different
+              product. The pages carry the brand theme (see AuthShell). */}
           <Show when="signed-out">
-            <SignInButton mode="modal">
-              <button
-                type="button"
-                className="whitespace-nowrap border border-sched-accent bg-sched-accent px-[14px] py-[7px] text-sm font-semibold text-sched-bg transition-colors hover:border-sched-cream hover:bg-sched-cream"
-              >
-                Sign in
-              </button>
-            </SignInButton>
+            <Link
+              href="/sign-in"
+              className="whitespace-nowrap border border-sched-accent px-[14px] py-[7px] text-sm font-semibold text-sched-accent transition-colors hover:border-sched-cream hover:text-sched-cream"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/sign-up"
+              className="whitespace-nowrap border border-sched-accent bg-sched-accent px-[14px] py-[7px] text-sm font-semibold text-sched-bg! transition-colors hover:border-sched-cream hover:bg-sched-cream"
+            >
+              Sign up
+            </Link>
           </Show>
         </div>
       </div>

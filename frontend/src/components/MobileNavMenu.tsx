@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SignInButton, useAuth, useUser } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import api from "@/lib/api";
 import { NAV_LINKS } from "@/lib/nav";
 import { useFocusTrap, useScrollLock } from "@/lib/overlay";
@@ -172,19 +172,24 @@ export default function MobileNavMenu({
             </>
           ) : (
             // Browsing works signed out; this is only needed to enter the CS
-            // comp or to run an event as an exec.
-            // Sign in only — Clerk's card already links to sign-up for
-            // anyone who doesn't have an account yet.
+            // comp or to run an event as an exec. Links to the themed auth
+            // pages rather than Clerk's (white) modal.
             <div className="flex flex-col gap-2">
               <span>Sign in to join the CS comp.</span>
-              <SignInButton mode="modal">
-                <button
-                  type="button"
-                  className="w-full border border-sched-accent bg-sched-accent px-3 py-2 font-mono text-[11px] font-semibold text-sched-bg"
-                >
-                  Sign in
-                </button>
-              </SignInButton>
+              <Link
+                href="/sign-in"
+                onClick={onClose}
+                className="w-full border border-sched-accent bg-sched-accent px-3 py-2 text-center font-mono text-[11px] font-semibold text-sched-bg!"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/sign-up"
+                onClick={onClose}
+                className="w-full border border-sched-accent px-3 py-2 text-center font-mono text-[11px] font-semibold text-sched-accent"
+              >
+                Sign up
+              </Link>
             </div>
           )}
         </div>
