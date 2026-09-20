@@ -45,11 +45,6 @@ export default function SignInPage() {
               formButtonPrimary:
                 "bg-ecsess-600 hover:bg-ecsess-700 text-ecsess-50",
               footerActionLink: "text-ecsess-150 hover:text-ecsess-50",
-              // White Microsoft SSO button (covers block + icon variants).
-              socialButtonsBlockButton__microsoft:
-                "!bg-white !text-gray-800 hover:!bg-gray-50 !border !border-gray-300",
-              socialButtonsIconButton__microsoft:
-                "!bg-white hover:!bg-gray-50 !border !border-gray-300",
             },
           }}
         />
