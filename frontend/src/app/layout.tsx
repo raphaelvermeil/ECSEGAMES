@@ -71,8 +71,18 @@ export default function RootLayout({
             because every route was gated and home would have bounced them
             straight back; now that the app is readable signed out, dumping
             someone on a login form after they deliberately logged out is
-            just rude. */}
-        <ClerkProvider afterSignOutUrl="/">{children}</ClerkProvider>
+            just rude.
+
+            Sign-up always continues to team selection: a new account has
+            no team yet, and nothing else in the app sends you there
+            unless you open the CS comp. "Force" rather than "fallback" so
+            it wins even when sign-up was reached with a redirect_url. */}
+        <ClerkProvider
+          afterSignOutUrl="/"
+          signUpForceRedirectUrl="/select-team"
+        >
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );

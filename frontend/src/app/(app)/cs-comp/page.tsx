@@ -27,12 +27,12 @@ export default async function CsCompPage() {
     signal: AbortSignal.timeout(API_TIMEOUT_MS),
   }).catch(() => null);
   if (!meRes || !meRes.ok) {
-    redirect("/select-team");
+    redirect("/select-team?next=/cs-comp");
   }
 
   const user = await meRes.json();
   if (!user.team || !user.name || !user.major) {
-    redirect("/select-team");
+    redirect("/select-team?next=/cs-comp");
   }
 
   // CsCompView loads its own state from /api/cscomp/me, which carries the

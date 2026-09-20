@@ -1,8 +1,17 @@
 import { auth } from "@clerk/nextjs/server";
 import SelectTeamForm from "./SelectTeamForm";
 
-export default async function SelectTeamPage() {
+// ?next= is where to go once the team is saved — the CS comp gate sets it
+// so a student who was sent here mid-way lands back on the comp, not on
+// the schedule. Only a same-site path is honoured; the form applies the
+// default otherwise.
+export default async function SelectTeamPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
   await auth.protect();
+  const { next } = await searchParams;
   return (
     <main
       className="flex min-h-screen flex-col items-center justify-center gap-9 p-12"
@@ -26,7 +35,7 @@ export default async function SelectTeamPage() {
           make it.
         </p>
       </div>
-      <SelectTeamForm />
+      <SelectTeamForm next={next} />
     </main>
   );
 }

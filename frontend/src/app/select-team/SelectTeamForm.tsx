@@ -17,7 +17,16 @@ const TEAMS = [
 const inputClass =
   "w-full rounded-lg border border-ecsess-700 bg-ecsess-800 px-4 py-3 text-ecsess-50 placeholder:text-ecsess-400 outline-none transition-colors focus:border-ecsess-400";
 
-export default function SelectTeamForm() {
+// Where to send the user after saving. Only a path on this site counts —
+// a single leading slash, so "//evil.example" (protocol-relative) is
+// rejected along with full URLs — everything else falls back to the
+// schedule.
+function afterSaveDestination(next: string | undefined): string {
+  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+  return "/schedule";
+}
+
+export default function SelectTeamForm({ next }: { next?: string }) {
   const { getToken } = useAuth();
   const { user: clerkUser, isLoaded: clerkLoaded } = useUser();
   const router = useRouter();
@@ -76,7 +85,7 @@ export default function SelectTeamForm() {
         { team, name: name.trim(), major: major.trim(), email },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      router.push("/schedule");
+      router.push(afterSaveDestination(next));
       router.refresh();
     } catch (err) {
       const status =
