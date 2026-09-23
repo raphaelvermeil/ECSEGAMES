@@ -23,6 +23,15 @@ import {
 // which matters both for campus upload speeds and for a gallery that loads
 // every tile. Converting to JPEG also sidesteps iPhone HEIC, which no
 // browser but Safari can display.
+// Field styling is copied from the event form (EventFormModal) rather than
+// re-invented, so every form in the app reads the same.
+const inputClass =
+  "box-border w-full border border-sched-hair bg-sched-bg px-[12px] py-[11px] font-mono text-sm text-sched-cream placeholder:text-[#5d7063] [color-scheme:dark] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sched-accent";
+const labelClass =
+  "mb-[7px] block font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-sched-text-muted";
+const sectionHeadingClass =
+  "font-mono text-[11px] uppercase tracking-[0.18em] text-sched-text-muted";
+
 const IMAGE_OPTIONS = {
   maxWidthOrHeight: 1600,
   maxSizeMB: 1,
@@ -128,20 +137,21 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
 
       <main className="min-h-screen bg-sched-bg px-4 pb-16 pt-6 lg:px-10 lg:pb-11 lg:pt-9">
         <div className="hidden items-baseline justify-between lg:flex">
-          <h1 className="text-4xl font-extrabold text-ecsess-50">Scunts</h1>
-          <p className="text-base text-ecsess-300">
-            Photo and video proof, all weekend.
-          </p>
+          <div>
+            <h1 className="font-display text-4xl font-semibold tracking-[0.01em] text-sched-cream">
+              Scunts
+            </h1>
+            <p className="mt-1.5 font-mono text-xs text-sched-accent">
+              Photo and video proof, all weekend.
+            </p>
+          </div>
         </div>
 
         {/* Caption first, deliberately: it is the only thing saying what a
             photo is proof of, and asking for it after the file picker would
             mean re-opening the camera to fix a missing one. */}
         <section className="mt-6 rounded-sm border border-sched-hair bg-sched-bg-raised p-4 lg:mt-8 lg:p-5">
-          <label
-            htmlFor="scunts-caption"
-            className="font-mono text-[11px] uppercase tracking-[0.14em] text-sched-accent"
-          >
+          <label htmlFor="scunts-caption" className={labelClass}>
             What is this proof of?
           </label>
           <input
@@ -150,7 +160,7 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
             onChange={(e) => setCaption(e.target.value)}
             maxLength={MAX_CAPTION_LEN}
             placeholder="e.g. Whole team in the Leacock fountain"
-            className="mt-2 w-full rounded-sm border border-sched-hair bg-sched-bg px-3 py-2.5 text-sched-cream outline-none transition-colors placeholder:text-sched-text-muted focus:border-sched-accent-dim"
+            className={inputClass}
           />
 
           <input
@@ -164,31 +174,34 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={busy}
-            className="mt-3 inline-flex items-center gap-2 rounded-sm bg-sched-accent px-5 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-sched-bg transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="mt-3 inline-flex items-center gap-2 bg-sched-accent px-6 py-[13px] font-display text-sm font-semibold tracking-[0.07em] text-sched-fill transition-[filter] hover:brightness-[1.12] disabled:opacity-60"
           >
             <Camera width={16} height={16} strokeWidth={2} />
             {busy ? "Uploading…" : "Add photo or video"}
           </button>
-          <p className="mt-2 font-mono text-[11px] text-sched-text-muted">
+          <p className="mt-2.5 font-mono text-[11px] text-sched-text-muted">
             Photos are shrunk automatically. Videos: up to 60 seconds.
           </p>
 
           {error && (
-            <p className="mt-3 text-sm text-red-300" role="alert">
+            <p className="mt-2 font-mono text-xs text-sched-coral" role="alert">
               {error}
             </p>
           )}
         </section>
 
         <section className="mt-8">
+          <h2 className={sectionHeadingClass}>Submissions</h2>
           {items === null ? (
-            <p className="font-mono text-xs text-sched-text-muted">Loading…</p>
+            <p className="mt-3 font-mono text-xs text-sched-text-muted">
+              Loading…
+            </p>
           ) : items.length === 0 ? (
-            <p className="font-mono text-xs text-sched-text-muted">
+            <p className="mt-3 font-mono text-xs text-sched-text-muted">
               Nothing submitted yet. Be the first.
             </p>
           ) : (
-            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((s) => (
                 <li
                   key={s.id}
@@ -229,7 +242,7 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                       <button
                         type="button"
                         onClick={() => onDelete(s.id)}
-                        className="mt-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-red-300 transition-colors hover:text-red-200"
+                        className="mt-2.5 inline-flex items-center gap-1.5 border border-sched-coral px-[10px] py-[6px] font-mono text-[11px] font-medium tracking-[0.06em] text-sched-coral transition-colors hover:bg-sched-coral hover:text-sched-bg"
                       >
                         <Trash width={13} height={13} strokeWidth={2} />
                         Remove
