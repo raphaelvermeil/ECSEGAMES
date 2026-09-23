@@ -2,32 +2,21 @@ import Link from "next/link";
 import {
   ArrowRight,
   CalendarDays,
+  CodeXml,
   Trophy,
-  Users,
   Zap,
 } from "@/components/icons";
 import { TEAM_COLORS } from "@/lib/leaderboard";
 import { TEAMS } from "@/lib/scores";
 import SignedOutOnly from "./SignedOutOnly";
 
-// ============================================================
-// PLACEHOLDER CONTENT — everything in this file is filler meant to be
-// replaced. The layout and styling are real; the words are not. Each block
-// below is a plain array or string so swapping copy never means touching
-// markup.
-// ============================================================
+// Copy lives in plain arrays and strings at the top of the file, so editing
+// what the page says never means touching markup.
 
 const ABOUT_BODY = [
   "The ECSE Games are the ECSE Student Society's annual competition weekend: three days of events that range from genuinely athletic to entirely ridiculous, run by execs and fought over by four teams drawn from across the department.",
   "Everyone is welcome regardless of year, program stream, or how competitive you actually are. Most events have a seated or low-effort alternative, and nothing requires drinking to take part.",
 ];
-
-const TEAM_BLURBS: Record<string, string> = {
-  electrical: "Placeholder blurb for the Electrical team.",
-  computer: "Placeholder blurb for the Computer team.",
-  software: "Placeholder blurb for the Software team.",
-  oldPatrol: "Placeholder blurb for the Old Patrol team.",
-};
 
 const HIGHLIGHTS = [
   {
@@ -43,15 +32,15 @@ const HIGHLIGHTS = [
     icon: Trophy,
   },
   {
-    title: "Chicken Rush",
+    title: "Hackathon",
     blurb:
-      "The Saturday evening centrepiece. Placeholder description — swap this for the real one.",
-    icon: Users,
+      "Teams get a theme and a deadline, then build something from scratch and demo it to the room.",
+    icon: CodeXml,
   },
   {
     title: "BOAT Races",
     blurb:
-      "Closing ceremonies and the last points on the board. Placeholder description.",
+      "Opening night. The weekend kicks off with the whole department in one room.",
     icon: CalendarDays,
   },
 ];
@@ -113,9 +102,6 @@ export default function LandingSections() {
                 >
                   {label}
                 </h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-sched-text-muted">
-                  {TEAM_BLURBS[value]}
-                </p>
               </li>
             ))}
           </ul>

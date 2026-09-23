@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "@/components/icons";
 import SignedOutOnly from "./SignedOutOnly";
 
-// PLACEHOLDER COPY — swap the strings below for the real event details.
+// Update these two when the dates or the pitch change.
 const EVENT_DATES = "25 – 27 September 2026";
 const TAGLINE =
   "Three days. Four teams. One trophy that has been fought over since before any of us got here.";
