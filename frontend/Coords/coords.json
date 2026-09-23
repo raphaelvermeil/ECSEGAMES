@@ -21,7 +21,7 @@
     "id": "arold-bonkoungou",
     "name": "Arold Bonkoungou",
     "program": "U2 Computer Eng",
-    "crew": "gen",
+    "crew": "captains",
     "linkedin": "https://www.linkedin.com/in/arold-bonkoungou/",
     "photo": "/coords/arold-bonkoungou.webp",
     "blurb": null
@@ -48,7 +48,7 @@
     "id": "eli-shiller",
     "name": "Eli Shiller",
     "program": "U2 Electrical Eng",
-    "crew": "gen",
+    "crew": "merch",
     "linkedin": null,
     "photo": "/coords/eli-shiller.webp",
     "blurb": null
@@ -111,7 +111,7 @@
     "id": "zhisong-li",
     "name": "Zhisong Li",
     "program": "U4 Electrical Eng",
-    "crew": "gen",
+    "crew": "staff",
     "linkedin": "https://www.linkedin.com/in/zhisong-li-70b2b72b1/",
     "photo": "/coords/zhisong-li.webp",
     "blurb": null

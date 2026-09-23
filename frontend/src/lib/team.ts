@@ -5,7 +5,16 @@
 // public URL for each.
 import coordsData from "../../Coords/coords.json";
 
-export type CrewId = "co" | "comms" | "tech" | "day" | "night" | "gen" | "ise";
+export type CrewId =
+  | "co"
+  | "comms"
+  | "tech"
+  | "day"
+  | "night"
+  | "captains"
+  | "merch"
+  | "staff"
+  | "ise";
 
 export interface Crew {
   id: CrewId;
@@ -48,7 +57,16 @@ export const CREWS: Crew[] = [
     role: "NIGHT EVENTS COORD",
     color: "#b39cff",
   },
-  { id: "gen", name: "GENERAL", role: "GENERAL COORD", color: "#e9f5cd" },
+  // The three roles that used to share one GENERAL label. They keep the
+  // same cream as before because they still stand together in the scene.
+  {
+    id: "captains",
+    name: "CAPTAINS",
+    role: "CAPTAINS COORD",
+    color: "#e9f5cd",
+  },
+  { id: "merch", name: "MERCH", role: "MERCH COORD", color: "#e9f5cd" },
+  { id: "staff", name: "STAFF", role: "STAFF COORD", color: "#e9f5cd" },
   {
     id: "ise",
     name: "INC & SUS & EQ",

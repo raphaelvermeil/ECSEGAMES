@@ -57,7 +57,9 @@ const RING_BY_CREW: Record<CrewId, string> = {
   tech: "#28563b",
   day: "#2c5e40",
   night: "#28563b",
-  gen: "#1f4831",
+  captains: "#1f4831",
+  merch: "#1f4831",
+  staff: "#1f4831",
   ise: "#1f4831",
 };
 
@@ -67,7 +69,9 @@ const BOB_SECONDS: Record<CrewId, number> = {
   tech: 3.4,
   day: 3.7,
   night: 3.2,
-  gen: 3.5,
+  captains: 3.5,
+  merch: 3.3,
+  staff: 3.7,
   ise: 4.1,
 };
 
@@ -77,14 +81,18 @@ const MARGIN_X: Record<CrewId, number> = {
   tech: 16,
   day: 22,
   night: 24,
-  gen: 14,
+  captains: 14,
+  merch: 14,
+  staff: 14,
   ise: 4,
 };
 
 const DY_OVERRIDES: Partial<Record<CrewId, string[]>> = {
   day: ["-9px", "21px"],
   tech: ["10px", "10px"],
-  gen: ["-16px", "-16px", "-16px"],
+  captains: ["-16px"],
+  merch: ["-16px"],
+  staff: ["-16px"],
 };
 const DX_OVERRIDES: Partial<Record<CrewId, string[]>> = {
   day: ["-18px", "18px"],
@@ -96,7 +104,9 @@ const CREW_COLOR: Record<CrewId, string> = {
   tech: "#6ee787",
   day: "#7fd1ff",
   night: "#b39cff",
-  gen: "#e9f5cd",
+  captains: "#e9f5cd",
+  merch: "#e9f5cd",
+  staff: "#e9f5cd",
   ise: "#58d6a8",
 };
 
@@ -1039,12 +1049,31 @@ const CampScene = memo(function CampScene({
 
       {/* COMMUNICATIONS — antenna */}
       <div style={{ position: "absolute", left: 490, top: 314, width: 210 }}>
-        <AvatarRow
-          crew="comms"
-          members={byId.comms}
-          selectedId={selectedId}
-          onSelect={onSelect}
-        />
+        {/* The IS&E coord stands with comms rather than alone across the
+            camp. Two rows rather than one list so each keeps its own crew
+            colour and ring — the modal reads the member's own crew, so
+            roles stay distinct. */}
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-end",
+          }}
+        >
+          <AvatarRow
+            crew="comms"
+            members={byId.comms}
+            selectedId={selectedId}
+            onSelect={onSelect}
+          />
+          <AvatarRow
+            crew="ise"
+            members={byId.ise}
+            selectedId={selectedId}
+            onSelect={onSelect}
+          />
+        </div>
         <Dec
           left="50%"
           top={36}
@@ -1151,10 +1180,14 @@ const CampScene = memo(function CampScene({
             position: "relative",
             zIndex: 9,
             marginTop: 46,
-            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4,
           }}
         >
           <Caption color="#ff7b54">COMMS</Caption>
+          <Caption color="#58d6a8">INC & SUS & EQ</Caption>
         </div>
       </div>
 
@@ -1527,34 +1560,42 @@ const CampScene = memo(function CampScene({
             />
           </div>
         ))}
-        <AvatarRow
-          crew="gen"
-          members={byId.gen}
-          selectedId={selectedId}
-          onSelect={onSelect}
-        />
-        <div
-          style={{
-            position: "relative",
-            zIndex: 9,
-            marginTop: 40,
-            textAlign: "center",
-          }}
-        >
-          <Caption color="#e9f5cd">GENERAL</Caption>
+        {/* One GENERAL row became three roles. Each column is 100px wide
+            starting at x=20, which lines its avatar up with the s'mores set
+            at offsets 0/100/200 above — nobody moved, they just gained
+            their own label. */}
+        <div style={{ display: "flex", marginLeft: 20 }}>
+          {(
+            [
+              ["captains", "CAPTAINS"],
+              ["merch", "MERCH"],
+              ["staff", "STAFF"],
+            ] as const
+          ).map(([id, label]) => (
+            <div key={id} style={{ width: 100 }}>
+              <AvatarRow
+                crew={id}
+                members={byId[id] ?? []}
+                selectedId={selectedId}
+                onSelect={onSelect}
+              />
+              <div
+                style={{
+                  position: "relative",
+                  zIndex: 9,
+                  marginTop: 40,
+                  textAlign: "center",
+                }}
+              >
+                <Caption color="#e9f5cd">{label}</Caption>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* INC & SUS & EQ — clothesline + recycling bin */}
       <div style={{ position: "absolute", left: 1424, top: 596, width: 210 }}>
-        <AvatarRow
-          crew="ise"
-          members={byId.ise}
-          selectedId={selectedId}
-          onSelect={onSelect}
-          justify="flex-start"
-          style={{ paddingLeft: 14 }}
-        />
         <Dec
           left={16}
           top={76}
@@ -1608,16 +1649,6 @@ const CampScene = memo(function CampScene({
           background="#f2f4ea"
           boxShadow="inset 0 5px 0 #d94f3d"
         />
-        <div
-          style={{
-            position: "relative",
-            zIndex: 9,
-            marginTop: 36,
-            textAlign: "center",
-          }}
-        >
-          <Caption color="#58d6a8">INC & SUS & EQ</Caption>
-        </div>
       </div>
     </div>
   );
