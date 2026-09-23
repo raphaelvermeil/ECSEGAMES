@@ -31,9 +31,14 @@ type rect struct {
 // target is the answer's markup and scaffold the starter the editor opens
 // with; both sit under the level's body background, which targetDoc and
 // starter supply, so neither repeats it.
+// given overrides how many leading rects the starter hands over (see
+// starter()). Zero means the default for the level. It is here for a
+// scene whose first shapes alone read as nothing: the wheel is four
+// shapes in, and without it the Ferris wheel opens on a stick.
 type part struct {
 	title string
 	rects []rect
+	given int
 
 	target   string
 	scaffold string
@@ -286,7 +291,7 @@ var levels = []level{
 		// Each spoke is a full diameter rotated about its own centre, so four
 		// rects give eight evenly spaced arms. Their half-length is 61, the rim's
 		// inner radius, so they meet the ring exactly.
-		{title: "Ferris wheel", rects: []rect{
+		{title: "Ferris wheel", given: 4, rects: []rect{
 			{0, 168, 300, 32, "#1d3a2f", "", ""},
 			{146, 100, 8, 96, "#5f6b5c", "", "transform:rotate(-16deg);transform-origin:50% 0"},
 			{146, 100, 8, 96, "#5f6b5c", "", "transform:rotate(16deg);transform-origin:50% 0"},
@@ -439,27 +444,25 @@ var levels = []level{
 	// Every child is a <div>, never an <i>: the flow levels drop the
 	// i{display:block} rule the rect levels rely on, and an inline <i> with
 	// no content collapses to nothing the moment it is not a flex item.
-	{n: 7, name: "ASSEMBLY LINE", bg: "#1e3348", example: `<!-- EXAMPLE. Not this part, just the idea.
-     Four bars in a row - and every second one a different colour,
-     without a second class anywhere in the HTML. -->
+	{n: 7, name: "ASSEMBLY LINE", bg: "#1e3348", example: `<!-- EXAMPLE. Not this part, just the idea:
+     four bars in a row, every second one a different colour, with no
+     second class in the HTML. -->
 
 <style>
   .row {
-    /* the CONTAINER gets placed once, the way you already know */
+    /* the CONTAINER is placed once, the way you already know */
     position: absolute;
     left: 40px; top: 80px;
     width: 220px; height: 40px;
 
-    display: flex;            /* its children now sit in a row        */
-    gap: 20px;                /* space between them                   */
-    justify-content: center;  /* how the leftover space is handed out */
-    align-items: center;      /* where they sit across the row        */
+    display: flex;            /* its children sit in a row       */
+    gap: 20px;                /* space between them              */
+    justify-content: center;  /* where the leftover space goes   */
+    align-items: center;      /* how they sit across the row     */
   }
 
   /* one rule, every bar. No left, no top on a child, ever again. */
   .row div { width: 40px; height: 24px; background: #6ee787 }
-
-  /* and one more rule that only catches the 2nd and the 4th */
   .row div:nth-child(even) { background: #ffd166 }
 </style>
 
@@ -470,9 +473,7 @@ var levels = []level{
   <div></div>
 </div>
 
-<!-- The four tags are identical. The CSS is what tells them apart, by
-     COUNTING them, and that is the job from here on: paste the children,
-     then select the ones you want.
+<!-- The four tags are identical - the CSS tells them apart by COUNTING:
 
        :nth-child(odd)     1st, 3rd, 5th ...
        :nth-child(even)    2nd, 4th, 6th ...
@@ -480,12 +481,8 @@ var levels = []level{
        :nth-child(3n + 1)  1st, 4th, 7th ...
        :nth-child(2)       just the 2nd
 
-     Worth reading up on: justify-content, align-items, flex-direction,
-     gap, and :nth-child.
-
-     4 x 40px + 3 x 20px of gap = 220px, which is why the row is 220
-     wide. Numbers that divide evenly are how a scene lands on whole
-     pixels, and whole pixels are how it matches the target. -->`, parts: []part{
+     4 x 40px + 3 x 20px of gap = 220px, the width of the row. Numbers
+     that divide evenly land the scene on whole pixels. -->`, parts: []part{
 
 		{title: "Row houses", target: `<style>
   .ground { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #24422f }
@@ -522,9 +519,8 @@ var levels = []level{
     /* five houses share these 280px, the outer two on the container edges */
   }
 
-  /* one house. A flex child can hold children of its own, and these three
-     are plain blocks - margin: 0 auto is what centres them in the facade
-     without either of them knowing where they are on screen. */
+  /* one house. A flex child holds children of its own - these three are
+     plain blocks, centred in the facade by margin: 0 auto. */
   .terrace > div { width: 48px; height: 110px; background: #c2705a }
   .roof { width: 48px; height: 10px; background: #2a1f1a }
   .win { width: 22px; height: 20px; margin: 16px auto 0; background: #ffd166 }
@@ -533,9 +529,8 @@ var levels = []level{
 
 <div class="ground"></div>
 
-<!-- 1 house up, 4 to go. Every second facade is painted a different
-     colour, and all five tags are identical, so that cannot come from
-     the HTML. -->
+<!-- 1 house up, 4 to go. Every second facade is a different colour,
+     and all five tags are identical. -->
 <div class="terrace">
   <div><div class="roof"></div><div class="win"></div><div class="door"></div></div>
 </div>`},
@@ -581,13 +576,11 @@ var levels = []level{
     display: flex;
     gap: 4px;
     /* a flex container runs across by default. This one has to run DOWN,
-       and the crates are not all the same width, so without a second
-       property the narrow ones will not line up with the wide ones. */
+       and the crates are not all the same width. Two properties. */
   }
 
-  /* the narrow crate. Two more rules give you the whole stack: one picks
-     the wide crates, the other picks the painted ones, and the two sets
-     overlap. Count them off the target. */
+  /* the narrow crate. Two more rules finish the stack: one picks the
+     wide crates, one picks the painted ones. Count them off the target. */
   .stack div { width: 60px; height: 22px; background: #8a5a3c }
 </style>
 
@@ -647,9 +640,8 @@ var levels = []level{
   .fan .head { width: 20px; height: 20px; border-radius: 50%; margin: 0 auto; background: #e0b48c }
   .fan .body { width: 30px; height: 60px; margin-top: 6px; border-radius: 6px 6px 0 0; background: #6ee787 }
 
-  /* three shirt colours, cycling. All seven tags below are identical, so
-     the CSS has to do the choosing - and the shirt is a CHILD of the
-     supporter you select, not the supporter itself. */
+  /* three shirt colours, cycling. The shirt is a CHILD of the supporter
+     you select, not the supporter itself. */
 </style>
 
 <div class="stand"></div>
@@ -700,11 +692,9 @@ var levels = []level{
     width: 100px; height: 120px;
     display: flex;
     gap: 8px;
-    /* twelve snacks, and only three fit across. A plain flex row would
-       sit all twelve on one line and let them run off the side, so they
-       have to spill onto the next line by themselves - and those lines
-       have to pack to the TOP of the shelf rather than spread down it.
-       Two properties. */
+    /* twelve snacks, three across. They have to spill onto the next
+       line by themselves, and the lines pack to the TOP of the shelf
+       rather than spread down it. Two properties. */
   }
 
   /* every snack is this. Every second one is a different colour. */
@@ -765,12 +755,10 @@ var levels = []level{
     align-items: center;
   }
 
-  /* Seven children: four track segments and, between them, three
-     stations. No segment has a width of its own. They SHARE whatever
-     the stations leave over - that is what flex: 1 means, one share
-     each - and one of the four takes a bigger share than the rest.
-
-     The stations are the even ones. They take no share at all. */
+  /* Seven children: four track segments, three stations between them.
+     No segment has a width - flex: 1 gives each an equal share of what
+     the stations leave over, and one segment takes a bigger share. The
+     stations are the even ones and take no share at all. */
   .line div { flex: 1; height: 8px; background: #4cc9f0 }
 </style>
 
