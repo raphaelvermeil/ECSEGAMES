@@ -11,7 +11,7 @@ import {
 } from "@/lib/leaderboard";
 import { teamLabel } from "@/lib/scores";
 import { formatTime } from "@/lib/schedule";
-import MobilePageBanner from "@/components/MobilePageBanner";
+import PageBanner from "@/components/PageBanner";
 import ScoreChart from "./ScoreChart";
 
 export default function LeaderboardView({ initial }: { initial: Leaderboard }) {
@@ -78,21 +78,10 @@ export default function LeaderboardView({ initial }: { initial: Leaderboard }) {
 
   return (
     <>
-      <MobilePageBanner title="Leaderboard" subtitle={status} />
+      <PageBanner title="Leaderboard" subtitle={status} />
 
-      <main className="min-h-screen bg-sched-bg px-4 pb-16 pt-6 lg:px-10 lg:pb-11 lg:pt-9">
-        <div className="hidden items-baseline justify-between lg:flex">
-          <div>
-            <h1 className="font-display text-4xl font-semibold tracking-[0.01em] text-sched-cream">
-              Leaderboard
-            </h1>
-            <p className="mt-1.5 font-mono text-xs text-sched-accent">
-              {status}
-            </p>
-          </div>
-        </div>
-
-        <section className="mt-6 lg:mt-8">
+      <main className="min-h-screen bg-sched-bg px-4 pb-16 pt-6 lg:px-10 lg:pb-11 lg:pt-[26px]">
+        <section className="mt-6 lg:mt-0">
           <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-sched-text-muted">
             Standings
           </h2>

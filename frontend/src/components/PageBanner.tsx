@@ -4,11 +4,10 @@ import { useState } from "react";
 import MobileChromeBar from "@/components/MobileChromeBar";
 import MobileNavMenu from "@/components/MobileNavMenu";
 
-// Mobile-only header for every non-Schedule page — the shared chrome bar
-// plus a green band + pixel title treatment matching ScheduleBanner, so the
-// app doesn't switch visual language between tabs on a phone. Desktop is
-// untouched: each page keeps its own existing desktop layout below this.
-export default function MobilePageBanner({
+// The title band for every non-Schedule page — the shared mobile chrome bar
+// plus the green band + pixel title treatment, sized to match ScheduleBanner
+// at both breakpoints so the app doesn't switch visual language between tabs.
+export default function PageBanner({
   title,
   subtitle,
 }: {
@@ -18,17 +17,16 @@ export default function MobilePageBanner({
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    // Deliberately a Fragment rather than a lg:hidden wrapper div:
-    // `position: sticky` is bounded by its parent's box, so wrapping the
-    // banner would let the chrome bar unpin the moment that short wrapper
-    // scrolled past. Each child carries lg:hidden instead.
+    // Deliberately a Fragment rather than a wrapper div: `position: sticky`
+    // is bounded by its parent's box, so wrapping the banner would let the
+    // chrome bar unpin the moment that short wrapper scrolled past.
     <>
       <MobileChromeBar
         menuOpen={menuOpen}
         onToggleMenu={() => setMenuOpen((o) => !o)}
       />
 
-      <div className="relative flex items-center bg-sched-band px-5 pb-4 pt-5 lg:hidden">
+      <div className="relative flex items-center bg-sched-band px-5 pb-4 pt-5 lg:min-h-[180px] lg:px-10 lg:py-9">
         <div
           aria-hidden="true"
           className="absolute inset-0 opacity-[0.28]"
@@ -38,10 +36,10 @@ export default function MobilePageBanner({
           }}
         />
         <div className="relative">
-          <h1 className="font-display text-[40px] font-semibold leading-none tracking-[0.01em] text-sched-cream">
+          <h1 className="font-display text-[40px] font-semibold leading-none tracking-[0.01em] text-sched-cream lg:text-[56px]">
             {title}
           </h1>
-          <p className="mt-[9px] font-mono text-xs text-sched-accent">
+          <p className="mt-[9px] font-mono text-xs text-sched-accent lg:mt-[14px] lg:text-[15px]">
             {subtitle}
           </p>
         </div>

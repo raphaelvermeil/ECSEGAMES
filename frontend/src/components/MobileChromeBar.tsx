@@ -8,7 +8,7 @@ import AccountControl from "@/components/AccountControl";
 // The desktop Navbar is `hidden lg:flex` and lives once in (app)/layout.tsx.
 // Below lg it disappears, and each page draws its own header — so this is
 // the mobile counterpart to Navbar, and like Navbar there is exactly one of
-// it. Every page banner (ScheduleBanner, MobilePageBanner, CsCompBanner,
+// it. Every page banner (ScheduleBanner, PageBanner, CsCompBanner,
 // TeamBanner) renders this and then adds its own title block underneath.
 // Previously each of those inlined its own copy; five copies drifted apart
 // and had to be fixed five times.

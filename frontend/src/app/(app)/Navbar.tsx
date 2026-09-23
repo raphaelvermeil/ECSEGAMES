@@ -6,7 +6,7 @@ import { Show, UserButton, useAuth } from "@clerk/nextjs";
 import { NAV_LINKS } from "@/lib/nav";
 
 // Desktop only — every page renders its own mobile header (ScheduleBanner
-// for /schedule, MobilePageBanner elsewhere) with its own logo/bell/account
+// for /schedule, PageBanner elsewhere) with its own logo/bell/account
 // row and hamburger menu, so this bar would just duplicate that below lg.
 export default function Navbar() {
   const pathname = usePathname();
