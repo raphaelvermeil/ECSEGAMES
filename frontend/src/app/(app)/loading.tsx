@@ -16,15 +16,15 @@ import MobileChromeBar from "@/components/MobileChromeBar";
 export default function AppLoading() {
   return (
     <>
-      {/* Mobile only. The desktop Navbar lives in the layout and survives the
-          transition, but on a phone the top chrome belongs to each *page*
-          (MobilePageBanner, ScheduleBanner, CsCompBanner, TeamBanner) and
-          unmounts with the outgoing one — so without a stand-in here the
-          header disappears mid-navigation. The logo row is static, so it is
-          rendered for real; only the title below is a placeholder. */}
+      {/* The desktop Navbar lives in the layout and survives the transition,
+          but the title band belongs to each *page* (PageBanner,
+          ScheduleBanner, CsCompBanner, TeamBanner) and unmounts with the
+          outgoing one — so without a stand-in here the header disappears
+          mid-navigation. The chrome bar below it is mobile-only and static,
+          so it is rendered for real; only the title is a placeholder. */}
       <MobileChromeBar />
 
-      <div className="relative bg-sched-band px-5 pb-4 pt-5 lg:hidden">
+      <div className="relative bg-sched-band px-5 pb-4 pt-5 lg:min-h-[180px] lg:px-10 lg:py-9">
         <div
           aria-hidden="true"
           className="absolute inset-0 opacity-[0.28]"
@@ -34,23 +34,18 @@ export default function AppLoading() {
           }}
         />
         <div className="relative animate-pulse">
-          <div className="h-[40px] w-52 bg-sched-hair" />
-          <div className="mt-[9px] h-3 w-32 bg-sched-row-line" />
+          <div className="h-[40px] w-52 bg-sched-hair lg:h-[56px] lg:w-80" />
+          <div className="mt-[9px] h-3 w-32 bg-sched-row-line lg:mt-[14px] lg:h-4 lg:w-64" />
         </div>
       </div>
 
       {/* The layout's inner wrapper is already bg-sched-bg, so this stays
           transparent and matches the frame on every route. */}
       <div
-        className="animate-pulse px-5 pb-11 pt-6 lg:px-10 lg:pt-9"
+        className="animate-pulse px-5 pb-11 pt-6 lg:px-10 lg:pt-[26px]"
         aria-hidden="true"
       >
-        <div className="hidden lg:block">
-          <div className="h-9 w-64 bg-sched-hair" />
-          <div className="mt-3 h-4 w-80 bg-sched-row-line" />
-        </div>
-
-        <div className="mt-6 flex gap-2 lg:mt-8">
+        <div className="mt-6 flex gap-2 lg:mt-0">
           <div className="h-8 w-24 border border-sched-hair" />
           <div className="h-8 w-24 border border-sched-hair" />
           <div className="h-8 w-24 border border-sched-hair" />

@@ -63,7 +63,7 @@ export default function CsCompBanner({
         onToggleMenu={() => setMenuOpen((o) => !o)}
       />
 
-      <div className="relative px-5 pb-0 pt-5 lg:px-[60px] lg:pt-[30px]">
+      <div className="relative px-5 pb-0 pt-5 lg:px-10 lg:pt-9">
         <div className="absolute inset-0 bg-sched-band" aria-hidden="true" />
         <div
           aria-hidden="true"
@@ -75,10 +75,10 @@ export default function CsCompBanner({
         />
         <div className="relative flex flex-wrap items-end gap-[26px]">
           <div className="min-w-[260px] flex-1">
-            <h1 className="font-display text-[32px] font-semibold leading-none tracking-[0.01em] text-sched-cream lg:text-[46px]">
+            <h1 className="font-display text-[32px] font-semibold leading-none tracking-[0.01em] text-sched-cream lg:text-[56px]">
               CS comp
             </h1>
-            <p className="mt-3 font-mono text-xs text-sched-accent">
+            <p className="mt-3 font-mono text-xs text-sched-accent lg:mt-[14px] lg:text-[15px]">
               In-house CSS battle · one file, HTML + CSS · recreate the target ·
               teams of 5
             </p>

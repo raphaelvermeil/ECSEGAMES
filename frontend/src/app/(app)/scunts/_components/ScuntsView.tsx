@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import imageCompression from "browser-image-compression";
-import MobilePageBanner from "@/components/MobilePageBanner";
+import PageBanner from "@/components/PageBanner";
 import { Camera, Trash } from "@/components/icons";
 import { teamLabel, type Team } from "@/lib/scores";
 import {
@@ -133,24 +133,13 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
 
   return (
     <>
-      <MobilePageBanner title="Scunts" subtitle="Post your proof." />
+      <PageBanner title="Scunts" subtitle="Post your proof." />
 
-      <main className="min-h-screen bg-sched-bg px-4 pb-16 pt-6 lg:px-10 lg:pb-11 lg:pt-9">
-        <div className="hidden items-baseline justify-between lg:flex">
-          <div>
-            <h1 className="font-display text-4xl font-semibold tracking-[0.01em] text-sched-cream">
-              Scunts
-            </h1>
-            <p className="mt-1.5 font-mono text-xs text-sched-accent">
-              Photo and video proof, all weekend.
-            </p>
-          </div>
-        </div>
-
+      <main className="min-h-screen bg-sched-bg px-4 pb-16 pt-6 lg:px-10 lg:pb-11 lg:pt-[26px]">
         {/* Caption first, deliberately: it is the only thing saying what a
             photo is proof of, and asking for it after the file picker would
             mean re-opening the camera to fix a missing one. */}
-        <section className="mt-6 rounded-sm border border-sched-hair bg-sched-bg-raised p-4 lg:mt-8 lg:p-5">
+        <section className="mt-6 rounded-sm border border-sched-hair bg-sched-bg-raised p-4 lg:mt-0 lg:p-5">
           <label htmlFor="scunts-caption" className={labelClass}>
             What is this proof of?
           </label>
