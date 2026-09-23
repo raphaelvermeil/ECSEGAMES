@@ -26,6 +26,15 @@ type Config struct {
 	ChromeNoSandbox         bool
 	CSCompRenderConcurrency int
 
+	// R2 object storage for Scunts media (internal/scunts). All four must
+	// be set for uploads to work; with any missing the module still mounts
+	// but every route reports 503, so a misconfigured deploy fails loudly
+	// instead of looking like a routing bug.
+	R2AccountID   string
+	R2AccessKeyID string
+	R2SecretKey   string
+	R2Bucket      string
+
 	// CSCompMinutes is how long a fresh comp round runs. It is the length
 	// the clock resets to, not a deadline the server enforces — an exec
 	// starts, pauses and adjusts it (see cscomp.Clock).
@@ -49,6 +58,11 @@ func Load() Config {
 		ChromeNoSandbox:         os.Getenv("CHROME_NO_SANDBOX") == "1",
 		CSCompRenderConcurrency: getenvInt("CSCOMP_RENDER_CONCURRENCY", 4),
 		CSCompMinutes:           getenvInt("CSCOMP_MINUTES", 45),
+
+		R2AccountID:   os.Getenv("R2_ACCOUNT_ID"),
+		R2AccessKeyID: os.Getenv("R2_ACCESS_KEY_ID"),
+		R2SecretKey:   os.Getenv("R2_SECRET_ACCESS_KEY"),
+		R2Bucket:      os.Getenv("R2_BUCKET"),
 	}
 }
 

@@ -1,0 +1,318 @@
+package scunts
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/ecsegames/backend/internal/audit"
+	appmw "github.com/ecsegames/backend/internal/middleware"
+	"github.com/ecsegames/backend/internal/models"
+	"github.com/ecsegames/backend/internal/users"
+	"github.com/go-chi/chi/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+// Handler serves the Scunts media endpoints. storage may be nil when R2 is
+// unconfigured, in which case every route reports 503 — unlike the CS comp,
+// where reads survive a missing renderer, listing here needs storage too
+// because each item carries a presigned URL.
+type Handler struct {
+	store   *Store
+	storage *Storage
+	users   *users.Repository
+	audit   *audit.Store
+}
+
+// NewHandler builds the handler. storage is allowed to be nil.
+func NewHandler(store *Store, storage *Storage, userRepo *users.Repository, auditStore *audit.Store) *Handler {
+	return &Handler{store: store, storage: storage, users: userRepo, audit: auditStore}
+}
+
+// Mount registers the Scunts routes. Everything is behind a session: the
+// gallery shows student faces and is readable by any signed-in user, but
+// never publicly, in contrast to the schedule.
+func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey string) {
+	r.Group(func(pr chi.Router) {
+		pr.Use(appmw.RequireAuth(clerkSecretKey))
+
+		pr.Post("/api/scunts/upload-url", h.UploadURL)
+		pr.Post("/api/scunts/submissions", h.Create)
+		pr.Get("/api/scunts/submissions", h.List)
+
+		// Takedown is the one exec-only action: because everyone signed in
+		// can see every upload, someone has to be able to remove one.
+		pr.Group(func(er chi.Router) {
+			er.Use(appmw.RequireRole(userRepo, models.RoleExec))
+			er.Delete("/api/scunts/submissions/{id}", h.Delete)
+		})
+	})
+}
+
+// caller resolves the requesting user, rejecting anyone who hasn't finished
+// onboarding: a submission is attributed to a Games team, so there has to
+// be one. The page gates this too; this is the backstop.
+func (h *Handler) caller(w http.ResponseWriter, r *http.Request) (*models.User, bool) {
+	clerkID, ok := appmw.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthenticated", http.StatusUnauthorized)
+		return nil, false
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	u, err := h.users.GetOrCreate(ctx, clerkID)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return nil, false
+	}
+	if u.Team == "" {
+		http.Error(w, "join a team first", http.StatusConflict)
+		return nil, false
+	}
+	return u, true
+}
+
+// ready reports whether R2 is configured, answering 503 when it isn't.
+func (h *Handler) ready(w http.ResponseWriter) bool {
+	if h.storage == nil {
+		http.Error(w, "media storage not configured", http.StatusServiceUnavailable)
+		return false
+	}
+	return true
+}
+
+type uploadURLRequest struct {
+	ContentType string `json:"contentType"`
+	Size        int64  `json:"size"`
+}
+
+type uploadURLResponse struct {
+	UploadURL string `json:"uploadUrl"`
+	Key       string `json:"key"`
+}
+
+// UploadURL hands back a short-lived URL the browser PUTs the file to
+// directly. Checking the type and size here is a courtesy that fails a bad
+// upload before it is transferred; Create checks the stored object again,
+// which is the check that actually counts.
+func (h *Handler) UploadURL(w http.ResponseWriter, r *http.Request) {
+	if !h.ready(w) {
+		return
+	}
+	u, ok := h.caller(w, r)
+	if !ok {
+		return
+	}
+
+	var req uploadURLRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	kind, allowed := KindFor(req.ContentType)
+	if !allowed {
+		http.Error(w, "unsupported file type", http.StatusBadRequest)
+		return
+	}
+	if req.Size <= 0 || req.Size > MaxBytesFor(kind) {
+		http.Error(w, "file is too large", http.StatusBadRequest)
+		return
+	}
+
+	key := NewKey(u.Team, req.ContentType)
+	url, err := h.storage.PresignPut(r.Context(), key, req.ContentType)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, uploadURLResponse{UploadURL: url, Key: key})
+}
+
+type createRequest struct {
+	Key     string `json:"key"`
+	Caption string `json:"caption"`
+}
+
+// Create records a submission for an object the client says it uploaded.
+//
+// Everything the client claims is re-derived from the object itself: the
+// content type and size come from a HEAD against R2, not from the request.
+// That is the same stance cscomp takes by rendering submitted code itself
+// rather than believing a reported score.
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+	if !h.ready(w) {
+		return
+	}
+	u, ok := h.caller(w, r)
+	if !ok {
+		return
+	}
+
+	var req createRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	caption := strings.TrimSpace(req.Caption)
+	if caption == "" {
+		http.Error(w, "caption is required", http.StatusBadRequest)
+		return
+	}
+	if len(caption) > MaxCaptionLen {
+		http.Error(w, "caption is too long", http.StatusBadRequest)
+		return
+	}
+	// The key was minted for this caller's team, so anything else is either
+	// a bug or someone claiming another team's object.
+	if !strings.HasPrefix(req.Key, "scunts/"+string(u.Team)+"/") {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+
+	contentType, size, err := h.storage.Head(ctx, req.Key)
+	if err != nil {
+		http.Error(w, "upload not found", http.StatusBadRequest)
+		return
+	}
+	kind, allowed := KindFor(contentType)
+	if !allowed {
+		// Stored but unusable, so don't leave it sitting in the bucket.
+		_ = h.storage.Delete(ctx, req.Key)
+		http.Error(w, "unsupported file type", http.StatusBadRequest)
+		return
+	}
+	if size <= 0 || size > MaxBytesFor(kind) {
+		_ = h.storage.Delete(ctx, req.Key)
+		http.Error(w, "file is too large", http.StatusBadRequest)
+		return
+	}
+
+	sub := Submission{
+		Team:            u.Team,
+		Key:             req.Key,
+		Kind:            kind,
+		ContentType:     contentType,
+		Size:            size,
+		Caption:         caption,
+		SubmittedBy:     u.ClerkID,
+		SubmittedByName: displayName(u),
+		SubmittedAt:     time.Now().UTC(),
+	}
+	saved, err := h.store.Insert(ctx, sub)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	if url, err := h.storage.PresignGet(ctx, saved.Key); err == nil {
+		saved.PhotoURL = url
+	}
+	writeJSON(w, http.StatusCreated, saved)
+}
+
+// List returns the gallery, newest first, each item carrying a presigned
+// URL the browser loads the media from.
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+	if !h.ready(w) {
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+
+	list, err := h.store.List(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	for i := range list {
+		// Presigning is local signing, not a network call, so doing it per
+		// item costs nothing. An item whose URL can't be signed is still
+		// returned; the client renders a broken tile rather than the whole
+		// gallery failing.
+		if url, err := h.storage.PresignGet(ctx, list[i].Key); err == nil {
+			list[i].PhotoURL = url
+		}
+	}
+	writeJSON(w, http.StatusOK, list)
+}
+
+// Delete takes a submission down: the object first, then the record, then
+// an audit entry naming the exec who did it.
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	if !h.ready(w) {
+		return
+	}
+	id, err := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+
+	sub, err := h.store.Get(ctx, id)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+
+	// Object before record: an orphaned object costs storage, whereas a
+	// record pointing at a deleted object renders as a broken tile.
+	if err := h.storage.Delete(ctx, sub.Key); err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	if err := h.store.Delete(ctx, id); err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+
+	clerkID, _ := appmw.UserIDFromContext(r.Context())
+	_ = h.audit.Record(ctx, audit.Entry{
+		EntityType: audit.EntityScuntsSubmission,
+		EntityID:   id,
+		Verb:       audit.VerbDeleted,
+		Actor:      h.actorName(ctx, clerkID),
+		At:         time.Now().UTC(),
+		Text:       "removed a Scunts submission by " + sub.SubmittedByName,
+	})
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// actorName resolves a Clerk ID to the name on the profile, matching how
+// events and scores attribute their audit entries. Falls back to the raw ID.
+func (h *Handler) actorName(ctx context.Context, clerkID string) string {
+	u, err := h.users.GetOrCreate(ctx, clerkID)
+	if err != nil || u.Name == "" {
+		return clerkID
+	}
+	return u.Name
+}
+
+// displayName is the name shown on a submission tile, falling back to the
+// Clerk ID so a tile is never anonymous.
+func displayName(u *models.User) string {
+	if u.Name == "" {
+		return u.ClerkID
+	}
+	return u.Name
+}
+
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(v)
+}

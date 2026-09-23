@@ -1,6 +1,7 @@
 import type { ComponentType, SVGProps } from "react";
 import {
   CalendarDays,
+  Camera,
   CodeXml,
   House,
   Trophy,
@@ -40,6 +41,12 @@ export const NAV_LINKS: NavLink[] = [
     label: "CS comp",
     description: "In-house CSS battle — teams of 5.",
     icon: CodeXml,
+  },
+  {
+    href: "/scunts",
+    label: "Scunts",
+    description: "Photo and video proof, all weekend.",
+    icon: Camera,
   },
   {
     href: "/leaderboard",

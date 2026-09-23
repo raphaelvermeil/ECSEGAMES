@@ -30,6 +30,11 @@ type EntityType string
 const (
 	EntityEvent      EntityType = "event"
 	EntityScoreEntry EntityType = "scoreEntry"
+	// A Scunts submission belongs to no event, so entries about one carry
+	// a zero EventID and never appear in an event's history. They exist so
+	// an exec taking media down leaves a durable trace, readable in the
+	// database even though no screen renders it.
+	EntityScuntsSubmission EntityType = "scuntsSubmission"
 )
 
 // Diff is one changed field, before and after. Values are pre-formatted

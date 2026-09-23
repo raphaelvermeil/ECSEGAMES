@@ -29,6 +29,7 @@ const eslintConfig = defineConfig([
           protected: [
             "src/app/(app)/cs-comp/**",
             "src/app/(app)/leaderboard/**",
+            "src/app/(app)/scunts/**",
             "src/app/select-team/**",
           ],
           public: ["**"],

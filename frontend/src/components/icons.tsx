@@ -82,6 +82,19 @@ export const Pin = (p: SVGProps<SVGSVGElement>) => (
     <circle cx="12" cy="10" r="2.5" />
   </svg>
 );
+export const Camera = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}>
+    <path d="M3 9a2 2 0 0 1 2-2h2l1.5-2h7L17 7h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+    <circle cx="12" cy="13" r="3.5" />
+  </svg>
+);
+export const Trash = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}>
+    <path d="M4 7h16" />
+    <path d="M9 7V5h6v2" />
+    <path d="M6 7l1 13h10l1-13" />
+  </svg>
+);
 export const X = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}>
     <path d="M5 5l14 14M19 5 5 19" />

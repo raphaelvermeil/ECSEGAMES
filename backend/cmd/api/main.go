@@ -19,6 +19,7 @@ import (
 	"github.com/ecsegames/backend/internal/handlers"
 	appmw "github.com/ecsegames/backend/internal/middleware"
 	"github.com/ecsegames/backend/internal/scores"
+	"github.com/ecsegames/backend/internal/scunts"
 	"github.com/ecsegames/backend/internal/users"
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
@@ -138,6 +139,19 @@ func main() {
 		}
 		cscompHandler := cscomp.NewHandler(cscompStore, userRepo, renderer, cfg.CSCompSolutionsDir, cfg.CSCompMinutes*60)
 		cscomp.Mount(r, cscompHandler, userRepo, cfg.ClerkSecretKey)
+
+		// Scunts media. Like the CS comp renderer, missing configuration
+		// disables the feature rather than stopping the server — but here
+		// it disables reads too, since every item needs a presigned URL.
+		scuntsStore := scunts.NewStore(database)
+		if err := scuntsStore.EnsureIndexes(idxCtx); err != nil {
+			log.Fatalf("scunts: ensure indexes: %v", err)
+		}
+		scuntsStorage, err := scunts.NewStorage(cfg.R2AccountID, cfg.R2AccessKeyID, cfg.R2SecretKey, cfg.R2Bucket)
+		if err != nil {
+			log.Printf("scunts: media storage unavailable, submissions disabled: %v", err)
+		}
+		scunts.Mount(r, scunts.NewHandler(scuntsStore, scuntsStorage, userRepo, auditStore), userRepo, cfg.ClerkSecretKey)
 	} else {
 		log.Printf("database not connected: user API disabled")
 	}
