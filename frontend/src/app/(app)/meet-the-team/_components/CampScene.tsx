@@ -1049,31 +1049,12 @@ const CampScene = memo(function CampScene({
 
       {/* COMMUNICATIONS — antenna */}
       <div style={{ position: "absolute", left: 490, top: 314, width: 210 }}>
-        {/* The IS&E coord stands with comms rather than alone across the
-            camp. Two rows rather than one list so each keeps its own crew
-            colour and ring — the modal reads the member's own crew, so
-            roles stay distinct. */}
-        <div
-          style={{
-            position: "relative",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "flex-end",
-          }}
-        >
-          <AvatarRow
-            crew="comms"
-            members={byId.comms}
-            selectedId={selectedId}
-            onSelect={onSelect}
-          />
-          <AvatarRow
-            crew="ise"
-            members={byId.ise}
-            selectedId={selectedId}
-            onSelect={onSelect}
-          />
-        </div>
+        <AvatarRow
+          crew="comms"
+          members={byId.comms}
+          selectedId={selectedId}
+          onSelect={onSelect}
+        />
         <Dec
           left="50%"
           top={36}
@@ -1180,14 +1161,10 @@ const CampScene = memo(function CampScene({
             position: "relative",
             zIndex: 9,
             marginTop: 46,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 4,
+            textAlign: "center",
           }}
         >
           <Caption color="#ff7b54">COMMS</Caption>
-          <Caption color="#58d6a8">INC & SUS & EQ</Caption>
         </div>
       </div>
 
@@ -1596,6 +1573,14 @@ const CampScene = memo(function CampScene({
 
       {/* INC & SUS & EQ — clothesline + recycling bin */}
       <div style={{ position: "absolute", left: 1424, top: 596, width: 210 }}>
+        <AvatarRow
+          crew="ise"
+          members={byId.ise}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          justify="flex-start"
+          style={{ paddingLeft: 14 }}
+        />
         <Dec
           left={16}
           top={76}
@@ -1649,6 +1634,16 @@ const CampScene = memo(function CampScene({
           background="#f2f4ea"
           boxShadow="inset 0 5px 0 #d94f3d"
         />
+        <div
+          style={{
+            position: "relative",
+            zIndex: 9,
+            marginTop: 36,
+            textAlign: "center",
+          }}
+        >
+          <Caption color="#58d6a8">INC & SUS & EQ</Caption>
+        </div>
       </div>
     </div>
   );
