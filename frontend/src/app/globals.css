@@ -115,8 +115,33 @@
   --app-chrome-h: 56px;
 }
 
+/* Both of these are the chrome bar's colour because both of them show above
+   the top of the page when an iPhone rubber-bands a downward drag. Installed
+   to the home screen there is no address bar covering that strip, so the drag
+   pushes the sticky MobileChromeBar away from the status bar and exposes it;
+   in Safari the browser's own UI sits over it, which is why the seam only
+   ever appears in the installed app.
+
+   <html> paints the canvas proper — the band above the document's top edge.
+   <body> is the one that actually mattered here: measured off the seam, the
+   exposed strip renders body's colour rather than the canvas colour that CSS
+   background propagation would predict, so setting only <html> left it
+   unchanged. With both the same the band is indistinguishable from the bar.
+
+   The bounce itself is deliberately left alone — overscroll-behavior would
+   remove the band by removing the drag, and dragging down at the top is how
+   people expect to refresh.
+
+   Nothing else showed the old #02120d: every top-level page draws its own
+   full-height backdrop (AuthShell and select-team use --gradient-hero, the
+   app shell bg-sched-bg, error/not-found the same), so the band was the only
+   place body's colour was ever visible. */
+html,
 body {
-  background: #02120d;
+  background: var(--color-sched-chrome);
+}
+
+body {
   color: var(--color-ecsess-100);
   font-family: var(--font-sans);
   font-weight: 500; /* ECSESS default weight */

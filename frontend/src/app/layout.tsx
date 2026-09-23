@@ -25,6 +25,25 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "ECSE Games",
   description: "ECSE Games competition platform",
+
+  // Added to the home screen, iOS runs the site as a standalone app with no
+  // browser chrome. Left unconfigured it picks its own defaults: it reserves
+  // a band for the status bar, keeps the page below it, and paints that band
+  // itself — so env(safe-area-inset-top) reports 0, every --app-safe-top rule
+  // in globals.css collapses, and the strip above the header is a shade iOS
+  // chose rather than one of ours. That strip is what separates from the
+  // chrome bar when the page is dragged down.
+  //
+  // "black-translucent" hands the whole screen to the page instead: the
+  // status bar floats over our own pixels, the insets start reporting real
+  // numbers, and MobileChromeBar's pt-[var(--app-safe-top)] finally does the
+  // job it was written for. This is the mode viewportFit: "cover" below
+  // already assumes — the two belong together.
+  appleWebApp: {
+    capable: true,
+    title: "ECSE Games",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 // viewportFit: "cover" is what lets the layout reach into an iPhone's safe
