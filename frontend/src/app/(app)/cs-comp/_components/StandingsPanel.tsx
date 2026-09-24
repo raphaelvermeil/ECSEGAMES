@@ -49,6 +49,12 @@ export default function StandingsPanel({
 
   const top = Math.max(1, board.standings[0]?.points ?? 1);
 
+  // What one part of each level is worth, read off the challenges rather
+  // than a formula, so the key always matches what the server scores.
+  // Empty before the comp starts, when students get no challenges.
+  const pointsFor = (level: number) =>
+    challenges.find((c) => c.level === level)?.points;
+
   return (
     <div className="bg-sched-bg px-5 pb-14 pt-8 lg:px-[60px] lg:pb-[60px] lg:pt-[34px]">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
@@ -81,8 +87,10 @@ export default function StandingsPanel({
             NOT THE GLOBAL LEADERBOARD
           </div>
           <p className="mt-2 font-mono text-[11px] leading-[1.65] text-sched-text-muted">
-            This board is CS comp only and resets every comp. Games-wide points
-            across all events live on the site leaderboard.
+            CS comp squads compete on their own, and these points don&rsquo;t go
+            straight to the global leaderboard. When the comp ends, the judges
+            average each department&rsquo;s squad scores and add that to the
+            department&rsquo;s Games total.
           </p>
           <Link
             href="/leaderboard"
@@ -99,7 +107,7 @@ export default function StandingsPanel({
         </span>
         <div className="h-px flex-1 bg-sched-hair" />
         <span className="font-mono text-[10px] tracking-[0.16em] text-sched-text-muted">
-          POINTS = LEVEL × 100 PER SOLVED PART
+          POINTS PER SOLVED PART GROW WITH EACH LEVEL
         </span>
       </div>
 
@@ -186,7 +194,7 @@ export default function StandingsPanel({
                     </span>
                   </span>
 
-                  {/* Ten pips per row (two levels), so forty parts stay
+                  {/* Ten pips per row (two levels), so fifty parts stay
                       legible in the fixed column instead of shrinking to
                       slivers. */}
                   <span
@@ -226,7 +234,9 @@ export default function StandingsPanel({
                   aria-hidden="true"
                 />
                 <span className="font-mono text-[10px] tracking-[0.1em] text-sched-text-muted">
-                  L{l.n} {l.name} · {l.n * 100} pts
+                  L{l.n} {l.name}
+                  {pointsFor(l.n) !== undefined &&
+                    ` · ${pointsFor(l.n)!.toLocaleString()} pts`}
                 </span>
               </span>
             ))}

@@ -31,7 +31,7 @@ const PassThreshold = 98.0
 // Chrome.
 const MaxCodeBytes = 64 * 1024
 
-// Challenge is one of the 40 tasks: level 1-8, part 1-5. The solution
+// Challenge is one of the 50 tasks: level 1-10, part 1-5. The solution
 // image is not stored on the document — it lives on disk at
 // <solutionsDir>/<Slug(Name)>.png, which is why Name is unique.
 type Challenge struct {

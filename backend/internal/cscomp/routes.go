@@ -95,6 +95,12 @@ type ClockView struct {
 	// the viewer's own zone, so the server never guesses at one.
 	EndsAt    string `json:"endsAt"`
 	UpdatedBy string `json:"updatedBy"`
+	// Started is whether the comp has ever been started, which is what
+	// opens the battle to students (see battleOpen).
+	Started bool `json:"started"`
+	// StandingsHidden is whether students are currently kept off the
+	// standings (see Clock.StandingsHidden). Execs still see them.
+	StandingsHidden bool `json:"standingsHidden"`
 }
 
 func view(c *Clock, now time.Time) ClockView {
@@ -108,6 +114,8 @@ func view(c *Clock, now time.Time) ClockView {
 		DurationSeconds:  c.Duration,
 		EndsAt:           ends,
 		UpdatedBy:        c.UpdatedBy,
+		Started:          c.Started(),
+		StandingsHidden:  c.StandingsHidden(now),
 	}
 }
 
@@ -174,7 +182,8 @@ func (h *Handler) ControlClock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now().UTC()
-	next := *current
+	// Before anything can move the end back out past the final hour.
+	next := current.Latch(now)
 	switch req.Action {
 	case "start":
 		next = next.Start(now)
@@ -182,6 +191,10 @@ func (h *Handler) ControlClock(w http.ResponseWriter, r *http.Request) {
 		next = next.Pause(now)
 	case "stop":
 		next = next.Stop(now)
+	case "rehide":
+		next = next.Rehide(now)
+	case "reveal":
+		next = next.Reveal()
 	case "setEnd":
 		if req.EndsAt == 0 {
 			http.Error(w, "an end time is required", http.StatusBadRequest)
@@ -210,12 +223,69 @@ func (h *Handler) ControlClock(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, view(&next, now))
 }
 
+// battleOpen gates everything that reveals a challenge. Execs always pass,
+// so they can check the board before the room arrives; everyone else waits
+// until the clock has been started once, and from then on it stays open.
+// Writes the response and returns false when the caller is kept out.
+func (h *Handler) battleOpen(ctx context.Context, w http.ResponseWriter, r *http.Request) bool {
+	return h.clockGate(ctx, w, r, func(c *Clock) string {
+		if !c.Started() {
+			return "the comp has not started"
+		}
+		return ""
+	})
+}
+
+// standingsOpen keeps students off the standings for the final stretch of
+// the comp, until an exec reveals them. Execs always pass.
+func (h *Handler) standingsOpen(ctx context.Context, w http.ResponseWriter, r *http.Request) bool {
+	return h.clockGate(ctx, w, r, func(c *Clock) string {
+		if c.StandingsHidden(time.Now().UTC()) {
+			return "the standings are hidden until the winners are revealed"
+		}
+		return ""
+	})
+}
+
+// clockGate lets execs and admins straight through and asks closed about
+// everyone else: a non-empty reason is sent back as a 403. Writes the
+// response and returns false when the caller is kept out.
+func (h *Handler) clockGate(ctx context.Context, w http.ResponseWriter, r *http.Request, closed func(*Clock) string) bool {
+	clerkID, ok := appmw.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthenticated", http.StatusUnauthorized)
+		return false
+	}
+	u, err := h.users.GetOrCreate(ctx, clerkID)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return false
+	}
+	if u.Role == models.RoleExec || u.Role == models.RoleAdmin {
+		return true
+	}
+	clock, err := h.store.GetClock(ctx, h.compSeconds)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return false
+	}
+	if reason := closed(clock); reason != "" {
+		http.Error(w, reason, http.StatusForbidden)
+		return false
+	}
+	return true
+}
+
 // ListChallenges returns every challenge: level, part, name, points and
 // starter code. The starter is the scaffold the editor opens with, not an
 // answer.
 func (h *Handler) ListChallenges(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
+
+	if !h.battleOpen(ctx, w, r) {
+		return
+	}
 
 	list, err := h.store.ListChallenges(ctx)
 	if err != nil {
@@ -239,6 +309,10 @@ func (h *Handler) Target(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
+
+	if !h.battleOpen(ctx, w, r) {
+		return
+	}
 
 	c, err := h.store.GetChallenge(ctx, id)
 	if errors.Is(err, mongo.ErrNoDocuments) {
@@ -588,6 +662,11 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	// A claim echoes the challenge's level back, so it is part of the
+	// battle too.
+	if !h.battleOpen(ctx, w, r) {
+		return
+	}
 
 	c, err := h.store.GetChallenge(ctx, id)
 	if errors.Is(err, mongo.ErrNoDocuments) {
@@ -842,10 +921,15 @@ type Leaderboard struct {
 // Standings ranks every sub-team. Reads are open to any authenticated user
 // rather than gated on team membership — the board is the thing a student
 // checks before they have joined anything, and it exposes nothing a
-// teammate could not already see.
+// teammate could not already see. The exception is the comp's final hour,
+// when only execs see it until they reveal it (see standingsOpen).
 func (h *Handler) Standings(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
+
+	if !h.standingsOpen(ctx, w, r) {
+		return
+	}
 
 	challenges, err := h.store.ListChallenges(ctx)
 	if err != nil {

@@ -163,6 +163,42 @@ export default function ClockControls({
         STOP
       </button>
 
+      {/* For a start pressed too early: stops the clock and hides the battle
+          from students again, as if start had never been pressed. */}
+      <button
+        type="button"
+        onClick={() => {
+          if (
+            window.confirm(
+              "Stop the clock and hide the battle from students again?",
+            )
+          ) {
+            onAction("rehide");
+          }
+        }}
+        disabled={busy || !clock.started}
+        title="Undo an early start: stop the clock and hide the battle again"
+        className="min-h-9 border border-sched-coral px-3.5 font-mono text-[10px] font-medium tracking-[0.14em] text-sched-coral transition-colors hover:bg-sched-coral hover:text-[#1a0e08] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        REHIDE
+      </button>
+
+      {/* The standings go dark for students in the final hour; this brings
+          them back for everyone, e.g. once the winners are announced. */}
+      <button
+        type="button"
+        onClick={() => onAction("reveal")}
+        disabled={busy || !clock.standingsHidden}
+        title={
+          clock.standingsHidden
+            ? "Show the standings to everyone again"
+            : "The standings are not hidden right now"
+        }
+        className="min-h-9 border border-sched-accent-dim px-3.5 font-mono text-[10px] font-medium tracking-[0.14em] text-sched-accent transition-colors hover:bg-[#16241c] hover:text-sched-cream disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        REVEAL STANDINGS
+      </button>
+
       <span className="mx-1 h-5 w-px bg-sched-hair" aria-hidden="true" />
 
       {/* When the comp runs until, rather than how long it lasts. Setting it

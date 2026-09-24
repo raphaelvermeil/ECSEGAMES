@@ -1,7 +1,7 @@
 package main
 
 // The challenges. Levels 1-6 were ported from the original design mock's
-// LEVELS array; 7-8 were authored here. In the rect levels every shape is
+// LEVELS array; 7-10 were authored here. In the rect levels every shape is
 // an absolutely positioned <i>, and a challenge is that list of shapes over
 // the level's background colour.
 //
@@ -58,7 +58,7 @@ type level struct {
 	parts   []part
 }
 
-// levels is the competition: 8 levels of 5 parts.
+// levels is the competition: 10 levels of 5 parts.
 var levels = []level{
 	{n: 1, name: "WARM UP", bg: "#2a3d4f", parts: []part{
 		{title: "Horizon", rects: []rect{
@@ -430,7 +430,7 @@ var levels = []level{
 		}},
 	}},
 
-	// Levels 7 and 8 are the flow-layout half of the set. The scenes repeat
+	// Levels 7 to 10 are the flow-layout half of the set. The scenes repeat
 	// one element, so they are built by giving a container a rule and
 	// handing it children rather than by placing every shape.
 	//
@@ -444,45 +444,42 @@ var levels = []level{
 	// Every child is a <div>, never an <i>: the flow levels drop the
 	// i{display:block} rule the rect levels rely on, and an inline <i> with
 	// no content collapses to nothing the moment it is not a flex item.
-	{n: 7, name: "ASSEMBLY LINE", bg: "#1e3348", example: `<!-- EXAMPLE. Not this part, just the idea:
-     four bars in a row, every second one a different colour, with no
-     second class in the HTML. -->
+	{n: 7, name: "ASSEMBLY LINE", bg: "#1e3348", example: `<!-- THE IDEA: place ONE box, and let flexbox line up its children.
+     You never write left/top on a child again. -->
 
 <style>
   .row {
-    /* the CONTAINER is placed once, the way you already know */
-    position: absolute;
+    position: absolute;        /* the box is placed once, like before */
     left: 40px; top: 80px;
     width: 220px; height: 40px;
 
-    display: flex;            /* its children sit in a row       */
-    gap: 20px;                /* space between them              */
-    justify-content: center;  /* where the leftover space goes   */
-    align-items: center;      /* how they sit across the row     */
+    display: flex;             /* its children now sit in a row */
+    gap: 20px;                 /* space between them            */
+    justify-content: center;   /* where they sit along the row  */
+    align-items: center;       /* where they sit across it      */
   }
 
-  /* one rule, every bar. No left, no top on a child, ever again. */
-  .row div { width: 40px; height: 24px; background: #6ee787 }
-  .row div:nth-child(even) { background: #ffd166 }
+  .row div { width: 40px; height: 24px; background: #6ee787 }  /* every child  */
+  .row div:nth-child(even) { background: #ffd166 }             /* some of them */
 </style>
 
 <div class="row">
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
+  <div></div><div></div><div></div><div></div>
 </div>
 
-<!-- The four tags are identical - the CSS tells them apart by COUNTING:
-
+<!-- Pick children by COUNTING them:
+       :nth-child(2)       the 2nd only
        :nth-child(odd)     1st, 3rd, 5th ...
        :nth-child(even)    2nd, 4th, 6th ...
-       :nth-child(3n)      every 3rd
+       :nth-child(3n)      3rd, 6th, 9th ...
        :nth-child(3n + 1)  1st, 4th, 7th ...
-       :nth-child(2)       just the 2nd
 
-     4 x 40px + 3 x 20px of gap = 220px, the width of the row. Numbers
-     that divide evenly land the scene on whole pixels. -->`, parts: []part{
+   Other useful switches:
+       flex-direction: column          stack them downwards
+       justify-content: space-between  first and last touch the edges
+       align-items: flex-end           line them up on the bottom
+       flex-wrap: wrap                 spill onto a new line when full
+       align-content: flex-start       where those lines sit -->`, parts: []part{
 
 		{title: "Row houses", target: `<style>
   .ground { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #24422f }
@@ -510,30 +507,13 @@ var levels = []level{
   <div><div class="roof"></div><div class="win"></div><div class="door"></div></div>
 </div>`, scaffold: `<style>
   .ground { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #24422f }
-
-  .terrace {
-    position: absolute;
-    left: 10px; top: 60px;
-    width: 280px; height: 110px;
-    display: flex;
-    /* five houses share these 280px, the outer two on the container edges */
-  }
-
-  /* one house. A flex child holds children of its own - these three are
-     plain blocks, centred in the facade by margin: 0 auto. */
-  .terrace > div { width: 48px; height: 110px; background: #c2705a }
-  .roof { width: 48px; height: 10px; background: #2a1f1a }
-  .win { width: 22px; height: 20px; margin: 16px auto 0; background: #ffd166 }
-  .door { width: 18px; height: 34px; margin: 18px auto 0; background: #3f2e1e }
+  .house { position: absolute; left: 10px; top: 60px; width: 48px; height: 110px; background: #c2705a }
 </style>
 
 <div class="ground"></div>
+<div class="house"></div>
 
-<!-- 1 house up, 4 to go. Every second facade is a different colour,
-     and all five tags are identical. -->
-<div class="terrace">
-  <div><div class="roof"></div><div class="win"></div><div class="door"></div></div>
-</div>`},
+<!-- the rest is yours to build. -->`},
 
 		{title: "Crate stack", target: `<style>
   .pallet { position: absolute; left: 100px; top: 176px; width: 100px; height: 24px; background: #4a3a26 }
@@ -566,35 +546,16 @@ var levels = []level{
   <div></div>
 </div>`, scaffold: `<style>
   .pallet { position: absolute; left: 100px; top: 176px; width: 100px; height: 24px; background: #4a3a26 }
-  .rope { position: absolute; left: 148px; top: 0; width: 4px; height: 14px; background: #7d857a }
   .hook { position: absolute; left: 138px; top: 14px; width: 24px; height: 10px; border-radius: 5px; background: #9aa196 }
-
-  .stack {
-    position: absolute;
-    left: 100px; top: 24px;
-    width: 100px; height: 152px;
-    display: flex;
-    gap: 4px;
-    /* a flex container runs across by default. This one has to run DOWN,
-       and the crates are not all the same width. Two properties. */
-  }
-
-  /* the narrow crate. Two more rules finish the stack: one picks the
-     wide crates, one picks the painted ones. Count them off the target. */
-  .stack div { width: 60px; height: 22px; background: #8a5a3c }
 </style>
 
 <div class="pallet"></div>
-<div class="rope"></div>
 <div class="hook"></div>
 
-<!-- 1 crate stacked, 5 to go. -->
-<div class="stack">
-  <div></div>
-</div>`},
+<!-- the rest is yours to build. -->`},
 
 		{title: "The crowd", target: `<style>
-  .stand { position: absolute; left: 0; top: 146px; width: 300px; height: 24px; background: #16283a }
+  .stand { position: absolute; left: 0; top: 146px; width: 300px; height: 24px; background: #8a5a3c }
   .pitch { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #2c5e40 }
   .crowd {
     position: absolute;
@@ -623,34 +584,12 @@ var levels = []level{
   <div class="fan"><div class="head"></div><div class="body"></div></div>
   <div class="fan"><div class="head"></div><div class="body"></div></div>
 </div>`, scaffold: `<style>
-  .stand { position: absolute; left: 0; top: 146px; width: 300px; height: 24px; background: #16283a }
   .pitch { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #2c5e40 }
-
-  .crowd {
-    position: absolute;
-    left: 15px; top: 60px;
-    width: 270px; height: 86px;
-    display: flex;
-    align-items: flex-end;
-    /* seven supporters share these 270px, the outer two on the edges */
-  }
-
-  /* one supporter: head over body, the head centred on the shoulders. */
-  .fan { width: 30px; height: 86px }
-  .fan .head { width: 20px; height: 20px; border-radius: 50%; margin: 0 auto; background: #e0b48c }
-  .fan .body { width: 30px; height: 60px; margin-top: 6px; border-radius: 6px 6px 0 0; background: #6ee787 }
-
-  /* three shirt colours, cycling. The shirt is a CHILD of the supporter
-     you select, not the supporter itself. */
 </style>
 
-<div class="stand"></div>
 <div class="pitch"></div>
 
-<!-- 1 in the stand, 6 to go. -->
-<div class="crowd">
-  <div class="fan"><div class="head"></div><div class="body"></div></div>
-</div>`},
+<!-- the rest is yours to build. -->`},
 
 		{title: "Vending machine", target: `<style>
   .cabinet { position: absolute; left: 60px; top: 20px; width: 180px; height: 170px; border-radius: 6px; background: #24384d }
@@ -682,40 +621,406 @@ var levels = []level{
   <div></div><div></div><div></div>
 </div>`, scaffold: `<style>
   .cabinet { position: absolute; left: 60px; top: 20px; width: 180px; height: 170px; border-radius: 6px; background: #24384d }
-  .keypad { position: absolute; left: 184px; top: 40px; width: 44px; height: 88px; background: #16283a }
-  .coin { position: absolute; left: 196px; top: 140px; width: 20px; height: 6px; background: #ffd166 }
-  .tray { position: absolute; left: 76px; top: 166px; width: 100px; height: 14px; background: #16283a }
-
-  .shelf {
-    position: absolute;
-    left: 72px; top: 34px;
-    width: 100px; height: 120px;
-    display: flex;
-    gap: 8px;
-    /* twelve snacks, three across. They have to spill onto the next
-       line by themselves, and the lines pack to the TOP of the shelf
-       rather than spread down it. Two properties. */
-  }
-
-  /* every snack is this. Every second one is a different colour. */
-  .shelf div { width: 28px; height: 22px; background: #ffd166 }
 </style>
 
 <div class="cabinet"></div>
-<div class="keypad"></div>
-<div class="coin"></div>
-<div class="tray"></div>
 
-<!-- 1 snack loaded, 11 to go. -->
-<div class="shelf">
-  <div></div>
-</div>`},
+<!-- the rest is yours to build. -->`},
+
+		{title: "Picket fence", target: `<style>
+  .grass { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #24422f }
+  .rail { position: absolute; left: 0; width: 300px; height: 8px; background: #8a5a3c }
+  .high { top: 112px }
+  .low { top: 146px }
+  .fence {
+    position: absolute;
+    left: 0; top: 90px;
+    width: 300px; height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .fence div { width: 14px; height: 70px; border-radius: 7px 7px 0 0; background: #e9f5cd }
+  .fence div:nth-child(even) { height: 58px }
+  .fence div:nth-child(5n) { background: #ffd166 }
+</style>
+
+<div class="grass"></div>
+<div class="rail high"></div>
+<div class="rail low"></div>
+
+<div class="fence">
+    <div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div>
+</div>`, scaffold: `<style>
+  .grass { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #24422f }
+</style>
+
+<div class="grass"></div>
+
+<!-- the rest is yours to build. -->`},
+	}},
+
+	// Level 8 puts several flex containers in one scene; level 9 nests
+	// them, rows inside a column; level 10 goes three levels deep and
+	// is meant to take a strong student half an hour a part.
+	{n: 8, name: "RUSH HOUR", bg: "#1a2a3c", example: `<!-- THE IDEA: a scene is made of STRIPS. Each strip is its own
+     flex box from level 7, placed once. One scene, several boxes. -->
+
+<style>
+  .top, .bottom {
+    position: absolute;
+    left: 0; width: 300px; height: 30px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  .top    { top: 40px }
+  .bottom { top: 130px; align-items: flex-end }   /* each box has its own rules */
+
+  .top div    { width: 20px; height: 20px; background: #6ee787 }
+  .bottom div { width: 30px; height: 12px; background: #ffd166 }
+</style>
+
+<div class="top">
+  <div></div><div></div><div></div>
+</div>
+<div class="bottom">
+  <div></div><div></div><div></div><div></div>
+</div>
+
+<!-- How to attack a scene:
+       1. Split the target into strips of repeated things.
+       2. One box per strip: position it, then display: flex.
+       3. Style one child, then use :nth-child for the odd ones out.
+
+   New tools here:
+       flex: 1                    this child takes the leftover space
+       :first-child, :last-child  the two ends of a strip
+       flex-direction: row-reverse  same strip, counted from the right -->`, parts: []part{
+
+		{title: "Parking lot", target: `<style>
+  .lot { position: absolute; left: 0; top: 20px; width: 300px; height: 160px; background: #2b3440 }
+  .lines {
+    position: absolute;
+    left: 0; width: 300px; height: 56px;
+    display: flex;
+    justify-content: center;
+    gap: 34px;
+  }
+  .lines div { width: 2px; background: #e9f5cd }
+  .north { top: 24px }
+  .south { top: 120px }
+  .row {
+    position: absolute;
+    left: 0; width: 300px; height: 56px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+  .row.north { align-items: flex-start; padding-top: 4px; box-sizing: border-box }
+  .row.south { align-items: flex-end; padding-bottom: 4px; box-sizing: border-box }
+  .car {
+    width: 24px; height: 40px;
+    border-radius: 4px;
+    background: #4cc9f0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .car div { width: 16px; height: 8px; margin-top: 6px; background: #16283a }
+  .south .car { align-items: flex-end }
+  .south .car div { margin-bottom: 6px }
+  .car:nth-child(even) { background: #ff7b54 }
+  .car:nth-child(3n) { background: #ffd166 }
+  .dashes {
+    position: absolute;
+    left: 0; top: 97px;
+    width: 300px; height: 6px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+  .dashes div { width: 20px; background: #ffd166 }
+</style>
+
+<div class="lot"></div>
+
+<div class="lines north">
+    <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+</div>
+<div class="lines south">
+    <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+</div>
+
+<div class="row north">
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+</div>
+<div class="row south">
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+  <div class="car"><div></div></div>
+</div>
+
+<div class="dashes">
+    <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+</div>`, scaffold: `<style>
+  .lot { position: absolute; left: 0; top: 20px; width: 300px; height: 160px; background: #2b3440 }
+</style>
+
+<div class="lot"></div>
+
+<!-- the rest is yours to build. -->`},
+
+		{title: "Garden beds", target: `<style>
+  .clouds {
+    position: absolute;
+    left: 30px; top: 14px;
+    width: 240px; height: 24px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .cloud { display: flex; align-items: flex-end }
+  .cloud div { width: 16px; height: 16px; border-radius: 50%; background: #e9f5cd }
+  .cloud div:nth-child(2) { width: 24px; height: 24px }
+  .soil { position: absolute; left: 0; top: 150px; width: 300px; height: 50px; background: #3f2e1e }
+  .flowers {
+    position: absolute;
+    left: 10px; top: 60px;
+    width: 280px; height: 90px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .flower { display: flex; flex-direction: column; align-items: center }
+  .head { width: 16px; height: 16px; border-radius: 50%; background: #f48fb1 }
+  .stem { width: 4px; height: 60px; background: #3f8f57 }
+  .flower:nth-child(even) .head { background: #ffd166 }
+  .flower:nth-child(even) .stem { height: 40px }
+  .flower:nth-child(3n) .head { background: #c792ea }
+  .flower:nth-child(3n) .stem { height: 50px }
+  .tufts {
+    position: absolute;
+    left: 0; top: 144px;
+    width: 300px; height: 6px;
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+  }
+  .tufts div { width: 8px; border-radius: 4px 4px 0 0; background: #3f8f57 }
+</style>
+
+<div class="clouds">
+  <div class="cloud"><div></div><div></div><div></div></div>
+  <div class="cloud"><div></div><div></div><div></div></div>
+  <div class="cloud"><div></div><div></div><div></div></div>
+</div>
+
+<div class="soil"></div>
+
+<div class="flowers">
+  <div class="flower"><div class="head"></div><div class="stem"></div></div>
+  <div class="flower"><div class="head"></div><div class="stem"></div></div>
+  <div class="flower"><div class="head"></div><div class="stem"></div></div>
+  <div class="flower"><div class="head"></div><div class="stem"></div></div>
+  <div class="flower"><div class="head"></div><div class="stem"></div></div>
+  <div class="flower"><div class="head"></div><div class="stem"></div></div>
+  <div class="flower"><div class="head"></div><div class="stem"></div></div>
+  <div class="flower"><div class="head"></div><div class="stem"></div></div>
+  <div class="flower"><div class="head"></div><div class="stem"></div></div>
+</div>
+
+<div class="tufts">
+  <div></div><div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div><div></div>
+</div>`, scaffold: `<style>
+  .soil { position: absolute; left: 0; top: 150px; width: 300px; height: 50px; background: #3f2e1e }
+</style>
+
+<div class="soil"></div>
+
+<!-- the rest is yours to build. -->`},
+
+		{title: "Keyboard", target: `<style>
+  .case { position: absolute; left: 10px; top: 40px; width: 280px; height: 108px; border-radius: 8px; background: #2b3440 }
+  .keys {
+    position: absolute;
+    left: 20px;
+    width: 260px; height: 18px;
+    display: flex;
+    gap: 4px;
+  }
+  .keys div { width: 18px; background: #e9f5cd }
+  .r1 { top: 52px }
+  .r2 { top: 74px }
+  .r3 { top: 96px }
+  .r4 { top: 118px }
+  .r1 div:first-child { background: #ff7b54 }
+  .r1 div:nth-child(4n + 2) { background: #7a8fa6 }
+  .r2 div:last-child { width: 40px; background: #ffd166 }
+  .r3 div:first-child, .r3 div:last-child { width: 29px; background: #7a8fa6 }
+  .r4 div { background: #7a8fa6 }
+  .r4 div:nth-child(4) { flex: 1; background: #e9f5cd }
+</style>
+
+<div class="case"></div>
+
+<div class="keys r1">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+</div>
+<div class="keys r2">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div>
+</div>
+<div class="keys r3">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div>
+</div>
+<div class="keys r4">
+    <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+</div>`, scaffold: `<style>
+  .case { position: absolute; left: 10px; top: 40px; width: 280px; height: 108px; border-radius: 8px; background: #2b3440 }
+</style>
+
+<div class="case"></div>
+
+<!-- the rest is yours to build. -->`},
+
+		{title: "Laundry day", target: `<style>
+  .grass { position: absolute; left: 0; top: 186px; width: 300px; height: 14px; background: #24422f }
+  .poles {
+    position: absolute;
+    left: 0; top: 30px;
+    width: 300px; height: 156px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .poles div { width: 6px; background: #5f6b5c }
+  .rope { position: absolute; left: 0; width: 300px; height: 2px; background: #9aa196 }
+  .top { top: 40px }
+  .bottom { top: 116px }
+  .line {
+    position: absolute;
+    left: 0; width: 300px; height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .line.top { top: 38px }
+  .line.bottom { top: 114px; flex-direction: row-reverse }
+  .shirt { width: 30px; height: 50px; background: #4cc9f0; display: flex; justify-content: center }
+  .shirt div { width: 4px; height: 10px; margin-top: -4px; background: #8a5a3c }
+  .shirt:nth-child(even) { width: 24px; height: 36px; background: #f48fb1 }
+  .shirt:nth-child(3n) { width: 40px; height: 44px; background: #ffd166 }
+</style>
+
+<div class="grass"></div>
+
+<div class="poles"><div></div><div></div></div>
+
+<div class="rope top"></div>
+<div class="rope bottom"></div>
+
+<div class="line top">
+  <div class="shirt"><div></div></div>
+  <div class="shirt"><div></div></div>
+  <div class="shirt"><div></div></div>
+  <div class="shirt"><div></div></div>
+  <div class="shirt"><div></div></div>
+  <div class="shirt"><div></div></div>
+  <div class="shirt"><div></div></div>
+</div>
+<div class="line bottom">
+  <div class="shirt"><div></div></div>
+  <div class="shirt"><div></div></div>
+  <div class="shirt"><div></div></div>
+  <div class="shirt"><div></div></div>
+  <div class="shirt"><div></div></div>
+  <div class="shirt"><div></div></div>
+  <div class="shirt"><div></div></div>
+</div>`, scaffold: `<style>
+  .grass { position: absolute; left: 0; top: 186px; width: 300px; height: 14px; background: #24422f }
+</style>
+
+<div class="grass"></div>
+
+<!-- the rest is yours to build. -->`},
 
 		{title: "Metro line", target: `<style>
+  .lights {
+    position: absolute;
+    left: 0; top: 6px;
+    width: 300px; height: 8px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+  .lights div { width: 16px; height: 8px; background: #ffd166 }
+  .lights div:nth-child(odd) { background: #e9f5cd }
   .tunnel { position: absolute; left: 0; top: 60px; width: 300px; height: 80px; background: #16283a }
+  .sleepers {
+    position: absolute;
+    left: 0; top: 122px;
+    width: 300px; height: 12px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  .sleepers div { width: 10px; height: 12px; background: #3f2e1e }
+  .rail { position: absolute; left: 0; top: 126px; width: 300px; height: 4px; background: #7d857a }
   .platform { position: absolute; left: 0; top: 140px; width: 300px; height: 60px; background: #2b4a63 }
-  .edge { position: absolute; left: 0; top: 140px; width: 300px; height: 6px; background: #ffd166 }
-  .train { position: absolute; left: 214px; top: 66px; width: 72px; height: 20px; border-radius: 4px 10px 10px 4px; background: #e9f5cd }
+  .edge {
+    position: absolute;
+    left: 0; top: 140px;
+    width: 300px; height: 6px;
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+  }
+  .edge div { width: 16px; height: 6px; background: #ffd166 }
+  .benches {
+    position: absolute;
+    left: 0; top: 164px;
+    width: 300px; height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .benches div { width: 36px; height: 12px; background: #8a5a3c }
+  .benches div:nth-child(even) { width: 10px; height: 18px; background: #7d857a }
+  .train {
+    position: absolute;
+    left: 150px; top: 64px;
+    width: 136px; height: 24px;
+    border-radius: 4px 10px 10px 4px;
+    background: #e9f5cd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+  }
+  .train div { width: 14px; height: 10px; background: #16283a }
+  .train div:nth-child(3n) { background: #4cc9f0 }
   .line {
     position: absolute;
     left: 6px; top: 92px;
@@ -728,10 +1033,35 @@ var levels = []level{
   .line div:nth-child(3) { flex: 2 }
 </style>
 
+<div class="lights">
+  <div></div><div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div><div></div>
+</div>
+
 <div class="tunnel"></div>
+
+<div class="sleepers">
+  <div></div><div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div><div></div>
+</div>
+<div class="rail"></div>
+
 <div class="platform"></div>
-<div class="edge"></div>
-<div class="train"></div>
+<div class="edge">
+  <div></div><div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div><div></div>
+</div>
+
+<div class="benches">
+  <div></div><div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div>
+</div>
+
+<div class="train">
+  <div></div><div></div><div></div><div></div><div></div><div></div>
+</div>
 
 <div class="line">
   <div></div>
@@ -743,168 +1073,475 @@ var levels = []level{
   <div></div>
 </div>`, scaffold: `<style>
   .tunnel { position: absolute; left: 0; top: 60px; width: 300px; height: 80px; background: #16283a }
-  .platform { position: absolute; left: 0; top: 140px; width: 300px; height: 60px; background: #2b4a63 }
-  .edge { position: absolute; left: 0; top: 140px; width: 300px; height: 6px; background: #ffd166 }
-  .train { position: absolute; left: 214px; top: 66px; width: 72px; height: 20px; border-radius: 4px 10px 10px 4px; background: #e9f5cd }
-
-  .line {
-    position: absolute;
-    left: 6px; top: 92px;
-    width: 288px; height: 20px;
-    display: flex;
-    align-items: center;
-  }
-
-  /* Seven children: four track segments, three stations between them.
-     No segment has a width - flex: 1 gives each an equal share of what
-     the stations leave over, and one segment takes a bigger share. The
-     stations are the even ones and take no share at all. */
-  .line div { flex: 1; height: 8px; background: #4cc9f0 }
 </style>
 
 <div class="tunnel"></div>
-<div class="platform"></div>
-<div class="edge"></div>
-<div class="train"></div>
 
-<!-- 1 segment laid, 6 to go. -->
-<div class="line">
-  <div></div>
-</div>`},
+<!-- the rest is yours to build. -->`},
 	}},
 
-	{n: 8, name: "THE BIG BUILD", bg: "#0f1a26", example: `<!-- EXAMPLE. Not this part, just the idea.
-     A rack of five posts, every third one taller, standing on the
-     floor of the band instead of hanging from its top. -->
+	{n: 9, name: "BOXES IN BOXES", bg: "#14202e", example: `<!-- THE IDEA: a child can be a flex box too. Put boxes INSIDE a box,
+     and only the outer one is ever placed. -->
 
 <style>
-  .band {
+  .grid {                        /* the only thing with left/top */
     position: absolute;
-    left: 50px; top: 60px;
-    width: 200px; height: 80px;
-
+    left: 100px; top: 50px;
+    width: 100px; height: 100px;
     display: flex;
-    justify-content: center;
-    align-items: flex-end;   /* stand them on the bottom edge */
-    gap: 10px;
+    flex-direction: column;      /* its children (the rows) stack down */
+    gap: 4px;
   }
-
-  .band div { width: 30px; height: 40px; background: #2c5e40 }
-  .band div:nth-child(3n) { height: 70px; background: #235838 }
+  .grid > div {                  /* each row is ALSO a flex box */
+    flex: 1;                     /* rows share the height evenly */
+    display: flex;               /* its children sit side by side */
+    gap: 4px;
+  }
+  .grid > div > div { flex: 1; background: #6ee787 }   /* the squares */
+  .grid > div:nth-child(2) > div { background: #ffd166 }
 </style>
 
-<div class="band">
-  <div></div><div></div><div></div><div></div><div></div>
+<div class="grid">
+  <div><div></div><div></div><div></div></div>
+  <div><div></div><div></div><div></div></div>
+  <div><div></div><div></div><div></div></div>
 </div>
 
-<!-- 5 x 30px + 4 x 10px of gap = 190px, centred in 200px.
+<!-- Two selectors matter now:
+       .grid > div        DIRECT children only (the rows)
+       .grid div          EVERY div inside, at any depth - often too much
 
-     A big build is that, several times over. A flex child can be a flex
-     container itself, so a scene becomes a COLUMN of bands, each band a
-     ROW of repeats:
+   Count at two levels at once:
+       .grid > div:nth-child(2) > div   every square in the 2nd row
+       .grid > div > div:nth-child(2)   the 2nd square of every row
 
-  .scene { display: flex; flex-direction: column }   <- stacks the bands
-  .scene > div { display: flex }                     <- each band a row
+   Also: box-sizing: border-box keeps padding INSIDE a width. -->`, parts: []part{
 
-     The bands are stacked in order and their heights add up to 200, so
-     no band is ever placed: the top one first, then the next, then the
-     next. Give a band its own background and it becomes that layer of
-     the build. Nothing in a nested part is positioned by hand.
-
-     Also worth knowing here:
-       flex-wrap: wrap      lets a row spill onto the next line
-       align-content        where those wrapped lines sit in the box
-       box-sizing: border-box   padding and border count INSIDE a width
-       :nth-child(3n), :nth-child(odd), :nth-child(even)   count siblings -->`, parts: []part{
-
-		{title: "City skyline", target: `<style>
-  .city {
+		{title: "Apartment block", target: `<style>
+  .ground { position: absolute; left: 0; top: 190px; width: 300px; height: 10px; background: #24422f }
+  .ledge { position: absolute; left: 62px; top: 14px; width: 176px; height: 8px; background: #2b3440 }
+  .building {
     position: absolute;
-    left: 0; top: 40px;
-    width: 300px; height: 160px;
+    left: 70px; top: 22px;
+    width: 160px; height: 168px;
     box-sizing: border-box;
-    background: #16283a;
-    border-bottom: 20px solid #1d3550;
+    padding: 10px;
+    background: #3a5068;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .floor {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .floor div { width: 20px; height: 22px; background: #ffd166 }
+  .floor div:nth-child(even) { background: #16283a }
+  .floor:nth-child(odd) div:nth-child(3) { background: #4cc9f0 }
+  .floor:last-child { align-items: flex-end }
+  .floor:last-child div:nth-child(3) { width: 24px; height: 34px; background: #3f2e1e }
+</style>
+
+<div class="ground"></div>
+<div class="ledge"></div>
+
+<div class="building">
+  <div class="floor"><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="floor"><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="floor"><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="floor"><div></div><div></div><div></div><div></div><div></div></div>
+</div>`, scaffold: `<style>
+  .ground { position: absolute; left: 0; top: 190px; width: 300px; height: 10px; background: #24422f }
+</style>
+
+<div class="ground"></div>
+
+<!-- the rest is yours to build. -->`},
+
+		{title: "Egg carton", target: `<style>
+  .table { position: absolute; left: 0; top: 160px; width: 300px; height: 40px; background: #3f2e1e }
+  .carton {
+    position: absolute;
+    left: 31px; top: 50px;
+    width: 238px; height: 110px;
+    box-sizing: border-box;
+    padding: 8px;
+    border-radius: 6px 6px 0 0;
+    background: #b08b5a;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .row { flex: 1; display: flex; gap: 6px }
+  .cup {
+    flex: 1;
+    border-radius: 8px;
+    background: #8a6a44;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .cup div { width: 20px; height: 26px; border-radius: 50%; background: #f3ead8 }
+  .cup:nth-child(3n) div { background: #d9a066 }
+  .row:nth-child(2) .cup:nth-child(odd) div { background: #d9a066 }
+</style>
+
+<div class="table"></div>
+
+<div class="carton">
+  <div class="row">
+    <div class="cup"><div></div></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"><div></div></div>
+  </div>
+  <div class="row">
+    <div class="cup"><div></div></div>
+    <div class="cup"></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"></div>
+    <div class="cup"><div></div></div>
+  </div>
+</div>`, scaffold: `<style>
+  .table { position: absolute; left: 0; top: 160px; width: 300px; height: 40px; background: #3f2e1e }
+</style>
+
+<div class="table"></div>
+
+<!-- the rest is yours to build. -->`},
+
+		{title: "Chessboard", target: `<style>
+  .board {
+    position: absolute;
+    left: 70px; top: 20px;
+    width: 160px; height: 160px;
+    box-sizing: border-box;
+    padding: 8px;
+    background: #3f2e1e;
+    display: flex;
+    flex-direction: column;
+  }
+  .row { flex: 1; display: flex }
+  .row > div {
+    flex: 1;
+    background: #e9d8b4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .row > div:nth-child(even) { background: #8a5a3c }
+  .row:nth-child(even) > div { background: #8a5a3c }
+  .row:nth-child(even) > div:nth-child(even) { background: #e9d8b4 }
+  .row > div > div { width: 8px; height: 8px; border-radius: 50%; background: #16283a }
+  .row:nth-child(n + 5) > div > div { background: #f3ead8 }
+  .row:first-child > div > div, .row:last-child > div > div { width: 10px; height: 12px; border-radius: 2px }
+</style>
+
+<div class="board">
+  <div class="row"><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div></div>
+  <div class="row"><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div></div>
+  <div class="row"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="row"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="row"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="row"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="row"><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div></div>
+  <div class="row"><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div></div>
+</div>`, scaffold: `<style>
+  .board { position: absolute; left: 70px; top: 20px; width: 160px; height: 160px; background: #3f2e1e }
+</style>
+
+<div class="board"></div>
+
+<!-- the rest is yours to build. -->`},
+
+		{title: "Calendar", target: `<style>
+  .page {
+    position: absolute;
+    left: 39px; top: 14px;
+    width: 222px; height: 172px;
+    background: #e9f5cd;
+    display: flex;
+    flex-direction: column;
+  }
+  .header {
+    height: 30px;
+    background: #ff7b54;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 100px;
+  }
+  .header div { width: 10px; height: 10px; border-radius: 50%; background: #16283a }
+  .weeks {
+    flex: 1;
+    box-sizing: border-box;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .week { flex: 1; display: flex; gap: 4px }
+  .week div { flex: 1; background: #c7d3b4 }
+  .week div:nth-child(n + 6) { background: #f48fb1 }
+  .week:first-child div:nth-child(-n + 2) { background: none }
+  .week:nth-child(3) div:nth-child(4) { background: #4cc9f0 }
+</style>
+
+<div class="page">
+  <div class="header"><div></div><div></div></div>
+  <div class="weeks">
+    <div class="week"><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    <div class="week"><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    <div class="week"><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    <div class="week"><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    <div class="week"><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  </div>
+</div>`, scaffold: `<style>
+  .page { position: absolute; left: 39px; top: 14px; width: 222px; height: 172px; background: #e9f5cd }
+</style>
+
+<div class="page"></div>
+
+<!-- the rest is yours to build. -->`},
+
+		{title: "Freight train", target: `<style>
+  .ground { position: absolute; left: 0; top: 174px; width: 300px; height: 26px; background: #24422f }
+  .rail { position: absolute; left: 0; top: 170px; width: 300px; height: 4px; background: #9aa196 }
+  .train {
+    position: absolute;
+    left: 0; top: 80px;
+    width: 300px; height: 90px;
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    gap: 6px;
+    gap: 4px;
   }
-  .tower {
+  .wagon { width: 64px; display: flex; flex-direction: column }
+  .body {
+    height: 50px;
+    background: #4cc9f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+  }
+  .body div { width: 10px; height: 14px; background: #16283a }
+  .wagon:nth-child(even) .body { background: #ff7b54 }
+  .wagon:first-child .body { height: 66px; border-radius: 10px 0 0 0; background: #ffd166 }
+  .wagon:first-child .body div { height: 24px }
+  .wheels {
+    height: 14px;
+    padding: 0 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .wheels div { width: 14px; border-radius: 50%; background: #7d857a }
+</style>
+
+<div class="ground"></div>
+<div class="rail"></div>
+
+<div class="train">
+  <div class="wagon">
+    <div class="body"><div></div><div></div></div>
+    <div class="wheels"><div></div><div></div></div>
+  </div>
+  <div class="wagon">
+    <div class="body"><div></div><div></div><div></div><div></div></div>
+    <div class="wheels"><div></div><div></div></div>
+  </div>
+  <div class="wagon">
+    <div class="body"><div></div><div></div><div></div><div></div></div>
+    <div class="wheels"><div></div><div></div></div>
+  </div>
+  <div class="wagon">
+    <div class="body"><div></div><div></div><div></div><div></div></div>
+    <div class="wheels"><div></div><div></div></div>
+  </div>
+</div>`, scaffold: `<style>
+  .rail { position: absolute; left: 0; top: 170px; width: 300px; height: 4px; background: #9aa196 }
+</style>
+
+<div class="rail"></div>
+
+<!-- the rest is yours to build. -->`},
+	}},
+
+	{n: 10, name: "THE BIG BUILD", bg: "#0f1a26", example: `<!-- THE IDEA: same as level 9, one level deeper. Boxes in boxes in
+     boxes. Solve it from the outside in. -->
+
+<style>
+  .deck {                               /* level 1: placed once */
+    position: absolute;
+    left: 0; top: 60px;
+    width: 300px; height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+  }
+  .card {                               /* level 2: a column of rows */
+    padding: 6px;
+    background: #16283a;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .card > div { display: flex; gap: 4px }            /* level 3: a row */
+  .card > div > div { width: 10px; height: 10px; background: #6ee787 }
+  .card:nth-child(even) > div:nth-child(2) > div { background: #ffd166 }
+</style>
+
+<div class="deck">
+  <div class="card">
+    <div><div></div><div></div><div></div></div>
+    <div><div></div><div></div><div></div></div>
+  </div>
+  <div class="card">
+    <div><div></div><div></div><div></div></div>
+    <div><div></div><div></div><div></div></div>
+  </div>
+  <div class="card">
+    <div><div></div><div></div><div></div></div>
+    <div><div></div><div></div><div></div></div>
+  </div>
+</div>
+
+<!-- How to attack it:
+       1. Find the biggest box and its direction (row or column).
+       2. Inside it, find the repeated box. Repeat step 1 for it.
+       3. Only style colours once the layout is right.
+
+   The yellow rule above reads, right to left:
+       squares  >  of the 2nd row  >  of every even card -->`, parts: []part{
+
+		{title: "City skyline", target: `<style>
+  .scene {
+    position: absolute;
+    left: 0; top: 0;
+    width: 300px; height: 200px;
+    display: flex;
+    flex-direction: column;
+  }
+  .sky {
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .sky div { width: 4px; height: 4px; margin-top: 4px; background: #e9f5cd }
+  .sky div:nth-child(odd) { margin-top: 16px }
+  .sky div:nth-child(3n) { width: 6px; height: 6px; margin-top: 30px; background: #ffd166 }
+  .city {
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 4px;
+  }
+  .tower { display: flex; flex-direction: column; align-items: center }
+  .cap { width: 12px; height: 8px; background: #2b4a63 }
+  .body {
     box-sizing: border-box;
-    padding: 8px;
-    background: #0f2033;
+    padding: 6px;
+    background: #16283a;
     display: flex;
     flex-wrap: wrap;
     align-content: flex-start;
-    gap: 6px;
+    gap: 4px;
   }
-  .tower div { width: 12px; height: 12px; background: #ffd166 }
-  .city .tower:nth-child(3n + 1) { width: 52px; height: 110px }
-  .city .tower:nth-child(3n + 2) { width: 46px; height: 76px }
-  .city .tower:nth-child(3n) { width: 58px; height: 94px }
-</style>
-
-<div class="city">
-  <div class="tower">
-    <div></div><div></div><div></div><div></div><div></div>
-    <div></div><div></div><div></div><div></div><div></div>
-  </div>
-  <div class="tower">
-    <div></div><div></div><div></div><div></div><div></div><div></div>
-  </div>
-  <div class="tower">
-    <div></div><div></div><div></div><div></div>
-    <div></div><div></div><div></div><div></div>
-  </div>
-  <div class="tower">
-    <div></div><div></div><div></div><div></div><div></div>
-    <div></div><div></div><div></div><div></div><div></div>
-  </div>
-  <div class="tower">
-    <div></div><div></div><div></div><div></div><div></div><div></div>
-  </div>
-</div>`, scaffold: `<style>
-  .city {
-    position: absolute;
-    left: 0; top: 40px;
-    width: 300px; height: 160px;
-    box-sizing: border-box;
-    background: #16283a;
-    border-bottom: 20px solid #1d3550;
+  .body div { width: 8px; height: 8px; background: #ffd166 }
+  .tower:nth-child(even) .body div:nth-child(odd) { background: #4cc9f0 }
+  .body div:nth-child(5n) { background: #24384d }
+  .tower:nth-child(3n + 1) .body { width: 44px; height: 92px }
+  .tower:nth-child(3n + 2) .body { width: 56px; height: 68px }
+  .tower:nth-child(3n) .body { width: 32px; height: 104px }
+  .tower:nth-child(3n) .cap { width: 4px; height: 14px; background: #ff7b54 }
+  .road {
+    height: 30px;
+    background: #1d3550;
     display: flex;
     justify-content: center;
-    align-items: flex-end;
-    gap: 6px;
+    align-items: center;
+    gap: 12px;
   }
-
-  /* a tower is a flex container too, and its windows are the repeat.
-     Two windows fit across every tower and the rest have to spill onto
-     the next line by themselves - a plain flex row would sit them all
-     on one line and let them run off the side. The lines also need to
-     pack to the TOP of the tower rather than spread down it. */
-  .tower {
-    box-sizing: border-box;
-    padding: 8px;
-    background: #0f2033;
-    display: flex;
-    gap: 6px;
-  }
-  .tower div { width: 12px; height: 12px; background: #ffd166 }
-
-  /* five towers, three sizes, cycling. The first is written out - the
-     other two sizes are 46x76 and 58x94, in that order after this one. */
-  .city .tower:nth-child(3n + 1) { width: 52px; height: 110px }
+  .road div { width: 18px; height: 3px; background: #e9f5cd }
 </style>
 
-<!-- tower 1 of 5, with its 10 windows. The others carry 6, 8, 10 and 6
-     windows - count them off the target. -->
-<div class="city">
-  <div class="tower">
+<div class="scene">
+  <div class="sky">
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="city">
+    <div class="tower">
+      <div class="cap"></div>
+      <div class="body">
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+      </div>
+    </div>
+    <div class="tower">
+      <div class="cap"></div>
+      <div class="body">
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div>
+      </div>
+    </div>
+    <div class="tower">
+      <div class="cap"></div>
+      <div class="body">
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div>
+      </div>
+    </div>
+    <div class="tower">
+      <div class="cap"></div>
+      <div class="body">
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+      </div>
+    </div>
+    <div class="tower">
+      <div class="cap"></div>
+      <div class="body">
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div>
+      </div>
+    </div>
+    <div class="tower">
+      <div class="cap"></div>
+      <div class="body">
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="road">
     <div></div><div></div><div></div><div></div><div></div>
     <div></div><div></div><div></div><div></div><div></div>
   </div>
-</div>`},
+</div>`, scaffold: `<style>
+  .road { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #1d3550 }
+</style>
+
+<div class="road"></div>
+
+<!-- the rest is yours to build. -->`},
 
 		{title: "Stadium night", target: `<style>
   .scene {
@@ -916,104 +1553,97 @@ var levels = []level{
   }
   .sky {
     height: 40px;
-    background: #16283a;
     display: flex;
     justify-content: center;
-    align-items: flex-end;
-    gap: 40px;
+    align-items: center;
+    gap: 50px;
   }
-  .sky div { width: 30px; height: 14px; background: #ffd166 }
+  .rig { width: 22px; display: flex; flex-wrap: wrap; gap: 2px }
+  .rig div { width: 6px; height: 6px; background: #ffd166 }
+  .rig div:nth-child(even) { background: #e9f5cd }
   .stand {
-    height: 84px;
+    height: 100px;
     background: #1d3550;
     display: flex;
-    flex-wrap: wrap;
-    align-content: center;
+    flex-direction: column;
     justify-content: center;
-    gap: 6px;
+    align-items: center;
+    gap: 4px;
   }
-  .stand div { width: 20px; height: 14px; background: #4cc9f0 }
-  .stand div:nth-child(even) { background: #e9f5cd }
-  .pitch {
-    height: 76px;
+  .tier { padding: 3px 6px; background: #16283a; display: flex; gap: 3px }
+  .tier div { width: 10px; height: 10px; background: #4cc9f0 }
+  .tier div:nth-child(even) { background: #e9f5cd }
+  .tier:nth-child(even) div:nth-child(4n) { background: #ff7b54 }
+  .pitch { height: 60px; display: flex }
+  .pitch > div {
+    flex: 1;
+    box-sizing: border-box;
     background: #2c5e40;
     display: flex;
-    flex-direction: column;
     justify-content: center;
-    gap: 8px;
+    align-items: center;
   }
-  .pitch div { height: 4px; background: #3f8f57 }
+  .pitch > div:nth-child(even) { background: #235838 }
+  .pitch > div:nth-child(3n) { align-items: flex-start; padding-top: 10px }
+  .pitch > div:nth-child(3n + 1) { align-items: flex-end; padding-bottom: 10px }
+  .pitch div div { width: 8px; height: 8px; border-radius: 50%; background: #ff7b54 }
+  .pitch > div:nth-child(n + 6) div { background: #4cc9f0 }
 </style>
 
 <div class="scene">
   <div class="sky">
-    <div></div><div></div><div></div><div></div>
+    <div class="rig"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    <div class="rig"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    <div class="rig"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    <div class="rig"><div></div><div></div><div></div><div></div><div></div><div></div></div>
   </div>
 
   <div class="stand">
-    <div></div><div></div><div></div><div></div><div></div><div></div>
-    <div></div><div></div><div></div><div></div><div></div>
-    <div></div><div></div><div></div><div></div><div></div><div></div>
-    <div></div><div></div><div></div><div></div><div></div>
+    <div class="tier">
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+      <div></div><div></div><div></div>
+    </div>
+    <div class="tier">
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+      <div></div><div></div><div></div><div></div><div></div>
+    </div>
+    <div class="tier">
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+    </div>
+    <div class="tier">
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+    </div>
   </div>
 
   <div class="pitch">
-    <div></div><div></div><div></div><div></div><div></div>
+    <div><div></div></div>
+    <div><div></div></div>
+    <div><div></div></div>
+    <div><div></div></div>
+    <div><div></div></div>
+    <div><div></div></div>
+    <div><div></div></div>
+    <div><div></div></div>
+    <div><div></div></div>
+    <div><div></div></div>
   </div>
 </div>`, scaffold: `<style>
-  /* the whole canvas is one flex column of three bands. Nothing here is
-     placed by hand: 40 + 84 + 76 = 200, so they stack to fill it. */
-  .scene {
-    position: absolute;
-    left: 0; top: 0;
-    width: 300px; height: 200px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* band 1 of 3, finished: four floodlights hanging off the bottom edge
-     of the band, and the shape the other two bands take. */
-  .sky {
-    height: 40px;
-    background: #16283a;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    gap: 40px;
-  }
-  .sky div { width: 30px; height: 14px; background: #ffd166 }
-
-  /* band 2 of 3: twenty-two seats, and only eleven fit across, so they
-     have to spill onto a second line by themselves. Both lines sit as a
-     block in the middle of the band rather than spreading down it. */
-  .stand { height: 84px; background: #1d3550 }
-  .stand div { width: 20px; height: 14px; background: #4cc9f0 }
-
-  /* band 3 of 3: five stripes STACKED, centred in the band. */
-  .pitch { height: 76px; background: #2c5e40 }
-  .pitch div { height: 4px; background: #3f8f57 }
+  .stand { position: absolute; left: 0; top: 40px; width: 300px; height: 100px; background: #1d3550 }
+  .pitch { position: absolute; left: 0; top: 140px; width: 300px; height: 60px; background: #2c5e40 }
 </style>
 
-<!-- 4 floodlights, 22 seats, 5 stripes. -->
-<div class="scene">
-  <div class="sky">
-    <div></div><div></div><div></div><div></div>
-  </div>
+<div class="stand"></div>
+<div class="pitch"></div>
 
-  <div class="stand">
-    <div></div>
-  </div>
-
-  <div class="pitch">
-    <div></div>
-  </div>
-</div>`},
+<!-- the rest is yours to build. -->`},
 
 		{title: "Bookshelf", target: `<style>
   .case {
     position: absolute;
-    left: 20px; top: 14px;
-    width: 260px; height: 174px;
+    left: 20px; top: 10px;
+    width: 260px; height: 180px;
     box-sizing: border-box;
     padding: 6px;
     background: #3f2e1e;
@@ -1023,74 +1653,70 @@ var levels = []level{
   }
   .shelf {
     flex: 1;
+    padding: 0 6px;
     background: #24180f;
     display: flex;
-    justify-content: center;
     align-items: flex-end;
-    gap: 4px;
+    gap: 3px;
   }
-  .shelf div { width: 20px; height: 40px; background: #c2705a }
-  .shelf div:nth-child(3n + 2) { background: #ffd166 }
-  .shelf div:nth-child(3n) { background: #4cc9f0 }
-  .shelf div:nth-child(odd) { height: 48px }
+  .shelf:nth-child(2) { flex-direction: row-reverse }
+  .book {
+    width: 18px; height: 44px;
+    box-sizing: border-box;
+    padding: 5px 0;
+    background: #c2705a;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .book div { height: 3px; background: #ffd166 }
+  .book:nth-child(3n + 2) { height: 38px; background: #4cc9f0 }
+  .book:nth-child(3n) { width: 14px; height: 48px; background: #6ee787 }
+  .book:nth-child(4n) { height: 30px }
+  .book:nth-child(4n) div { background: #e9f5cd }
+  .pot { margin-left: auto; width: 24px; height: 20px; border-radius: 0 0 6px 6px; background: #8a5a3c }
 </style>
 
 <div class="case">
   <div class="shelf">
-    <div></div><div></div><div></div><div></div><div></div>
-    <div></div><div></div><div></div><div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="pot"></div>
   </div>
   <div class="shelf">
-    <div></div><div></div><div></div><div></div><div></div>
-    <div></div><div></div><div></div><div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="pot"></div>
   </div>
   <div class="shelf">
-    <div></div><div></div><div></div><div></div><div></div>
-    <div></div><div></div><div></div><div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="book"><div></div><div></div></div>
+    <div class="pot"></div>
   </div>
 </div>`, scaffold: `<style>
-  /* the case is a flex COLUMN of three shelves. No shelf has a height:
-     flex: 1 gives them one share each of what the case leaves over, so
-     they divide it evenly without anyone doing the arithmetic. */
-  .case {
-    position: absolute;
-    left: 20px; top: 14px;
-    width: 260px; height: 174px;
-    box-sizing: border-box;
-    padding: 6px;
-    background: #3f2e1e;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  /* a shelf is a flex ROW of books. They are a block in the middle of
-     the shelf, and they stand on it rather than hanging from the top. */
-  .shelf {
-    flex: 1;
-    background: #24180f;
-    gap: 4px;
-  }
-
-  /* the short book. Three spine colours cycle across each shelf, and the
-     taller books alternate with the shorter ones - four rules in all,
-     and no shelf needs a class of its own. */
-  .shelf div { width: 20px; height: 40px; background: #c2705a }
+  .case { position: absolute; left: 20px; top: 10px; width: 260px; height: 180px; background: #3f2e1e }
 </style>
 
-<!-- shelf 1 of 3 is stocked with its 9 books. The other two hold 9 each. -->
-<div class="case">
-  <div class="shelf">
-    <div></div><div></div><div></div><div></div><div></div>
-    <div></div><div></div><div></div><div></div>
-  </div>
-  <div class="shelf">
-    <div></div>
-  </div>
-  <div class="shelf">
-    <div></div>
-  </div>
-</div>`},
+<div class="case"></div>
+
+<!-- the rest is yours to build. -->`},
 
 		{title: "Circuit board", target: `<style>
   .board {
@@ -1101,117 +1727,109 @@ var levels = []level{
     display: flex;
     flex-direction: column;
   }
-  .rail {
+  .traces {
     height: 40px;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
-  .rail div { width: 40px; height: 8px; background: #6ee787 }
+  .traces > div { display: flex; flex-direction: column; gap: 3px }
+  .traces div div { width: 30px; height: 3px; background: #6ee787 }
+  .traces > div:nth-child(even) div { background: #3f8f57 }
+  .traces > div:nth-child(3n) div:nth-child(2) { width: 20px }
   .chips {
     height: 120px;
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
-    align-items: center;
-    gap: 18px;
+    align-content: center;
+    gap: 8px 20px;
   }
-  .chip {
-    width: 84px; height: 84px;
+  .chip { display: flex; align-items: center; gap: 2px }
+  .pins { display: flex; flex-direction: column; gap: 4px }
+  .pins div { width: 6px; height: 4px; background: #9aa196 }
+  .core {
+    width: 52px; height: 52px;
     box-sizing: border-box;
-    padding: 8px;
+    padding: 7px;
     background: #0b1a12;
     display: flex;
     flex-wrap: wrap;
-    align-content: center;
     justify-content: center;
-    gap: 6px;
+    align-content: center;
+    gap: 4px;
   }
-  .chip div { width: 14px; height: 14px; background: #ffd166 }
-  .chip div:nth-child(even) { background: #ff7b54 }
-</style>
-
-<div class="board">
-  <div class="rail">
-    <div></div><div></div><div></div><div></div><div></div>
-  </div>
-
-  <div class="chips">
-    <div class="chip">
-      <div></div><div></div><div></div>
-      <div></div><div></div><div></div>
-      <div></div><div></div><div></div>
-    </div>
-    <div class="chip">
-      <div></div><div></div><div></div>
-      <div></div><div></div><div></div>
-      <div></div><div></div><div></div>
-    </div>
-    <div class="chip">
-      <div></div><div></div><div></div>
-      <div></div><div></div><div></div>
-      <div></div><div></div><div></div>
-    </div>
-  </div>
-
-  <div class="rail">
-    <div></div><div></div><div></div><div></div><div></div>
-  </div>
-</div>`, scaffold: `<style>
-  /* three bands: 40 + 120 + 40 = 200. The two rails are the same class,
-     so one rule builds both of them. */
-  .board {
-    position: absolute;
-    left: 0; top: 0;
-    width: 300px; height: 200px;
-    background: #123024;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* the rails, finished. Five traces each, centred both ways. */
-  .rail {
+  .core div { width: 10px; height: 10px; background: #ffd166 }
+  .core div:nth-child(even) { background: #ff7b54 }
+  .core div:nth-child(5) { background: #4cc9f0 }
+  .chip:nth-child(even) .core { background: #16283a }
+  .chip:nth-child(even) .core div:nth-child(odd) { background: #6ee787 }
+  .leds {
     height: 40px;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
-  .rail div { width: 40px; height: 8px; background: #6ee787 }
-
-  /* the middle band holds three chips, centred both ways. */
-  .chips { height: 120px }
-
-  /* and a chip is a flex container of its own: nine pins, and only three
-     fit across the padded box, so the rest spill onto the lines below.
-     Those lines sit as a block in the middle of the chip. Every second
-     pin is a different colour. */
-  .chip {
-    width: 84px; height: 84px;
-    box-sizing: border-box;
-    padding: 8px;
-    background: #0b1a12;
-    gap: 6px;
-  }
-  .chip div { width: 14px; height: 14px; background: #ffd166 }
+  .leds div { width: 8px; height: 8px; border-radius: 50%; background: #6ee787 }
+  .leds div:nth-child(3n) { background: #ff7b54 }
 </style>
 
-<!-- both rails are laid. 3 chips, 9 pins each. -->
 <div class="board">
-  <div class="rail">
-    <div></div><div></div><div></div><div></div><div></div>
+  <div class="traces">
+    <div><div></div><div></div><div></div></div>
+    <div><div></div><div></div><div></div></div>
+    <div><div></div><div></div><div></div></div>
+    <div><div></div><div></div><div></div></div>
+    <div><div></div><div></div><div></div></div>
+    <div><div></div><div></div><div></div></div>
   </div>
 
   <div class="chips">
     <div class="chip">
-      <div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="core"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    </div>
+    <div class="chip">
+      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="core"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    </div>
+    <div class="chip">
+      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="core"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    </div>
+    <div class="chip">
+      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="core"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    </div>
+    <div class="chip">
+      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="core"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    </div>
+    <div class="chip">
+      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="core"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
     </div>
   </div>
 
-  <div class="rail">
-    <div></div><div></div><div></div><div></div><div></div>
+  <div class="leds">
+    <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
   </div>
-</div>`},
+</div>`, scaffold: `<style>
+  .board { position: absolute; left: 0; top: 0; width: 300px; height: 200px; background: #123024 }
+</style>
+
+<div class="board"></div>
+
+<!-- the rest is yours to build. -->`},
 
 		{title: "The quilt", target: `<style>
   .quilt {
@@ -1226,63 +1844,63 @@ var levels = []level{
     gap: 4px;
   }
   .row { flex: 1; display: flex; gap: 4px }
-  .row div { flex: 1; background: #c2705a }
-  .row div:nth-child(even) { background: #ffd166 }
-  .quilt .row:nth-child(even) div { background: #4cc9f0 }
-  .quilt .row:nth-child(even) div:nth-child(even) { background: #6ee787 }
+  .patch {
+    flex: 1;
+    box-sizing: border-box;
+    padding: 3px;
+    background: #e9f5cd;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .patch div { width: 15px; height: 14px; background: #c2705a }
+  .patch div:nth-child(2), .patch div:nth-child(3) { background: #ffd166 }
+  .patch:nth-child(even) div { background: #4cc9f0 }
+  .patch:nth-child(even) div:nth-child(2), .patch:nth-child(even) div:nth-child(3) { background: #16283a }
+  .row:nth-child(even) .patch div { border-radius: 50% }
+  .row:nth-child(even) .patch:nth-child(odd) { background: #6ee787 }
+  .row:nth-child(3n) .patch:nth-child(3n) { background: #ff7b54 }
 </style>
 
 <div class="quilt">
   <div class="row">
-    <div></div><div></div><div></div><div></div><div></div><div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
   </div>
   <div class="row">
-    <div></div><div></div><div></div><div></div><div></div><div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
   </div>
   <div class="row">
-    <div></div><div></div><div></div><div></div><div></div><div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
   </div>
   <div class="row">
-    <div></div><div></div><div></div><div></div><div></div><div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
+    <div class="patch"><div></div><div></div><div></div><div></div></div>
   </div>
 </div>`, scaffold: `<style>
-  /* Not a scene this time - just the pattern, as plainly as it goes.
-     Nothing in here has a width or a height of its own. Four rows share
-     the quilt, six patches share each row, and flex: 1 is the whole of
-     the layout. */
-  .quilt {
-    position: absolute;
-    left: 22px; top: 18px;
-    width: 256px; height: 164px;
-    box-sizing: border-box;
-    padding: 4px;
-    background: #3f2e1e;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .row { flex: 1; display: flex; gap: 4px }
-  .row div { flex: 1; background: #c2705a }
-
-  /* Four colours, and the pattern runs BOTH ways: across a row, and down
-     the rows. One patch rule cannot say that on its own - a selector has
-     to count the row as well as the patch inside it. */
+  .quilt { position: absolute; left: 22px; top: 18px; width: 256px; height: 164px; background: #3f2e1e }
 </style>
 
-<!-- row 1 of 4, with its 6 patches. -->
-<div class="quilt">
-  <div class="row">
-    <div></div><div></div><div></div><div></div><div></div><div></div>
-  </div>
-  <div class="row">
-    <div></div>
-  </div>
-  <div class="row">
-    <div></div>
-  </div>
-  <div class="row">
-    <div></div>
-  </div>
-</div>`},
+<div class="quilt"></div>
+
+<!-- the rest is yours to build. -->`},
 	}},
 }

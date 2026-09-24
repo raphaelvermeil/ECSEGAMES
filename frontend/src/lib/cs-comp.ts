@@ -68,9 +68,21 @@ export const LEVEL_META: LevelMeta[] = [
   },
   {
     n: 8,
+    name: "RUSH HOUR",
+    color: "#ffb86b",
+    note: "Several flex rows working together in one scene.",
+  },
+  {
+    n: 9,
+    name: "BOXES IN BOXES",
+    color: "#9aa7ff",
+    note: "Introduction of nesting: rows inside a column.",
+  },
+  {
+    n: 10,
     name: "THE BIG BUILD",
     color: "#e9f5cd",
-    note: "Introduction of nested rows and deeper layouts.",
+    note: "Three levels deep. The hardest scenes in the comp.",
   },
 ];
 

@@ -100,12 +100,24 @@ func main() {
 	log.Printf("seeded %d challenges and wrote %d target images to %s", n, n, cfg.CSCompSolutionsDir)
 }
 
-// points is a challenge's worth: its level times a hundred, the rule the
-// standings board states outright ("POINTS = LEVEL x 100 PER SOLVED
-// PART"). Uncapped, so level 6 is worth six times a level 1 part and
-// clearing the hard scenes actually decides the board.
+// levelPoints is what one solved part is worth, by level. The gaps grow
+// with difficulty: small steps through the absolute-positioning levels
+// (1-6), then big jumps where flexbox (7-8) and nesting (9-10) start. A
+// level 10 part takes a strong student about half an hour, so it is worth
+// far more than a level 1 part, not just ten times as much.
+var levelPoints = map[int]int{
+	1: 100, 2: 150, 3: 200, 4: 350, 5: 450,
+	6: 600, 7: 850, 8: 1000, 9: 1200, 10: 1500,
+}
+
+// points is a challenge's worth. A level missing from the table is a
+// mistake in levels.go, so the seed stops rather than scoring it zero.
 func points(level int) int {
-	return level * 100
+	p, ok := levelPoints[level]
+	if !ok {
+		log.Fatalf("no points set for level %d", level)
+	}
+	return p
 }
 
 // css renders one shape's inline style. Ported from the mock's css()
