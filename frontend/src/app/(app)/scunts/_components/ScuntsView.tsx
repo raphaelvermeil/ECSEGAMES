@@ -5,7 +5,8 @@ import { useAuth } from "@clerk/nextjs";
 import imageCompression from "browser-image-compression";
 import PageBanner from "@/components/PageBanner";
 import { Camera, Trash } from "@/components/icons";
-import { teamLabel, type Team } from "@/lib/scores";
+import { TEAM_COLORS } from "@/lib/leaderboard";
+import { TEAMS, teamLabel, type Team } from "@/lib/scores";
 import {
   ACCEPTED_TYPES,
   MAX_CAPTION_LEN,
@@ -45,6 +46,11 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
   const [caption, setCaption] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "all" or one of the four Games teams. Filtering happens here rather
+  // than on the server: the list is capped at 200 anyway, so refetching per
+  // tab would cost a round trip and a fresh set of presigned URLs to show
+  // pictures the browser already has.
+  const [teamFilter, setTeamFilter] = useState<Team | "all">("all");
   const fileRef = useRef<HTMLInputElement>(null);
 
   // load fetches but doesn't touch state, so the effect below can own the
@@ -131,6 +137,19 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
     }
   }
 
+  // Counts come from the unfiltered list so each tab still shows its total
+  // while another tab is selected.
+  const counts = (items ?? []).reduce<Record<string, number>>((acc, s) => {
+    acc[s.team] = (acc[s.team] ?? 0) + 1;
+    return acc;
+  }, {});
+  const shown =
+    items === null
+      ? null
+      : teamFilter === "all"
+        ? items
+        : items.filter((s) => s.team === teamFilter);
+
   return (
     <>
       <PageBanner title="Scunts" subtitle="Post your proof." />
@@ -181,20 +200,68 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
 
         <section className="mt-8">
           <h2 className={sectionHeadingClass}>Submissions</h2>
-          {items === null ? (
+
+          {/* Team tabs. Each carries its own colour so the filter row reads
+              as the same palette as the tiles and the leaderboard. */}
+          {items !== null && items.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[
+                { value: "all" as const, label: "All", color: undefined },
+                ...TEAMS.map((t) => ({
+                  value: t.value,
+                  label: t.label,
+                  color: TEAM_COLORS[t.value],
+                })),
+              ].map((tab) => {
+                const active = teamFilter === tab.value;
+                const n =
+                  tab.value === "all" ? items.length : (counts[tab.value] ?? 0);
+                return (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    onClick={() => setTeamFilter(tab.value)}
+                    aria-pressed={active}
+                    className="border px-[12px] py-[7px] font-mono text-[11px] font-medium uppercase tracking-[0.08em] transition-colors"
+                    style={{
+                      borderColor: active
+                        ? (tab.color ?? "var(--color-sched-accent)")
+                        : "var(--color-sched-hair)",
+                      color: active
+                        ? (tab.color ?? "var(--color-sched-accent)")
+                        : "var(--color-sched-text-muted)",
+                    }}
+                  >
+                    {tab.label} {n}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {shown === null ? (
             <p className="mt-3 font-mono text-xs text-sched-text-muted">
               Loading…
             </p>
-          ) : items.length === 0 ? (
+          ) : items !== null && items.length === 0 ? (
             <p className="mt-3 font-mono text-xs text-sched-text-muted">
               Nothing submitted yet. Be the first.
             </p>
+          ) : shown.length === 0 ? (
+            <p className="mt-3 font-mono text-xs text-sched-text-muted">
+              Nothing from this team yet.
+            </p>
           ) : (
             <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((s) => (
+              {shown.map((s) => (
                 <li
                   key={s.id}
                   className="overflow-hidden rounded-sm border border-sched-hair bg-sched-bg-raised"
+                  // Same team palette the leaderboard uses, so a team reads
+                  // as one colour everywhere in the app.
+                  style={{
+                    borderLeft: `3px solid ${TEAM_COLORS[s.team as Team]}`,
+                  }}
                 >
                   {s.kind === "video" ? (
                     // preload="metadata" so opening the page doesn't pull
@@ -225,7 +292,10 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                       {s.caption}
                     </p>
                     <p className="mt-1.5 font-mono text-[11px] text-sched-text-muted">
-                      {teamLabel(s.team as Team)} · {s.submittedByName}
+                      <span style={{ color: TEAM_COLORS[s.team as Team] }}>
+                        {teamLabel(s.team as Team)}
+                      </span>{" "}
+                      · {s.submittedByName}
                     </p>
                     {canManage && (
                       <button
