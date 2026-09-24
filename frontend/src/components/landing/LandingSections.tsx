@@ -22,7 +22,7 @@ const HIGHLIGHTS = [
   {
     title: "Scunts",
     blurb:
-      "A weekend-long scavenger hunt. Tasks drop Friday morning and stay open until closing ceremonies.",
+      "A weekend-long set of challenges. Tasks drop Friday morning and stay open until closing ceremonies.",
     icon: Zap,
   },
   {
@@ -34,7 +34,7 @@ const HIGHLIGHTS = [
   {
     title: "Hackathon",
     blurb:
-      "Teams get a theme and a deadline, then build something from scratch and demo it to the room.",
+      "A set of timed challenges that put your frontend knowledge to the test.",
     icon: CodeXml,
   },
   {
