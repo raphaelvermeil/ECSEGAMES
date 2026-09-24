@@ -55,7 +55,7 @@ export default function CsCompView() {
   const { getToken } = useAuth();
 
   const [view, setView] = useState<View>("teams");
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [loadedChallenges, setChallenges] = useState<Challenge[]>([]);
   const [teams, setTeams] = useState<CompTeam[]>([]);
   const [me, setMe] = useState<MeView | null>(null);
   const [board, setBoard] = useState<Leaderboard | null>(null);
@@ -164,18 +164,17 @@ export default function CsCompView() {
     async function load() {
       try {
         const token = await getToken();
-        const [cs, ts, mine] = await Promise.all([
-          listChallenges(token),
+        const [ts, mine] = await Promise.all([
           listTeams(token),
           fetchMe(token),
         ]);
         if (cancelled) return;
-        setChallenges(cs);
         setTeams(ts);
         setMe(mine);
-        // A returning competitor lands on the comp rather than the join
-        // screen they already finished with.
-        if (mine.team) setView("battle");
+        // A returning competitor lands on their team rather than the join
+        // screen they already finished with. The battle is one tab over
+        // once it is open.
+        if (mine.team) setView("mine");
       } catch (err) {
         if (!cancelled) {
           setLoadError(errorText(err, "Could not load the CS comp."));
@@ -190,11 +189,15 @@ export default function CsCompView() {
     };
   }, [getToken]);
 
+  // In the comp's final hour the server keeps students off the standings
+  // until an exec reveals them; execs keep the live board throughout.
+  const boardHidden = !!clock?.standingsHidden && !canControlClock(me?.user);
+
   // The standings poll runs only while the board is on screen. Nothing
   // else on the page reads them, so polling in the background would be
   // load for its own sake.
   useEffect(() => {
-    if (view !== "board") return;
+    if (view !== "board" || boardHidden) return;
     let cancelled = false;
     async function poll() {
       try {
@@ -211,7 +214,37 @@ export default function CsCompView() {
       cancelled = true;
       clearInterval(t);
     };
-  }, [view, getToken]);
+  }, [view, boardHidden, getToken]);
+
+  // The challenges stay hidden until the clock has been started once; execs
+  // see them early. The server enforces this — the check here only decides
+  // when to ask, so a student's page picks them up on the poll after start.
+  const battleOpen = canControlClock(me?.user) || !!clock?.started;
+  const haveChallenges = loadedChallenges.length > 0;
+
+  // Everything below reads this, not what was loaded: once the battle is
+  // closed (not started yet, or rehidden) the page behaves as if it holds
+  // no challenges at all, whatever an earlier fetch left in memory.
+  const challenges = useMemo(
+    () => (battleOpen ? loadedChallenges : []),
+    [battleOpen, loadedChallenges],
+  );
+
+  useEffect(() => {
+    if (!battleOpen || haveChallenges) return;
+    let cancelled = false;
+    getToken()
+      .then((token) => listChallenges(token))
+      .then((cs) => {
+        if (!cancelled) setChallenges(cs);
+      })
+      .catch(() => {
+        // Left empty; the next clock poll re-runs this.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [battleOpen, haveChallenges, clock, getToken]);
 
   const colors = useMemo(() => teamColors(teams.map((t) => t.id)), [teams]);
 
@@ -301,13 +334,40 @@ export default function CsCompView() {
     current?.starterCode ??
     "";
 
+  // Opening the battle or any part asks the server again rather than
+  // trusting the list already on the page. A refusal closes the battle.
+  async function verifyBattle(): Promise<Challenge[] | null> {
+    try {
+      const cs = await listChallenges(await getToken());
+      setChallenges(cs);
+      return cs;
+    } catch (err) {
+      setChallenges([]);
+      setPicker(null);
+      setView((v) => (v === "battle" ? "mine" : v));
+      setActionError(errorText(err, "The battle is not open yet."));
+      return null;
+    }
+  }
+
+  function showView(v: View) {
+    setView(v);
+    setConfirming(false);
+    setActionError(null);
+  }
+
   function selectView(v: View) {
     // The board is readable before joining anything; the battle and the
     // roster are not.
     if (v !== "teams" && v !== "board" && locked) return;
-    setView(v);
-    setConfirming(false);
-    setActionError(null);
+    if (v === "battle") {
+      if (!battleOpen) return;
+      verifyBattle().then((cs) => {
+        if (cs) showView("battle");
+      });
+      return;
+    }
+    showView(v);
   }
 
   async function run(fn: () => Promise<void>, fallback: string) {
@@ -324,14 +384,14 @@ export default function CsCompView() {
 
   function onJoin(team: CompTeam) {
     if (myTeam?.id === team.id) {
-      setView("battle");
+      setView("mine");
       return;
     }
     run(async () => {
       const token = await getToken();
       await joinTeam(token, team.id);
       await refreshMe();
-      setView("battle");
+      setView("mine");
     }, "Could not join that team.");
   }
 
@@ -340,7 +400,7 @@ export default function CsCompView() {
       const token = await getToken();
       await createTeam(token, name);
       await refreshMe();
-      setView("battle");
+      setView("mine");
     }, "Could not create that team.");
   }
 
@@ -395,12 +455,14 @@ export default function CsCompView() {
   }
 
   function selectPart(level: number, part: number) {
-    const c = byKey[partKey(level, part)];
-    if (c) {
-      setChallengeId(c.id);
-      setResult(null);
-    }
     setPicker(null);
+    verifyBattle().then((cs) => {
+      const c = cs?.find((x) => x.level === level && x.part === part);
+      if (c) {
+        setChallengeId(c.id);
+        setResult(null);
+      }
+    });
   }
 
   if (loading) {
@@ -436,6 +498,7 @@ export default function CsCompView() {
       <CsCompBanner
         view={view}
         locked={locked}
+        battleLocked={!battleOpen}
         clock={clock}
         clockText={formatClock(secondsLeft)}
         clockUrgent={clock?.status === "running" && secondsLeft < 300}
@@ -476,7 +539,15 @@ export default function CsCompView() {
         />
       )}
 
-      {view === "battle" && !locked && myTeam && current && (
+      {view === "battle" && !locked && !battleOpen && (
+        <div className="bg-sched-bg px-5 py-20 text-center lg:px-[60px]">
+          <p className="font-mono text-sm text-sched-text-muted">
+            The battle opens when the comp starts.
+          </p>
+        </div>
+      )}
+
+      {view === "battle" && battleOpen && !locked && myTeam && current && (
         <BattlePanel
           challenge={current}
           myTeamName={myTeam.name}
@@ -518,7 +589,18 @@ export default function CsCompView() {
         />
       )}
 
-      {view === "board" && (
+      {view === "board" && boardHidden && (
+        <div className="bg-sched-bg px-5 py-20 text-center lg:px-[60px]">
+          <p className="font-mono text-sm text-sched-cream">
+            The standings are hidden for the final hour.
+          </p>
+          <p className="mt-2 font-mono text-xs text-sched-text-muted">
+            Keep solving the challenges! The winners will be revealed at the end.
+          </p>
+        </div>
+      )}
+
+      {view === "board" && !boardHidden && (
         <StandingsPanel
           board={board}
           colors={colors}
@@ -527,7 +609,7 @@ export default function CsCompView() {
         />
       )}
 
-      {picker !== null && (
+      {picker !== null && battleOpen && (
         <LevelPartPicker
           picker={picker}
           challenges={challenges}

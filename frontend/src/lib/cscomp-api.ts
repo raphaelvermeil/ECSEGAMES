@@ -103,9 +103,16 @@ export interface ClockView {
   // end has been set. Rendered in the viewer's own zone.
   endsAt: string;
   updatedBy: string;
+  // Whether the comp has ever been started. Until it has, the challenges are
+  // exec-only and the server refuses them to everyone else.
+  started: boolean;
+  // Whether students are kept off the standings right now: the comp's
+  // final hour, until an exec reveals them. Execs still see the board.
+  standingsHidden: boolean;
 }
 
-export type ClockAction = "start" | "pause" | "stop" | "setEnd";
+export type ClockAction =
+  "start" | "pause" | "stop" | "setEnd" | "rehide" | "reveal";
 
 export interface SubmitResult {
   matchPercent: number;

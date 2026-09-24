@@ -68,9 +68,21 @@ export const LEVEL_META: LevelMeta[] = [
   },
   {
     n: 8,
+    name: "RUSH HOUR",
+    color: "#ffb86b",
+    note: "Several flex rows working together in one scene.",
+  },
+  {
+    n: 9,
+    name: "BOXES IN BOXES",
+    color: "#9aa7ff",
+    note: "Introduction of nesting: rows inside a column.",
+  },
+  {
+    n: 10,
     name: "THE BIG BUILD",
     color: "#e9f5cd",
-    note: "Introduction of nested rows and deeper layouts.",
+    note: "Three levels deep. The hardest scenes in the comp.",
   },
 ];
 
@@ -156,18 +168,23 @@ export function slots(
   claims: Claim[],
   challengeLabel: (challengeId: string) => string,
 ): CompSlot[] {
-  const claimByMember: Record<string, Claim> = {};
+  // A person holds at most one claim per level, so someone working across
+  // levels has several — show them all, lowest level first.
+  const claimsByMember: Record<string, Claim[]> = {};
   for (const c of claims) {
-    // A person holds one claim per level, so the highest level they are on
-    // is the one worth showing.
-    const held = claimByMember[c.clerkId];
-    if (!held || c.level > held.level) claimByMember[c.clerkId] = c;
+    (claimsByMember[c.clerkId] ??= []).push(c);
+  }
+  for (const list of Object.values(claimsByMember)) {
+    list.sort((a, b) => a.level - b.level);
   }
 
   const out: CompSlot[] = members.map((m) => {
     const isYou = m.clerkId === meClerkId;
-    const claim = claimByMember[m.clerkId];
-    const label = claim ? challengeLabel(claim.challengeId) : "NO CLAIM";
+    const held = claimsByMember[m.clerkId] ?? [];
+    const label =
+      held.length > 0
+        ? held.map((c) => challengeLabel(c.challengeId)).join(" · ")
+        : "NO CLAIM";
     return {
       key: m.clerkId,
       initials: initialsOf(m.name),

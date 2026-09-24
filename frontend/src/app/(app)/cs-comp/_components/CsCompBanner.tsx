@@ -30,6 +30,7 @@ const CLOCK_LABEL: Record<ClockView["status"], string> = {
 export default function CsCompBanner({
   view,
   locked,
+  battleLocked,
   clock,
   clockText,
   clockUrgent,
@@ -42,6 +43,7 @@ export default function CsCompBanner({
 }: {
   view: View;
   locked: boolean;
+  battleLocked: boolean;
   clock: ClockView | null;
   clockText: string;
   clockUrgent: boolean;
@@ -79,8 +81,7 @@ export default function CsCompBanner({
               CS comp
             </h1>
             <p className="mt-3 font-mono text-xs text-sched-accent lg:mt-[14px] lg:text-[15px]">
-              In-house CSS battle · one file, HTML + CSS · recreate the target ·
-              teams of 5
+              Wake up, dev. The comp has started.
             </p>
           </div>
           <div className="flex gap-[26px] pb-1.5">
@@ -94,20 +95,30 @@ export default function CsCompBanner({
             </div>
             <div>
               <div className="font-mono text-[9px] tracking-[0.18em] text-sched-text-muted">
-                {clock ? CLOCK_LABEL[clock.status] : "TIME LEFT"}
+                {/* A stopped clock that was started before is not "not
+                    started" - the battle is open - so it says so. */}
+                {!clock
+                  ? "TIME LEFT"
+                  : clock.status === "stopped" && clock.started
+                    ? "STOPPED"
+                    : CLOCK_LABEL[clock.status]}
               </div>
-              <div
-                className="mt-[5px] font-mono text-lg font-medium"
-                style={{
-                  color: clockUrgent
-                    ? "#ff7b54"
-                    : clock && clock.status !== "running"
-                      ? "#7f9482"
-                      : "#e9f5cd",
-                }}
-              >
-                {clockText}
-              </div>
+              {/* A stopped clock shows no countdown, only its status and
+                  the UNTIL time below. */}
+              {clock?.status !== "stopped" && (
+                <div
+                  className="mt-[5px] font-mono text-lg font-medium"
+                  style={{
+                    color: clockUrgent
+                      ? "#ff7b54"
+                      : clock && clock.status !== "running"
+                        ? "#7f9482"
+                        : "#e9f5cd",
+                  }}
+                >
+                  {clockText}
+                </div>
+              )}
 
               {/* The moment the comp is due to finish, so the room can see
                   what it is working towards rather than only how much is
@@ -140,49 +151,52 @@ export default function CsCompBanner({
           role="tablist"
           aria-label="CS comp view"
         >
-          {TABS.map((t) => {
-            const active = view === t.view;
-            const isLocked = locked && !t.open;
-            return (
-              <button
-                key={t.view}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                aria-disabled={isLocked}
-                title={isLocked ? "Join a team of 5 first" : undefined}
-                onClick={() => onSelectView(t.view)}
-                className="flex min-h-[44px] items-center gap-2.5 border-l-0 border-b-0 border-t px-3.5 font-mono text-[11px] font-medium tracking-[0.14em] first:border-l lg:px-[22px] lg:text-xs"
-                style={{
-                  background: active ? "#0b1310" : "rgba(11,19,16,.35)",
-                  color: active ? "#e9f5cd" : "#7f9482",
-                  borderColor: isLocked
-                    ? "rgba(63,143,87,.45)"
-                    : "var(--color-sched-hair)",
-                  borderLeftWidth: 1,
-                  borderStyle: isLocked ? "dashed" : "solid",
-                  cursor: isLocked ? "not-allowed" : "pointer",
-                }}
-              >
-                {isLocked && (
-                  <Lock
-                    width={12}
-                    height={14}
-                    strokeWidth={1.4}
-                    className="flex-none"
-                  />
-                )}
-                {t.view === "board" && (
-                  <span
-                    aria-hidden="true"
-                    className="h-2 w-2 flex-none animate-pulse"
-                    style={{ background: "#6ee787" }}
-                  />
-                )}
-                {t.label}
-              </button>
-            );
-          })}
+          {/* The battle tab is not shown at all until the comp starts. */}
+          {TABS.filter((t) => !(t.view === "battle" && battleLocked)).map(
+            (t) => {
+              const active = view === t.view;
+              const isLocked = locked && !t.open;
+              return (
+                <button
+                  key={t.view}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  aria-disabled={isLocked}
+                  title={isLocked ? "Join a team of 5 first" : undefined}
+                  onClick={() => onSelectView(t.view)}
+                  className="flex min-h-[44px] items-center gap-2.5 border-l-0 border-b-0 border-t px-3.5 font-mono text-[11px] font-medium tracking-[0.14em] first:border-l lg:px-[22px] lg:text-xs"
+                  style={{
+                    background: active ? "#0b1310" : "rgba(11,19,16,.35)",
+                    color: active ? "#e9f5cd" : "#7f9482",
+                    borderColor: isLocked
+                      ? "rgba(63,143,87,.45)"
+                      : "var(--color-sched-hair)",
+                    borderLeftWidth: 1,
+                    borderStyle: isLocked ? "dashed" : "solid",
+                    cursor: isLocked ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {isLocked && (
+                    <Lock
+                      width={12}
+                      height={14}
+                      strokeWidth={1.4}
+                      className="flex-none"
+                    />
+                  )}
+                  {t.view === "board" && (
+                    <span
+                      aria-hidden="true"
+                      className="h-2 w-2 flex-none animate-pulse"
+                      style={{ background: "#6ee787" }}
+                    />
+                  )}
+                  {t.label}
+                </button>
+              );
+            },
+          )}
         </div>
       </div>
 

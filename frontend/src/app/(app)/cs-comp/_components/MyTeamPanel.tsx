@@ -80,7 +80,7 @@ export default function MyTeamPanel({
                   </span>
                 </div>
                 <span
-                  className="font-mono text-[10px] tracking-[0.14em]"
+                  className="text-right font-mono text-[10px] leading-[1.6] tracking-[0.14em]"
                   style={{ color: s.tagInk }}
                 >
                   {s.tag}

@@ -37,7 +37,22 @@ type Clock struct {
 	Duration  int       `bson:"durationSeconds" json:"durationSeconds"`
 	UpdatedAt time.Time `bson:"updatedAt" json:"updatedAt"`
 	UpdatedBy string    `bson:"updatedBy" json:"updatedBy"`
+	// StartedAt is the first time the clock ever ran. Nothing clears it, so
+	// once set the battle stays open for good, through pauses, stops and
+	// the round running out.
+	StartedAt time.Time `bson:"startedAt" json:"-"`
+	// Revealed is set by an exec to show the standings again after they
+	// went dark for the final stretch (see StandingsHidden).
+	Revealed bool `bson:"standingsRevealed" json:"-"`
+	// Blackout records that the standings have gone dark, so they stay
+	// dark even if the clock is later stopped or its end pushed out. Only
+	// Reveal or Rehide undoes it.
+	Blackout bool `bson:"standingsBlackout" json:"-"`
 }
+
+// standingsBlackout is how close to the end the standings go dark for
+// students, so the last stretch keeps everyone guessing.
+const standingsBlackout = time.Hour
 
 // NewClock is a fresh, unstarted clock of the given length.
 func NewClock(seconds int) Clock {
@@ -68,6 +83,38 @@ func (c Clock) RemainingAt(now time.Time) int {
 	}
 }
 
+// Started reports whether the comp has ever been started. The challenges
+// are hidden from students until it has.
+func (c Clock) Started() bool {
+	return !c.StartedAt.IsZero()
+}
+
+// StandingsHidden reports whether students are kept off the standings:
+// the comp has started, no exec has revealed them, and either an hour or
+// less is left or the blackout already began (see Latch).
+func (c Clock) StandingsHidden(now time.Time) bool {
+	if !c.Started() || c.Revealed {
+		return false
+	}
+	return c.Blackout || time.Duration(c.RemainingAt(now))*time.Second <= standingsBlackout
+}
+
+// Latch makes a blackout that has begun permanent. Time passing only ever
+// brings the end closer, so the one way out of the last hour is an exec
+// action — stop, or a later end — and every action runs this first.
+func (c Clock) Latch(now time.Time) Clock {
+	if c.StandingsHidden(now) {
+		c.Blackout = true
+	}
+	return c
+}
+
+// Reveal shows the standings to everyone again.
+func (c Clock) Reveal() Clock {
+	c.Revealed = true
+	return c
+}
+
 // EndTime is the moment the countdown is heading for, or the zero time when
 // no end has been set. A running clock reports its live end; anything else
 // reports the target an exec picked.
@@ -95,7 +142,7 @@ func (c Clock) Start(now time.Time) Clock {
 		c.Status = ClockRunning
 		c.EndsAt = c.TargetEnd
 		c.Remaining = max(0, int(c.TargetEnd.Sub(now)/time.Second))
-		return c
+		return c.markStarted(now)
 	}
 	left := max(0, c.Remaining)
 	if c.Status == ClockStopped {
@@ -107,6 +154,14 @@ func (c Clock) Start(now time.Time) Clock {
 	c.Status = ClockRunning
 	c.EndsAt = now.Add(time.Duration(left) * time.Second)
 	c.Remaining = left
+	return c.markStarted(now)
+}
+
+// markStarted records the first start and leaves any earlier one alone.
+func (c Clock) markStarted(now time.Time) Clock {
+	if c.StartedAt.IsZero() {
+		c.StartedAt = now
+	}
 	return c
 }
 
@@ -142,6 +197,16 @@ func (c Clock) Stop(now time.Time) Clock {
 	// stale one would keep the display pinned at zero after a stop.
 	c.TargetEnd = time.Time{}
 	c.Remaining = c.Duration
+	return c
+}
+
+// Rehide undoes an early start: it stops the clock like Stop and forgets
+// that it was ever started, so the battle is hidden from students again.
+func (c Clock) Rehide(now time.Time) Clock {
+	c = c.Stop(now)
+	c.StartedAt = time.Time{}
+	c.Revealed = false
+	c.Blackout = false
 	return c
 }
 

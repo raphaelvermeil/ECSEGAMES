@@ -100,6 +100,80 @@ func TestClockEndTime(t *testing.T) {
 		}
 	})
 
+	t.Run("started is set by the first start and survives everything after", func(t *testing.T) {
+		c := NewClock(1200).SetEnd(base, end)
+		if c.Started() {
+			t.Fatal("started before any start")
+		}
+		c = c.Start(base)
+		first := c.StartedAt
+		c = c.Pause(base.Add(time.Minute)).Start(base.Add(2 * time.Minute)).Stop(end.Add(time.Hour))
+		if !c.Started() || !c.StartedAt.Equal(first) {
+			t.Fatalf("startedAt %v, want %v", c.StartedAt, first)
+		}
+	})
+
+	t.Run("rehide stops the clock and hides the battle again", func(t *testing.T) {
+		c := NewClock(1200).SetEnd(base, end).Start(base)
+		c = c.Rehide(base.Add(time.Minute))
+		if c.Status != ClockStopped || c.Started() {
+			t.Fatalf("status %s, started %v", c.Status, c.Started())
+		}
+		c = c.Start(base.Add(2 * time.Minute))
+		if !c.EndsAt.Equal(end) || !c.Started() {
+			t.Fatalf("restart ends at %v, started %v", c.EndsAt, c.Started())
+		}
+	})
+
+	t.Run("standings hide in the last hour until revealed", func(t *testing.T) {
+		c := NewClock(1200).SetEnd(base, end) // 90 minutes out
+		if c.StandingsHidden(base) {
+			t.Fatal("hidden before the comp started")
+		}
+		c = c.Start(base)
+		if c.StandingsHidden(base.Add(29 * time.Minute)) {
+			t.Fatal("hidden with more than an hour left")
+		}
+		if !c.StandingsHidden(base.Add(30 * time.Minute)) {
+			t.Fatal("not hidden with an hour left")
+		}
+		if !c.StandingsHidden(end.Add(time.Hour)) {
+			t.Fatal("not hidden after time ran out")
+		}
+		if c.Reveal().StandingsHidden(end.Add(time.Hour)) {
+			t.Fatal("still hidden after reveal")
+		}
+		if c.Reveal().Rehide(base).Revealed {
+			t.Fatal("rehide kept the reveal")
+		}
+	})
+
+	t.Run("a blackout survives stop and a later end until revealed", func(t *testing.T) {
+		c := NewClock(1200).SetEnd(base, end).Start(base) // 90 minutes out
+		inside := base.Add(40 * time.Minute)              // 50 minutes left
+
+		stopped := c.Latch(inside).Stop(end.Add(time.Minute)) // resets to 20 min
+		stopped.Duration = 3 * 60 * 60                        // a long default round
+		stopped = stopped.Stop(end.Add(time.Minute))
+		if !stopped.StandingsHidden(end.Add(time.Minute)) {
+			t.Fatal("stop brought the standings back")
+		}
+
+		extended := c.Latch(inside).SetEnd(inside, inside.Add(3*time.Hour))
+		if !extended.StandingsHidden(inside) {
+			t.Fatal("a later end brought the standings back")
+		}
+		if extended.Reveal().StandingsHidden(inside) {
+			t.Fatal("still hidden after reveal")
+		}
+		if extended.Rehide(inside).Blackout {
+			t.Fatal("rehide kept the blackout")
+		}
+		if c.Latch(base).Blackout {
+			t.Fatal("latched with more than an hour left")
+		}
+	})
+
 	t.Run("a passed end never goes negative", func(t *testing.T) {
 		c := NewClock(1200).SetEnd(base, end).Start(base)
 		if got := c.RemainingAt(end.Add(time.Hour)); got != 0 {
