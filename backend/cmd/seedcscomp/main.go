@@ -132,7 +132,14 @@ func css(r rect, pretty bool) string {
 	var b strings.Builder
 	b.WriteString("left: " + strconv.Itoa(r.x) + "px")
 	if pretty {
-		b.WriteString("; bottom: " + strconv.Itoa(200-r.y-r.h) + "px")
+		// A border sits outside height, so the box's bottom edge is that
+		// much lower than y + h. The rects only ever use the "border:Npx"
+		// shorthand.
+		border := 0
+		if _, after, ok := strings.Cut(r.extra, "border:"); ok {
+			border, _ = strconv.Atoi(after[:strings.Index(after, "px")])
+		}
+		b.WriteString("; bottom: " + strconv.Itoa(200-r.y-r.h-2*border) + "px")
 	} else {
 		b.WriteString("; top: " + strconv.Itoa(r.y) + "px")
 	}

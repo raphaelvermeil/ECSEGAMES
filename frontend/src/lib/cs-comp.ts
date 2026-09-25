@@ -82,7 +82,7 @@ export const LEVEL_META: LevelMeta[] = [
     n: 10,
     name: "THE BIG BUILD",
     color: "#e9f5cd",
-    note: "Three levels deep. The hardest scenes in the comp.",
+    note: "The hardest scenes in the comp.",
   },
 ];
 

@@ -68,26 +68,26 @@ var levels = []level{
 		}},
 		{title: "Goalposts", rects: []rect{
 			{0, 150, 300, 50, "#2c5e40", "", ""},
-			{64, 56, 10, 94, "#e9f5cd", "", ""},
-			{226, 56, 10, 94, "#e9f5cd", "", ""},
-			{64, 56, 172, 10, "#e9f5cd", "", ""},
+			{65, 55, 10, 95, "#e9f5cd", "", ""},
+			{225, 55, 10, 95, "#e9f5cd", "", ""},
+			{65, 55, 170, 10, "#e9f5cd", "", ""},
 		}},
 		{title: "Scoreboard", rects: []rect{
-			{40, 44, 220, 112, "#0b1310", "", ""},
-			{56, 60, 80, 24, "#6ee787", "", ""},
-			{56, 96, 120, 16, "#3f8f57", "", ""},
-			{56, 120, 60, 12, "#2c5e40", "", ""},
+			{40, 45, 220, 110, "#0b1310", "", ""},
+			{55, 60, 80, 25, "#6ee787", "", ""},
+			{55, 95, 120, 15, "#3f8f57", "", ""},
+			{55, 120, 60, 10, "#2c5e40", "", ""},
 		}},
 		{title: "Cinder track", rects: []rect{
 			{0, 120, 300, 80, "#8a5a3c", "", ""},
-			{0, 148, 300, 5, "#e9f5cd", "", ""},
-			{0, 176, 300, 5, "#e9f5cd", "", ""},
+			{0, 145, 300, 5, "#e9f5cd", "", ""},
+			{0, 175, 300, 5, "#e9f5cd", "", ""},
 		}},
 		{title: "Team flag", rects: []rect{
 			{0, 180, 300, 20, "#2c5e40", "", ""},
 			{40, 40, 10, 140, "#9aa196", "", ""},
-			{50, 44, 90, 50, "#6ee787", "", ""},
-			{50, 64, 90, 8, "#0b1310", "", ""},
+			{50, 45, 90, 50, "#6ee787", "", ""},
+			{50, 65, 90, 10, "#0b1310", "", ""},
 		}},
 	}},
 	{n: 2, name: "FIELD DAY", bg: "#1b2a20", parts: []part{
@@ -101,146 +101,146 @@ var levels = []level{
 		{title: "Camp tent", rects: []rect{
 			{0, 180, 300, 20, "#2c5e40", "", ""},
 			{70, 100, 160, 80, "#ff7b54", "", ""},
-			{130, 132, 40, 48, "#1b2a20", "4px 4px 0 0", ""},
-			{148, 58, 4, 44, "#9aa196", "", ""},
-			{152, 58, 38, 18, "#ffd166", "", ""},
+			{130, 130, 40, 50, "#1b2a20", "4px 4px 0 0", ""},
+			{145, 55, 5, 45, "#9aa196", "", ""},
+			{150, 55, 40, 20, "#ffd166", "", ""},
 		}},
 		{title: "Bonfire", rects: []rect{
 			{0, 180, 300, 20, "#2c5e40", "", ""},
-			{96, 168, 108, 12, "#5a4632", "6px", ""},
-			{96, 158, 108, 10, "#3f2e1e", "5px", "transform:rotate(-8deg)"},
-			{128, 104, 44, 64, "#ff7b54", "", "border-radius:22px 22px 6px 6px"},
-			{140, 124, 20, 44, "#ffd166", "", "border-radius:10px 10px 4px 4px"},
+			{95, 170, 110, 10, "#5a4632", "5px", ""},
+			{95, 160, 110, 10, "#3f2e1e", "5px", "transform:rotate(-8deg)"},
+			{130, 105, 40, 65, "#ff7b54", "", "border-radius:20px 20px 5px 5px"},
+			{140, 125, 20, 45, "#ffd166", "", "border-radius:10px 10px 5px 5px"},
 		}},
 		{title: "Bench and tree", rects: []rect{
 			{0, 180, 300, 20, "#2c5e40", "", ""},
-			{40, 148, 120, 12, "#8a5a3c", "", ""},
-			{46, 160, 12, 20, "#5f6b5c", "", ""},
-			{142, 160, 12, 20, "#5f6b5c", "", ""},
-			{220, 120, 14, 60, "#4a3a26", "", ""},
-			{196, 70, 62, 58, "#235838", "26px", ""},
+			{40, 150, 120, 10, "#8a5a3c", "", ""},
+			{45, 160, 10, 20, "#5f6b5c", "", ""},
+			{145, 160, 10, 20, "#5f6b5c", "", ""},
+			{220, 120, 10, 60, "#4a3a26", "", ""},
+			{195, 70, 60, 60, "#235838", "25px", ""},
 		}},
 		{title: "Match ball", rects: []rect{
 			{0, 150, 300, 50, "#2c5e40", "", ""},
-			{0, 186, 300, 5, "#e9f5cd", "", ""},
-			{118, 148, 64, 10, "rgba(0,0,0,.35)", "50%", ""},
-			{120, 88, 60, 60, "#e9f5cd", "30px", ""},
-			{138, 106, 24, 24, "#0b1310", "5px", "transform:rotate(45deg)"},
+			{0, 185, 300, 5, "#e9f5cd", "", ""},
+			{120, 145, 60, 10, "rgba(0,0,0,.35)", "50%", ""},
+			{120, 85, 60, 60, "#e9f5cd", "30px", ""},
+			{140, 105, 20, 20, "#0b1310", "5px", "transform:rotate(45deg)"},
 		}},
 	}},
 	{n: 3, name: "GOLDEN HOUR", bg: "#142a33", parts: []part{
 		{title: "Sailboat", rects: []rect{
 			{0, 140, 300, 60, "#2f6f8f", "", ""},
-			{40, 36, 36, 36, "#ffd98a", "18px", ""},
-			{100, 124, 100, 20, "#8a5a3c", "0 0 20px 20px", ""},
-			{148, 54, 4, 72, "#e9f5cd", "", ""},
-			{104, 58, 44, 66, "#e9f5cd", "", "clip-path:polygon(100% 0,100% 100%,0 100%)"},
-			{152, 58, 44, 66, "#ffd98a", "", "clip-path:polygon(0 0,100% 100%,0 100%)"},
-			{0, 152, 300, 4, "rgba(233,245,205,.35)", "", ""},
+			{40, 35, 40, 40, "#ffd98a", "20px", ""},
+			{100, 125, 100, 20, "#8a5a3c", "0 0 20px 20px", ""},
+			{150, 50, 5, 75, "#e9f5cd", "", ""},
+			{105, 55, 45, 70, "#e9f5cd", "", "clip-path:polygon(100% 0,100% 100%,0 100%)"},
+			{155, 55, 45, 70, "#ffd98a", "", "clip-path:polygon(0 0,100% 100%,0 100%)"},
+			{0, 150, 300, 5, "rgba(233,245,205,.35)", "", ""},
 		}},
 		{title: "Ice cream", rects: []rect{
-			{100, 176, 100, 12, "#9aa196", "6px", ""},
-			{127, 118, 46, 66, "#c98a4b", "", "clip-path:polygon(0 0,100% 0,50% 100%)"},
-			{122, 84, 56, 56, "#ff7b54", "28px", ""},
-			{133, 60, 34, 34, "#e9f5cd", "17px", ""},
-			{143, 50, 14, 14, "#c1121f", "7px", ""},
-			{149, 42, 3, 10, "#3f8f57", "", ""},
+			{100, 175, 100, 10, "#9aa196", "5px", ""},
+			{125, 120, 50, 60, "#c98a4b", "", "clip-path:polygon(0 0,100% 0,50% 100%)"},
+			{120, 80, 60, 60, "#ff7b54", "30px", ""},
+			{135, 60, 30, 30, "#e9f5cd", "15px", ""},
+			{140, 45, 20, 20, "#c1121f", "10px", ""},
+			{150, 35, 5, 10, "#3f8f57", "", ""},
 		}},
 		{title: "Windmill", rects: []rect{
-			{0, 168, 300, 32, "#2c5e40", "", ""},
-			{136, 52, 28, 118, "#e9f5cd", "4px 4px 0 0", ""},
-			{142, 126, 16, 20, "#4a3a26", "2px", ""},
-			{147, 24, 6, 96, "#5a4632", "", "transform:rotate(22.5deg)"},
-			{147, 24, 6, 96, "#5a4632", "", "transform:rotate(67.5deg)"},
-			{147, 24, 6, 96, "#5a4632", "", "transform:rotate(112.5deg)"},
-			{147, 24, 6, 96, "#5a4632", "", "transform:rotate(157.5deg)"},
-			{144, 66, 12, 12, "#0b1310", "6px", ""},
+			{0, 170, 300, 30, "#2c5e40", "", ""},
+			{135, 50, 30, 120, "#e9f5cd", "4px 4px 0 0", ""},
+			{140, 125, 20, 20, "#4a3a26", "2px", ""},
+			{145, 20, 10, 100, "#5a4632", "", "transform:rotate(22.5deg)"},
+			{145, 20, 10, 100, "#5a4632", "", "transform:rotate(67.5deg)"},
+			{145, 20, 10, 100, "#5a4632", "", "transform:rotate(112.5deg)"},
+			{145, 20, 10, 100, "#5a4632", "", "transform:rotate(157.5deg)"},
+			{140, 60, 20, 20, "#0b1310", "10px", ""},
 		}},
 		{title: "Letter home", rects: []rect{
 			{70, 70, 160, 100, "#e9f5cd", "4px", ""},
-			{70, 166, 160, 6, "rgba(0,0,0,.3)", "", ""},
-			{70, 70, 160, 58, "#c6d6c0", "", "clip-path:polygon(0 0,100% 0,50% 100%)"},
-			{196, 78, 22, 26, "#ff7b54", "2px", ""},
-			{86, 138, 80, 6, "#9aa196", "", ""},
-			{86, 150, 50, 6, "#9aa196", "", ""},
-			{200, 140, 18, 18, "#3f8f57", "9px", ""},
+			{70, 165, 160, 5, "rgba(0,0,0,.3)", "", ""},
+			{70, 70, 160, 60, "#c6d6c0", "", "clip-path:polygon(0 0,100% 0,50% 100%)"},
+			{195, 80, 20, 25, "#ff7b54", "2px", ""},
+			{85, 140, 80, 5, "#9aa196", "", ""},
+			{85, 150, 50, 5, "#9aa196", "", ""},
+			{200, 140, 20, 20, "#3f8f57", "10px", ""},
 		}},
 		{title: "Balloon ride", rects: []rect{
 			{0, 170, 300, 30, "#2c5e40", "", ""},
-			{118, 40, 64, 76, "#ff7b54", "50% 50% 45% 45%", ""},
-			{146, 40, 8, 76, "#ffd166", "", ""},
-			{136, 110, 3, 15, "#5a4632", "", "transform:rotate(-18deg)"},
-			{161, 110, 3, 15, "#5a4632", "", "transform:rotate(18deg)"},
-			{138, 124, 24, 18, "#8a5a3c", "3px", ""},
-			{40, 58, 54, 16, "#e9f5cd", "8px", ""},
-			{204, 96, 42, 12, "#e9f5cd", "6px", ""},
+			{120, 40, 60, 75, "#ff7b54", "50% 50% 45% 45%", ""},
+			{145, 40, 10, 75, "#ffd166", "", ""},
+			{135, 110, 5, 15, "#5a4632", "", "transform:rotate(-18deg)"},
+			{160, 110, 5, 15, "#5a4632", "", "transform:rotate(18deg)"},
+			{140, 125, 20, 15, "#8a5a3c", "3px", ""},
+			{40, 60, 55, 15, "#e9f5cd", "8px", ""},
+			{205, 95, 40, 10, "#e9f5cd", "5px", ""},
 		}},
 	}},
 	{n: 4, name: "SCUNTS", bg: "#0f1512", parts: []part{
 		{title: "Boombox", rects: []rect{
-			{0, 176, 300, 24, "#1d3a2f", "", ""},
-			{58, 88, 184, 88, "#9aa196", "8px", ""},
-			{212, 46, 4, 44, "#9aa196", "2px", "transform:rotate(25deg)"},
-			{126, 70, 48, 10, "#7d857a", "5px", ""},
-			{130, 76, 6, 16, "#7d857a", "", ""},
-			{164, 76, 6, 16, "#7d857a", "", ""},
-			{78, 104, 52, 52, "#7d857a", "26px", ""},
-			{90, 116, 28, 28, "#0b1310", "14px", ""},
-			{170, 104, 52, 52, "#7d857a", "26px", ""},
-			{182, 116, 28, 28, "#0b1310", "14px", ""},
-			{136, 100, 28, 34, "#4cc9f0", "3px", ""},
-			{136, 142, 10, 10, "#ffd166", "5px", ""},
-			{154, 142, 10, 10, "#ff7b54", "5px", ""},
+			{0, 175, 300, 25, "#1d3a2f", "", ""},
+			{60, 90, 180, 85, "#9aa196", "8px", ""},
+			{210, 45, 5, 45, "#9aa196", "2px", "transform:rotate(25deg)"},
+			{125, 70, 50, 10, "#7d857a", "5px", ""},
+			{130, 75, 5, 15, "#7d857a", "", ""},
+			{165, 75, 5, 15, "#7d857a", "", ""},
+			{80, 105, 50, 50, "#7d857a", "25px", ""},
+			{90, 115, 30, 30, "#0b1310", "15px", ""},
+			{170, 105, 50, 50, "#7d857a", "25px", ""},
+			{180, 115, 30, 30, "#0b1310", "15px", ""},
+			{135, 100, 30, 35, "#4cc9f0", "3px", ""},
+			{135, 145, 10, 10, "#ffd166", "5px", ""},
+			{155, 145, 10, 10, "#ff7b54", "5px", ""},
 		}},
 		{title: "Trophy", rects: []rect{
-			{0, 176, 300, 24, "#1d3a2f", "", ""},
-			{112, 62, 76, 58, "#ffd166", "6px 6px 40px 40px", ""},
-			{112, 62, 76, 8, "#e9f5cd", "6px 6px 0 0", ""},
-			{90, 72, 28, 30, "", "15px", "border:6px solid #ffd166"},
-			{170, 72, 28, 30, "", "15px", "border:6px solid #ffd166"},
-			{124, 78, 8, 26, "rgba(233,245,205,.45)", "4px", ""},
-			{142, 82, 16, 16, "#ff7b54", "2px", "transform:rotate(45deg)"},
-			{140, 114, 20, 36, "#ffd166", "", ""},
-			{122, 150, 56, 12, "#9aa196", "2px", ""},
-			{110, 162, 80, 14, "#7d857a", "3px", ""},
-			{134, 166, 32, 8, "#0b1310", "2px", ""},
+			{0, 175, 300, 25, "#1d3a2f", "", ""},
+			{110, 60, 80, 60, "#ffd166", "6px 6px 40px 40px", ""},
+			{110, 60, 80, 10, "#e9f5cd", "6px 6px 0 0", ""},
+			{90, 70, 30, 30, "", "15px", "border:5px solid #ffd166"},
+			{170, 70, 30, 30, "", "15px", "border:5px solid #ffd166"},
+			{120, 75, 10, 25, "rgba(233,245,205,.45)", "5px", ""},
+			{140, 80, 20, 20, "#ff7b54", "2px", "transform:rotate(45deg)"},
+			{140, 115, 20, 35, "#ffd166", "", ""},
+			{120, 150, 60, 10, "#9aa196", "2px", ""},
+			{110, 160, 80, 15, "#7d857a", "3px", ""},
+			{135, 165, 30, 5, "#0b1310", "2px", ""},
 		}},
 		{title: "Arcade cabinet", rects: []rect{
-			{96, 180, 108, 8, "rgba(0,0,0,.45)", "", ""},
+			{95, 180, 110, 10, "rgba(0,0,0,.45)", "", ""},
 			{90, 30, 120, 150, "#1a2c22", "6px", ""},
-			{104, 34, 92, 10, "#6ee787", "", ""},
-			{104, 50, 92, 58, "#0b1310", "2px", ""},
-			{112, 58, 76, 42, "#4cc9f0", "2px", ""},
-			{104, 116, 92, 22, "#243c2e", "3px", ""},
-			{118, 120, 16, 16, "#ffd166", "8px", ""},
-			{142, 120, 16, 16, "#ff7b54", "8px", ""},
-			{172, 112, 6, 22, "#e9f5cd", "3px", ""},
-			{168, 106, 14, 8, "#c1121f", "4px", ""},
+			{105, 35, 90, 10, "#6ee787", "", ""},
+			{105, 50, 90, 60, "#0b1310", "2px", ""},
+			{110, 55, 80, 50, "#4cc9f0", "2px", ""},
+			{105, 115, 90, 25, "#243c2e", "3px", ""},
+			{115, 120, 15, 15, "#ffd166", "8px", ""},
+			{140, 120, 15, 15, "#ff7b54", "8px", ""},
+			{170, 115, 5, 20, "#e9f5cd", "3px", ""},
+			{165, 110, 15, 10, "#c1121f", "5px", ""},
 		}},
 		{title: "Rocket", rects: []rect{
-			{96, 182, 108, 8, "#5f6b5c", "", ""},
-			{134, 38, 32, 20, "#ff7b54", "16px 16px 0 0", ""},
-			{134, 56, 32, 80, "#e9f5cd", "4px 4px 4px 4px", ""},
-			{142, 72, 16, 16, "#4cc9f0", "8px", ""},
-			{118, 110, 18, 26, "#ff7b54", "", "clip-path:polygon(100% 0,100% 100%,0 100%)"},
-			{164, 110, 18, 26, "#ff7b54", "", "clip-path:polygon(0 0,100% 100%,0 100%)"},
-			{140, 136, 20, 34, "#ffd166", "6px 6px 12px 12px", ""},
-			{145, 142, 10, 20, "#ff7b54", "4px 4px 8px 8px", ""},
-			{110, 168, 42, 14, "rgba(233,245,205,.45)", "8px", ""},
-			{158, 172, 36, 12, "rgba(233,245,205,.3)", "7px", ""},
+			{95, 180, 110, 10, "#5f6b5c", "", ""},
+			{135, 40, 30, 20, "#ff7b54", "15px 15px 0 0", ""},
+			{135, 55, 30, 80, "#e9f5cd", "4px 4px 4px 4px", ""},
+			{140, 70, 20, 20, "#4cc9f0", "10px", ""},
+			{115, 110, 20, 25, "#ff7b54", "", "clip-path:polygon(100% 0,100% 100%,0 100%)"},
+			{165, 110, 20, 25, "#ff7b54", "", "clip-path:polygon(0 0,100% 100%,0 100%)"},
+			{140, 135, 20, 35, "#ffd166", "6px 6px 12px 12px", ""},
+			{145, 140, 10, 20, "#ff7b54", "4px 4px 8px 8px", ""},
+			{110, 170, 40, 15, "rgba(233,245,205,.45)", "8px", ""},
+			{160, 170, 35, 15, "rgba(233,245,205,.3)", "8px", ""},
 		}},
 		{title: "Robot mascot", rects: []rect{
-			{0, 176, 300, 24, "#1d3a2f", "", ""},
-			{143, 22, 14, 14, "#ff7b54", "7px", ""},
-			{148, 32, 4, 14, "#e9f5cd", "", ""},
-			{110, 44, 80, 62, "#9aa196", "6px", ""},
-			{126, 64, 16, 16, "#4cc9f0", "8px", ""},
-			{158, 64, 16, 16, "#4cc9f0", "8px", ""},
-			{130, 88, 40, 6, "#0b1310", "3px", ""},
-			{104, 110, 92, 60, "#7d857a", "6px", ""},
-			{86, 118, 18, 42, "#9aa196", "4px", ""},
-			{196, 118, 18, 42, "#9aa196", "4px", ""},
-			{128, 124, 44, 20, "#243c2e", "3px", ""},
+			{0, 175, 300, 25, "#1d3a2f", "", ""},
+			{140, 15, 20, 20, "#ff7b54", "10px", ""},
+			{145, 30, 10, 15, "#e9f5cd", "", ""},
+			{110, 45, 80, 60, "#9aa196", "6px", ""},
+			{125, 60, 20, 20, "#4cc9f0", "10px", ""},
+			{155, 60, 20, 20, "#4cc9f0", "10px", ""},
+			{130, 90, 40, 5, "#0b1310", "3px", ""},
+			{105, 110, 90, 60, "#7d857a", "6px", ""},
+			{85, 120, 20, 40, "#9aa196", "4px", ""},
+			{195, 120, 20, 40, "#9aa196", "4px", ""},
+			{125, 125, 50, 20, "#243c2e", "3px", ""},
 		}},
 	}},
 	{n: 5, name: "AFTER DARK", bg: "#0b1310", parts: []part{
@@ -250,183 +250,183 @@ var levels = []level{
 		// real bench rather than a plank on two posts: back rail, two uprights,
 		// a seat slab and two legs.
 		{title: "The quad at golden hour", rects: []rect{
-			{0, 0, 300, 96, "#2a3d4f", "", ""},
-			{0, 96, 300, 10, "#d99a5b", "", ""},
-			{0, 106, 300, 94, "#2c5e40", "", ""},
-			{200, 36, 44, 44, "#ffd98a", "22px", "box-shadow:0 0 0 10px #50595a"},
-			{0, 116, 300, 20, "#8a5a3c", "", ""},
-			{50, 138, 10, 38, "#4a3a26", "", ""},
-			{30, 100, 48, 46, "#235838", "24px", ""},
-			{188, 138, 64, 5, "#8a5a3c", "", ""},
-			{191, 140, 5, 14, "#6b4228", "", ""},
-			{246, 140, 5, 14, "#6b4228", "", ""},
-			{184, 152, 72, 7, "#8a5a3c", "", ""},
-			{189, 159, 7, 13, "#5f6b5c", "", ""},
-			{244, 159, 7, 13, "#5f6b5c", "", ""},
-			{86, 152, 86, 28, "#4cc9f0", "50%", ""},
-			{96, 158, 30, 6, "#8bdbe2", "3px", ""},
-			{14, 182, 36, 15, "#7d857a", "12px 12px 4px 4px", ""},
+			{0, 0, 300, 95, "#2a3d4f", "", ""},
+			{0, 95, 300, 10, "#d99a5b", "", ""},
+			{0, 105, 300, 95, "#2c5e40", "", ""},
+			{200, 35, 40, 40, "#ffd98a", "20px", "box-shadow:0 0 0 10px #50595a"},
+			{0, 115, 300, 20, "#8a5a3c", "", ""},
+			{50, 135, 10, 40, "#4a3a26", "", ""},
+			{30, 100, 50, 45, "#235838", "25px", ""},
+			{190, 135, 60, 5, "#8a5a3c", "", ""},
+			{195, 140, 5, 15, "#6b4228", "", ""},
+			{240, 140, 5, 15, "#6b4228", "", ""},
+			{185, 155, 70, 5, "#8a5a3c", "", ""},
+			{190, 160, 5, 15, "#5f6b5c", "", ""},
+			{245, 160, 5, 15, "#5f6b5c", "", ""},
+			{85, 150, 90, 30, "#4cc9f0", "50%", ""},
+			{95, 155, 30, 5, "#8bdbe2", "3px", ""},
+			{15, 180, 35, 15, "#7d857a", "12px 12px 4px 4px", ""},
 		}},
 		{title: "Night skyline", rects: []rect{
 			{0, 150, 300, 50, "#101a15", "", ""},
-			{236, 28, 34, 34, "#e9f5cd", "17px", ""},
-			{20, 80, 54, 70, "#182633", "", ""},
-			{84, 52, 62, 98, "#14212c", "", ""},
-			{156, 96, 54, 54, "#182633", "", ""},
-			{220, 70, 52, 80, "#14212c", "", ""},
-			{32, 94, 10, 14, "#ffd166", "", ""},
-			{52, 94, 10, 14, "rgba(255,209,102,.45)", "", ""},
-			{98, 70, 10, 14, "#ffd166", "", ""},
-			{120, 70, 10, 14, "rgba(255,209,102,.5)", "", ""},
-			{168, 112, 10, 14, "#ffd166", "", ""},
-			{236, 88, 10, 14, "#ffd166", "", ""},
+			{235, 30, 30, 30, "#e9f5cd", "15px", ""},
+			{20, 80, 55, 70, "#182633", "", ""},
+			{85, 50, 60, 100, "#14212c", "", ""},
+			{155, 95, 55, 55, "#182633", "", ""},
+			{220, 70, 50, 80, "#14212c", "", ""},
+			{30, 95, 10, 15, "#ffd166", "", ""},
+			{50, 95, 10, 15, "rgba(255,209,102,.45)", "", ""},
+			{100, 70, 10, 15, "#ffd166", "", ""},
+			{120, 70, 10, 15, "rgba(255,209,102,.5)", "", ""},
+			{170, 110, 10, 15, "#ffd166", "", ""},
+			{235, 90, 10, 15, "#ffd166", "", ""},
 		}},
 		// The wheel is one circle centred on (150,100) with an outer radius of
-		// 66, and everything else is placed off that centre. The rim is 122x122
-		// of content plus a 5px border, which is 132 across the border box, so
-		// border-radius:66px makes it an exact circle. Get that arithmetic wrong
-		// and the rim drifts off the hub — and if it drifts past y=200 the page
-		// grows a scrollbar, which the renderer screenshots into the target.
+		// 65, and everything else is placed off that centre. The rim is 120x120
+		// of content plus a 5px border, which is 130 across the border box, so
+		// border-radius:65px makes it an exact circle. Get that arithmetic wrong
+		// and the rim drifts off the hub.
 		//
 		// Each spoke is a full diameter rotated about its own centre, so four
-		// rects give eight evenly spaced arms. Their half-length is 61, the rim's
-		// inner radius, so they meet the ring exactly.
+		// rects give eight evenly spaced arms. Their half-length is 60, the rim's
+		// inner radius, so they meet the ring. They are 5px wide on the 5px
+		// grid, so they sit 2.5px right of true centre; the hub hides it.
 		{title: "Ferris wheel", given: 4, rects: []rect{
-			{0, 168, 300, 32, "#1d3a2f", "", ""},
-			{146, 100, 8, 96, "#5f6b5c", "", "transform:rotate(-16deg);transform-origin:50% 0"},
-			{146, 100, 8, 96, "#5f6b5c", "", "transform:rotate(16deg);transform-origin:50% 0"},
-			{84, 34, 122, 122, "", "66px", "border:5px solid #6ee787"},
-			{148, 39, 4, 122, "#3f8f57", "", ""},
-			{148, 39, 4, 122, "#3f8f57", "", "transform:rotate(90deg)"},
-			{148, 39, 4, 122, "#3f8f57", "", "transform:rotate(45deg)"},
-			{148, 39, 4, 122, "#3f8f57", "", "transform:rotate(-45deg)"},
-			{142, 92, 16, 16, "#e9f5cd", "8px", ""},
-			{139, 26, 22, 16, "#ffd166", "3px", ""},
-			{205, 92, 22, 16, "#ff7b54", "3px", ""},
-			{139, 158, 22, 16, "#c792ea", "3px", ""},
-			{73, 92, 22, 16, "#4cc9f0", "3px", ""},
+			{0, 170, 300, 30, "#1d3a2f", "", ""},
+			{145, 100, 10, 100, "#5f6b5c", "", "transform:rotate(-16deg);transform-origin:50% 0"},
+			{145, 100, 10, 100, "#5f6b5c", "", "transform:rotate(16deg);transform-origin:50% 0"},
+			{85, 35, 120, 120, "", "65px", "border:5px solid #6ee787"},
+			{150, 40, 5, 120, "#3f8f57", "", ""},
+			{150, 40, 5, 120, "#3f8f57", "", "transform:rotate(90deg)"},
+			{150, 40, 5, 120, "#3f8f57", "", "transform:rotate(45deg)"},
+			{150, 40, 5, 120, "#3f8f57", "", "transform:rotate(-45deg)"},
+			{140, 90, 20, 20, "#e9f5cd", "10px", ""},
+			{135, 25, 30, 20, "#ffd166", "3px", ""},
+			{200, 90, 30, 20, "#ff7b54", "3px", ""},
+			{135, 155, 30, 20, "#c792ea", "3px", ""},
+			{70, 90, 30, 20, "#4cc9f0", "3px", ""},
 		}},
 		{title: "Terminal", rects: []rect{
-			{36, 32, 228, 136, "#0d1712", "4px", "box-shadow:0 8px 0 rgba(0,0,0,.35)"},
-			{36, 32, 228, 18, "#1a2c22", "4px 4px 0 0", ""},
-			{48, 37, 8, 8, "#ff7b54", "4px", ""},
-			{62, 37, 8, 8, "#ffd166", "4px", ""},
-			{76, 37, 8, 8, "#6ee787", "4px", ""},
-			{52, 64, 14, 8, "#3f8f57", "", ""},
-			{72, 64, 110, 8, "#6ee787", "", ""},
-			{52, 82, 14, 8, "#3f8f57", "", ""},
-			{72, 82, 74, 8, "#c6d6c0", "", ""},
-			{52, 100, 14, 8, "#3f8f57", "", ""},
-			{72, 100, 138, 8, "#4cc9f0", "", ""},
-			{52, 118, 14, 8, "#3f8f57", "", ""},
-			{72, 118, 10, 8, "#e9f5cd", "0", ""},
+			{35, 30, 230, 140, "#0d1712", "4px", "box-shadow:0 8px 0 rgba(0,0,0,.35)"},
+			{35, 30, 230, 20, "#1a2c22", "4px 4px 0 0", ""},
+			{45, 35, 10, 10, "#ff7b54", "5px", ""},
+			{60, 35, 10, 10, "#ffd166", "5px", ""},
+			{75, 35, 10, 10, "#6ee787", "5px", ""},
+			{50, 60, 15, 10, "#3f8f57", "", ""},
+			{70, 60, 110, 10, "#6ee787", "", ""},
+			{50, 80, 15, 10, "#3f8f57", "", ""},
+			{70, 80, 75, 10, "#c6d6c0", "", ""},
+			{50, 100, 15, 10, "#3f8f57", "", ""},
+			{70, 100, 140, 10, "#4cc9f0", "", ""},
+			{50, 120, 15, 10, "#3f8f57", "", ""},
+			{70, 120, 10, 10, "#e9f5cd", "0", ""},
 		}},
 		{title: "Boss", rects: []rect{
-			{46, 44, 208, 112, "#6ee787", "8px", ""},
-			{54, 52, 192, 96, "#0b1310", "5px", ""},
-			{76, 72, 44, 44, "#ff7b54", "22px", ""},
-			{180, 72, 44, 44, "#ff7b54", "22px", ""},
-			{88, 84, 18, 18, "#0b1310", "9px", ""},
-			{192, 84, 18, 18, "#0b1310", "9px", ""},
-			{70, 60, 44, 8, "#e9f5cd", "4px", "transform:rotate(-12deg)"},
-			{186, 60, 44, 8, "#e9f5cd", "4px", "transform:rotate(12deg)"},
-			{96, 124, 108, 16, "#e9f5cd", "4px", ""},
-			{116, 124, 10, 16, "#0b1310", "", ""},
-			{146, 124, 10, 16, "#0b1310", "", ""},
-			{176, 124, 10, 16, "#0b1310", "", ""},
+			{45, 45, 210, 110, "#6ee787", "8px", ""},
+			{55, 55, 190, 90, "#0b1310", "5px", ""},
+			{80, 75, 40, 40, "#ff7b54", "20px", ""},
+			{180, 75, 40, 40, "#ff7b54", "20px", ""},
+			{90, 85, 20, 20, "#0b1310", "10px", ""},
+			{190, 85, 20, 20, "#0b1310", "10px", ""},
+			{75, 60, 50, 10, "#e9f5cd", "5px", "transform:rotate(-12deg)"},
+			{175, 60, 50, 10, "#e9f5cd", "5px", "transform:rotate(12deg)"},
+			{95, 120, 110, 20, "#e9f5cd", "4px", ""},
+			{115, 120, 10, 20, "#0b1310", "", ""},
+			{145, 120, 10, 20, "#0b1310", "", ""},
+			{175, 120, 10, 20, "#0b1310", "", ""},
 			{0, 180, 300, 20, "#093325", "", ""},
 		}},
 	}},
 	{n: 6, name: "THE LANDSCAPE", bg: "#233b52", parts: []part{
 		{title: "Mount Royal at dawn", rects: []rect{
-			{0, 0, 300, 64, "#3c4a5e", "", ""},
-			{0, 64, 300, 36, "#6b5560", "", ""},
+			{0, 0, 300, 65, "#3c4a5e", "", ""},
+			{0, 65, 300, 35, "#6b5560", "", ""},
 			{0, 100, 300, 20, "#a3695a", "", ""},
-			{130, 72, 40, 40, "#ffd98a", "20px", "box-shadow:0 0 0 9px #836a67"},
-			{16, 38, 150, 92, "#2c3e4f", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
-			{132, 52, 140, 78, "#26364a", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
-			{74, 40, 36, 26, "#e9f5cd", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
-			{0, 120, 300, 28, "#1d3a2f", "", ""},
-			{0, 146, 300, 36, "#2f6f8f", "", ""},
-			{40, 152, 120, 4, "#8fb2ae", "", ""},
-			{92, 164, 86, 3, "#5f93a0", "", ""},
+			{130, 70, 40, 40, "#ffd98a", "20px", "box-shadow:0 0 0 10px #836a67"},
+			{15, 40, 150, 90, "#2c3e4f", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
+			{130, 50, 140, 80, "#26364a", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
+			{75, 40, 30, 20, "#e9f5cd", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
+			{0, 120, 300, 30, "#1d3a2f", "", ""},
+			{0, 145, 300, 35, "#2f6f8f", "", ""},
+			{40, 155, 120, 5, "#8fb2ae", "", ""},
+			{90, 165, 85, 5, "#5f93a0", "", ""},
 			{0, 180, 300, 20, "#2c5e40", "", ""},
-			{40, 156, 6, 26, "#4a3a26", "", ""},
-			{28, 128, 30, 32, "#235838", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
-			{252, 158, 6, 24, "#4a3a26", "", ""},
-			{242, 134, 26, 28, "#235838", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
+			{40, 155, 5, 25, "#4a3a26", "", ""},
+			{30, 130, 25, 30, "#235838", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
+			{250, 155, 5, 25, "#4a3a26", "", ""},
+			{240, 135, 25, 25, "#235838", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
 		}},
 		{title: "Lakeside dusk", rects: []rect{
 			{0, 0, 300, 70, "#2a3d4f", "", ""},
-			{0, 70, 300, 26, "#7a5a68", "", ""},
-			{0, 96, 300, 18, "#c2705a", "", ""},
-			{196, 80, 34, 34, "#ffd98a", "17px", ""},
-			{0, 112, 300, 12, "#16261f", "", ""},
-			{0, 122, 300, 58, "#245a72", "", ""},
-			{0, 132, 300, 4, "#4a6b6a", "", ""},
-			{150, 132, 120, 4, "#a3906a", "", ""},
-			{0, 178, 300, 22, "#1d3a2f", "", ""},
-			{40, 140, 110, 8, "#5a4632", "", ""},
-			{40, 148, 8, 32, "#4a3a26", "", ""},
-			{142, 148, 8, 32, "#4a3a26", "", ""},
-			{180, 150, 60, 12, "#8a5a3c", "0 0 14px 14px", ""},
-			{196, 144, 8, 8, "#e9f5cd", "4px", ""},
-			{214, 144, 26, 4, "#5a4632", "", "transform:rotate(-8deg)"},
-			{60, 60, 44, 12, "#8fa3ae", "6px", ""},
+			{0, 70, 300, 25, "#7a5a68", "", ""},
+			{0, 95, 300, 20, "#c2705a", "", ""},
+			{195, 80, 30, 30, "#ffd98a", "15px", ""},
+			{0, 110, 300, 15, "#16261f", "", ""},
+			{0, 120, 300, 60, "#245a72", "", ""},
+			{0, 130, 300, 5, "#4a6b6a", "", ""},
+			{150, 130, 120, 5, "#a3906a", "", ""},
+			{0, 180, 300, 20, "#1d3a2f", "", ""},
+			{40, 140, 110, 10, "#5a4632", "", ""},
+			{40, 150, 10, 30, "#4a3a26", "", ""},
+			{140, 150, 10, 30, "#4a3a26", "", ""},
+			{180, 150, 60, 15, "#8a5a3c", "0 0 15px 15px", ""},
+			{195, 140, 10, 10, "#e9f5cd", "5px", ""},
+			{215, 145, 25, 5, "#5a4632", "", "transform:rotate(-8deg)"},
+			{60, 60, 45, 10, "#8fa3ae", "5px", ""},
 		}},
 		{title: "Winter campus", rects: []rect{
 			{0, 0, 300, 110, "#2c4763", "", ""},
-			{240, 24, 30, 30, "#e9f5cd", "15px", ""},
+			{240, 25, 30, 30, "#e9f5cd", "15px", ""},
 			{0, 110, 300, 90, "#dfe9ea", "", ""},
-			{24, 58, 64, 54, "#1e2f3f", "3px 3px 0 0", ""},
-			{24, 54, 64, 8, "#f4fbfb", "4px 4px 0 0", ""},
-			{36, 70, 14, 16, "#ffd166", "", ""},
-			{104, 40, 80, 72, "#182633", "4px 4px 0 0", ""},
-			{104, 36, 80, 8, "#f4fbfb", "4px 4px 0 0", ""},
-			{118, 52, 18, 20, "#ffd166", "", ""},
-			{148, 52, 18, 20, "#6b6347", "", ""},
-			{200, 66, 58, 46, "#1e2f3f", "3px 3px 0 0", ""},
-			{200, 62, 58, 8, "#f4fbfb", "4px 4px 0 0", ""},
-			{212, 78, 16, 18, "#ffd166", "", ""},
-			{92, 120, 6, 42, "#3f2e1e", "", ""},
-			{80, 96, 30, 34, "#1f5138", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
-			{0, 168, 300, 6, "#f1f5f6", "", ""},
+			{25, 60, 65, 50, "#1e2f3f", "3px 3px 0 0", ""},
+			{25, 55, 65, 10, "#f4fbfb", "4px 4px 0 0", ""},
+			{35, 70, 15, 15, "#ffd166", "", ""},
+			{105, 40, 80, 70, "#182633", "4px 4px 0 0", ""},
+			{105, 35, 80, 10, "#f4fbfb", "4px 4px 0 0", ""},
+			{120, 50, 20, 20, "#ffd166", "", ""},
+			{150, 50, 20, 20, "#6b6347", "", ""},
+			{200, 65, 60, 45, "#1e2f3f", "3px 3px 0 0", ""},
+			{200, 60, 60, 10, "#f4fbfb", "4px 4px 0 0", ""},
+			{210, 75, 15, 20, "#ffd166", "", ""},
+			{90, 120, 5, 40, "#3f2e1e", "", ""},
+			{80, 95, 25, 35, "#1f5138", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
+			{0, 165, 300, 5, "#f1f5f6", "", ""},
 		}},
 		{title: "River valley", rects: []rect{
-			{0, 0, 300, 64, "#4a6c8c", "", ""},
-			{36, 16, 40, 40, "#ffd98a", "20px", ""},
-			{0, 64, 160, 52, "#3f6b4a", "", "clip-path:polygon(40% 0,100% 100%,0 100%)"},
-			{140, 60, 160, 58, "#356043", "", "clip-path:polygon(55% 0,100% 100%,0 100%)"},
+			{0, 0, 300, 65, "#4a6c8c", "", ""},
+			{35, 15, 40, 40, "#ffd98a", "20px", ""},
+			{0, 65, 160, 50, "#3f6b4a", "", "clip-path:polygon(40% 0,100% 100%,0 100%)"},
+			{140, 60, 160, 60, "#356043", "", "clip-path:polygon(55% 0,100% 100%,0 100%)"},
 			{0, 110, 300, 90, "#2f6f8f", "", "clip-path:polygon(38% 0,60% 0,100% 100%,0 100%)"},
 			{0, 110, 300, 90, "#2c5e40", "", "clip-path:polygon(0 0,38% 0,0 100%)"},
 			{0, 110, 300, 90, "#357d43", "", "clip-path:polygon(60% 0,100% 0,100% 100%)"},
-			{104, 132, 26, 3, "#8fb0b4", "", ""},
-			{92, 158, 44, 3, "#6791a3", "", ""},
-			{30, 120, 6, 20, "#4a3a26", "", ""},
-			{20, 102, 26, 24, "#235838", "13px", ""},
-			{236, 124, 6, 22, "#4a3a26", "", ""},
-			{226, 104, 26, 26, "#235838", "13px", ""},
-			{186, 80, 44, 10, "#9aa196", "2px", ""},
-			{196, 90, 6, 14, "#5f6b5c", "", ""},
-			{214, 90, 6, 14, "#5f6b5c", "", ""},
+			{105, 130, 25, 5, "#8fb0b4", "", ""},
+			{90, 155, 45, 5, "#6791a3", "", ""},
+			{30, 120, 5, 20, "#4a3a26", "", ""},
+			{20, 100, 25, 25, "#235838", "13px", ""},
+			{235, 125, 5, 20, "#4a3a26", "", ""},
+			{225, 105, 25, 25, "#235838", "13px", ""},
+			{185, 80, 45, 10, "#9aa196", "2px", ""},
+			{195, 90, 5, 15, "#5f6b5c", "", ""},
+			{215, 90, 5, 15, "#5f6b5c", "", ""},
 		}},
 		{title: "Desert highway", rects: []rect{
-			{0, 0, 300, 112, "#e2955f", "", ""},
-			{0, 0, 300, 44, "#c2705a", "", ""},
-			{124, 52, 52, 52, "#ffe0a3", "26px", "box-shadow:0 0 0 12px #e8a46d"},
-			{0, 88, 110, 28, "#8a5a4c", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
-			{190, 84, 110, 32, "#7d5044", "", "clip-path:polygon(45% 0,100% 100%,0 100%)"},
-			{0, 112, 300, 88, "#caa06e", "", ""},
-			{0, 112, 300, 88, "#3a3a3e", "", "clip-path:polygon(44% 0,56% 0,84% 100%,16% 100%)"},
-			{148, 118, 4, 14, "#f4fbfb", "", ""},
-			{147, 142, 6, 18, "#f4fbfb", "", ""},
-			{146, 172, 8, 24, "#f4fbfb", "", ""},
-			{56, 120, 10, 44, "#2f6b45", "6px", ""},
-			{46, 132, 10, 20, "#2f6b45", "5px", ""},
-			{240, 126, 12, 50, "#2f6b45", "6px", ""},
-			{228, 140, 12, 22, "#2f6b45", "6px", ""},
-			{96, 104, 4, 26, "#5f6b5c", "", ""},
-			{88, 96, 20, 10, "#9aa196", "2px", ""},
+			{0, 0, 300, 110, "#e2955f", "", ""},
+			{0, 0, 300, 45, "#c2705a", "", ""},
+			{125, 50, 50, 50, "#ffe0a3", "25px", "box-shadow:0 0 0 10px #e8a46d"},
+			{0, 90, 110, 25, "#8a5a4c", "", "clip-path:polygon(50% 0,100% 100%,0 100%)"},
+			{190, 85, 110, 30, "#7d5044", "", "clip-path:polygon(45% 0,100% 100%,0 100%)"},
+			{0, 110, 300, 90, "#caa06e", "", ""},
+			{0, 110, 300, 90, "#3a3a3e", "", "clip-path:polygon(44% 0,56% 0,84% 100%,16% 100%)"},
+			{145, 115, 10, 15, "#f4fbfb", "", ""},
+			{145, 140, 10, 20, "#f4fbfb", "", ""},
+			{145, 170, 10, 25, "#f4fbfb", "", ""},
+			{55, 120, 10, 45, "#2f6b45", "5px", ""},
+			{45, 130, 10, 20, "#2f6b45", "5px", ""},
+			{240, 125, 10, 50, "#2f6b45", "5px", ""},
+			{230, 140, 10, 20, "#2f6b45", "5px", ""},
+			{95, 105, 5, 25, "#5f6b5c", "", ""},
+			{85, 95, 25, 10, "#9aa196", "2px", ""},
 		}},
 	}},
 
@@ -485,16 +485,16 @@ var levels = []level{
   .ground { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #24422f }
   .terrace {
     position: absolute;
-    left: 10px; top: 60px;
-    width: 280px; height: 110px;
+    left: 5px; top: 60px;
+    width: 290px; height: 110px;
     display: flex;
     justify-content: space-between;
   }
-  .terrace > div { width: 48px; height: 110px; background: #c2705a }
+  .terrace > div { width: 50px; height: 110px; background: #c2705a }
   .terrace > div:nth-child(even) { background: #7a8fa6 }
-  .roof { width: 48px; height: 10px; background: #2a1f1a }
-  .win { width: 22px; height: 20px; margin: 16px auto 0; background: #ffd166 }
-  .door { width: 18px; height: 34px; margin: 18px auto 0; background: #3f2e1e }
+  .roof { width: 50px; height: 10px; background: #2a1f1a }
+  .win { width: 20px; height: 20px; margin: 15px auto 0; background: #ffd166 }
+  .door { width: 20px; height: 35px; margin: 20px auto 0; background: #3f2e1e }
 </style>
 
 <div class="ground"></div>
@@ -507,7 +507,7 @@ var levels = []level{
   <div><div class="roof"></div><div class="win"></div><div class="door"></div></div>
 </div>`, scaffold: `<style>
   .ground { position: absolute; left: 0; bottom: 0; width: 300px; height: 30px; background: #24422f }
-  .house { position: absolute; left: 10px; bottom: 30px; width: 48px; height: 110px; background: #c2705a }
+  .house { position: absolute; left: 5px; bottom: 30px; width: 50px; height: 110px; background: #c2705a }
 </style>
 
 <div class="ground"></div>
@@ -516,20 +516,20 @@ var levels = []level{
 <!-- the rest is yours to build. -->`},
 
 		{title: "Crate stack", target: `<style>
-  .pallet { position: absolute; left: 100px; top: 176px; width: 100px; height: 24px; background: #4a3a26 }
-  .rope { position: absolute; left: 148px; top: 0; width: 4px; height: 14px; background: #7d857a }
-  .hook { position: absolute; left: 138px; top: 14px; width: 24px; height: 10px; border-radius: 5px; background: #9aa196 }
+  .pallet { position: absolute; left: 100px; top: 175px; width: 100px; height: 25px; background: #4a3a26 }
+  .rope { position: absolute; left: 145px; top: 0; width: 10px; height: 15px; background: #7d857a }
+  .hook { position: absolute; left: 135px; top: 15px; width: 30px; height: 10px; border-radius: 5px; background: #9aa196 }
   .stack {
     position: absolute;
-    left: 100px; top: 24px;
-    width: 100px; height: 152px;
+    left: 100px; top: 30px;
+    width: 100px; height: 145px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
   }
-  .stack div { width: 60px; height: 22px; background: #8a5a3c }
-  .stack div:nth-child(odd) { width: 84px; background: #c2705a }
+  .stack div { width: 60px; height: 20px; background: #8a5a3c }
+  .stack div:nth-child(odd) { width: 80px; background: #c2705a }
   .stack div:nth-child(3n) { background: #ffd166 }
 </style>
 
@@ -545,8 +545,8 @@ var levels = []level{
   <div></div>
   <div></div>
 </div>`, scaffold: `<style>
-  .pallet { position: absolute; left: 100px; bottom: 0; width: 100px; height: 24px; background: #4a3a26 }
-  .hook { position: absolute; left: 138px; bottom: 176px; width: 24px; height: 10px; border-radius: 5px; background: #9aa196 }
+  .pallet { position: absolute; left: 100px; bottom: 0; width: 100px; height: 25px; background: #4a3a26 }
+  .hook { position: absolute; left: 135px; bottom: 175px; width: 30px; height: 10px; border-radius: 5px; background: #9aa196 }
 </style>
 
 <div class="pallet"></div>
@@ -555,19 +555,19 @@ var levels = []level{
 <!-- the rest is yours to build. -->`},
 
 		{title: "The crowd", target: `<style>
-  .stand { position: absolute; left: 0; top: 146px; width: 300px; height: 24px; background: #8a5a3c }
+  .stand { position: absolute; left: 0; top: 145px; width: 300px; height: 25px; background: #8a5a3c }
   .pitch { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #2c5e40 }
   .crowd {
     position: absolute;
     left: 15px; top: 60px;
-    width: 270px; height: 86px;
+    width: 270px; height: 85px;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
   }
-  .fan { width: 30px; height: 86px }
+  .fan { width: 30px; height: 85px }
   .fan .head { width: 20px; height: 20px; border-radius: 50%; margin: 0 auto; background: #e0b48c }
-  .fan .body { width: 30px; height: 60px; margin-top: 6px; border-radius: 6px 6px 0 0; background: #6ee787 }
+  .fan .body { width: 30px; height: 60px; margin-top: 5px; border-radius: 6px 6px 0 0; background: #6ee787 }
   .crowd .fan:nth-child(3n + 2) .body { background: #4cc9f0 }
   .crowd .fan:nth-child(3n) .body { background: #ff7b54 }
 </style>
@@ -593,19 +593,19 @@ var levels = []level{
 
 		{title: "Vending machine", target: `<style>
   .cabinet { position: absolute; left: 60px; top: 20px; width: 180px; height: 170px; border-radius: 6px; background: #24384d }
-  .keypad { position: absolute; left: 184px; top: 40px; width: 44px; height: 88px; background: #16283a }
-  .coin { position: absolute; left: 196px; top: 140px; width: 20px; height: 6px; background: #ffd166 }
-  .tray { position: absolute; left: 76px; top: 166px; width: 100px; height: 14px; background: #16283a }
+  .keypad { position: absolute; left: 185px; top: 40px; width: 40px; height: 90px; background: #16283a }
+  .coin { position: absolute; left: 195px; top: 140px; width: 20px; height: 5px; background: #ffd166 }
+  .tray { position: absolute; left: 75px; top: 165px; width: 100px; height: 15px; background: #16283a }
   .shelf {
     position: absolute;
-    left: 72px; top: 34px;
+    left: 75px; top: 35px;
     width: 100px; height: 120px;
     display: flex;
     flex-wrap: wrap;
     align-content: flex-start;
-    gap: 8px;
+    gap: 5px;
   }
-  .shelf div { width: 28px; height: 22px; background: #ffd166 }
+  .shelf div { width: 30px; height: 20px; background: #ffd166 }
   .shelf div:nth-child(even) { background: #ff7b54 }
 </style>
 
@@ -629,9 +629,9 @@ var levels = []level{
 
 		{title: "Picket fence", target: `<style>
   .grass { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #24422f }
-  .rail { position: absolute; left: 0; width: 300px; height: 8px; background: #8a5a3c }
-  .high { top: 112px }
-  .low { top: 146px }
+  .rail { position: absolute; left: 0; width: 300px; height: 10px; background: #8a5a3c }
+  .high { top: 110px }
+  .low { top: 145px }
   .fence {
     position: absolute;
     left: 0; top: 90px;
@@ -639,10 +639,10 @@ var levels = []level{
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    gap: 6px;
+    gap: 10px;
   }
-  .fence div { width: 14px; height: 70px; border-radius: 7px 7px 0 0; background: #e9f5cd }
-  .fence div:nth-child(even) { height: 58px }
+  .fence div { width: 10px; height: 70px; border-radius: 5px 5px 0 0; background: #e9f5cd }
+  .fence div:nth-child(even) { height: 60px }
   .fence div:nth-child(5n) { background: #ffd166 }
 </style>
 
@@ -705,43 +705,41 @@ var levels = []level{
   .lot { position: absolute; left: 0; top: 20px; width: 300px; height: 160px; background: #2b3440 }
   .lines {
     position: absolute;
-    left: 0; width: 300px; height: 56px;
+    left: 5px; height: 55px;
     display: flex;
-    justify-content: center;
-    gap: 34px;
+    gap: 30px;
   }
-  .lines div { width: 2px; background: #e9f5cd }
-  .north { top: 24px }
-  .south { top: 120px }
+  .lines div { width: 5px; background: #e9f5cd }
+  .lines.north { top: 25px }
+  .lines.south { top: 120px }
   .row {
     position: absolute;
-    left: 0; width: 300px; height: 56px;
+    left: 15px;
     display: flex;
-    justify-content: center;
-    gap: 12px;
+    gap: 15px;
   }
-  .row.north { align-items: flex-start; padding-top: 4px; box-sizing: border-box }
-  .row.south { align-items: flex-end; padding-bottom: 4px; box-sizing: border-box }
+  .row.north { top: 30px }
+  .row.south { top: 130px }
   .car {
-    width: 24px; height: 40px;
+    width: 20px; height: 40px;
     border-radius: 4px;
     background: #4cc9f0;
     display: flex;
     justify-content: center;
     align-items: flex-start;
   }
-  .car div { width: 16px; height: 8px; margin-top: 6px; background: #16283a }
+  .car div { width: 10px; height: 10px; margin-top: 5px; background: #16283a }
   .south .car { align-items: flex-end }
-  .south .car div { margin-bottom: 6px }
+  .south .car div { margin-bottom: 5px }
   .car:nth-child(even) { background: #ff7b54 }
   .car:nth-child(3n) { background: #ffd166 }
   .dashes {
     position: absolute;
-    left: 0; top: 97px;
-    width: 300px; height: 6px;
+    left: 0; top: 95px;
+    width: 300px; height: 5px;
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 15px;
   }
   .dashes div { width: 20px; background: #ffd166 }
 </style>
@@ -789,39 +787,39 @@ var levels = []level{
 		{title: "Garden beds", target: `<style>
   .clouds {
     position: absolute;
-    left: 30px; top: 14px;
-    width: 240px; height: 24px;
+    left: 15px; top: 10px;
+    width: 270px; height: 30px;
     display: flex;
     justify-content: space-between;
   }
   .cloud { display: flex; align-items: flex-end }
-  .cloud div { width: 16px; height: 16px; border-radius: 50%; background: #e9f5cd }
-  .cloud div:nth-child(2) { width: 24px; height: 24px }
+  .cloud div { width: 20px; height: 20px; border-radius: 50%; background: #e9f5cd }
+  .cloud div:nth-child(2) { width: 30px; height: 30px }
   .soil { position: absolute; left: 0; top: 150px; width: 300px; height: 50px; background: #3f2e1e }
   .flowers {
     position: absolute;
-    left: 10px; top: 60px;
-    width: 280px; height: 90px;
+    left: 5px; top: 60px;
+    height: 90px;
     display: flex;
-    justify-content: space-between;
     align-items: flex-end;
+    gap: 20px;
   }
   .flower { display: flex; flex-direction: column; align-items: center }
-  .head { width: 16px; height: 16px; border-radius: 50%; background: #f48fb1 }
-  .stem { width: 4px; height: 60px; background: #3f8f57 }
+  .head { width: 15px; height: 15px; border-radius: 50%; background: #f48fb1 }
+  .stem { width: 5px; height: 60px; background: #3f8f57 }
   .flower:nth-child(even) .head { background: #ffd166 }
   .flower:nth-child(even) .stem { height: 40px }
   .flower:nth-child(3n) .head { background: #c792ea }
   .flower:nth-child(3n) .stem { height: 50px }
   .tufts {
     position: absolute;
-    left: 0; top: 144px;
-    width: 300px; height: 6px;
+    left: 0; top: 145px;
+    width: 300px; height: 5px;
     display: flex;
     justify-content: center;
-    gap: 4px;
+    gap: 5px;
   }
-  .tufts div { width: 8px; border-radius: 4px 4px 0 0; background: #3f8f57 }
+  .tufts div { width: 10px; border-radius: 5px 5px 0 0; background: #3f8f57 }
 </style>
 
 <div class="clouds">
@@ -848,8 +846,7 @@ var levels = []level{
   <div></div><div></div><div></div><div></div><div></div>
   <div></div><div></div><div></div><div></div><div></div>
   <div></div><div></div><div></div><div></div><div></div>
-  <div></div><div></div><div></div><div></div><div></div>
-  <div></div><div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div>
 </div>`, scaffold: `<style>
   .soil { position: absolute; left: 0; bottom: 0; width: 300px; height: 50px; background: #3f2e1e }
 </style>
@@ -859,23 +856,23 @@ var levels = []level{
 <!-- the rest is yours to build. -->`},
 
 		{title: "Keyboard", target: `<style>
-  .case { position: absolute; left: 10px; top: 40px; width: 280px; height: 108px; border-radius: 8px; background: #2b3440 }
+  .case { position: absolute; left: 10px; top: 40px; width: 275px; height: 95px; border-radius: 8px; background: #2b3440 }
   .keys {
     position: absolute;
-    left: 20px;
-    width: 260px; height: 18px;
+    left: 25px;
+    width: 245px; height: 15px;
     display: flex;
-    gap: 4px;
+    gap: 5px;
   }
-  .keys div { width: 18px; background: #e9f5cd }
-  .r1 { top: 52px }
-  .r2 { top: 74px }
-  .r3 { top: 96px }
-  .r4 { top: 118px }
-  .r1 div:first-child { background: #ff7b54 }
+  .keys div { width: 15px; background: #e9f5cd }
+  .r1 { top: 50px }
+  .r2 { top: 70px }
+  .r3 { top: 90px }
+  .r4 { top: 110px }
+  .r1 div:first-child { width: 25px; background: #ff7b54 }
   .r1 div:nth-child(4n + 2) { background: #7a8fa6 }
-  .r2 div:last-child { width: 40px; background: #ffd166 }
-  .r3 div:first-child, .r3 div:last-child { width: 29px; background: #7a8fa6 }
+  .r2 div:last-child { width: 45px; background: #ffd166 }
+  .r3 div:first-child, .r3 div:last-child { width: 30px; background: #7a8fa6 }
   .r4 div { background: #7a8fa6 }
   .r4 div:nth-child(4) { flex: 1; background: #e9f5cd }
 </style>
@@ -897,7 +894,7 @@ var levels = []level{
 <div class="keys r4">
     <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
 </div>`, scaffold: `<style>
-  .case { position: absolute; left: 10px; bottom: 52px; width: 280px; height: 108px; border-radius: 8px; background: #2b3440 }
+  .case { position: absolute; left: 10px; bottom: 65px; width: 275px; height: 95px; border-radius: 8px; background: #2b3440 }
 </style>
 
 <div class="case"></div>
@@ -905,32 +902,30 @@ var levels = []level{
 <!-- the rest is yours to build. -->`},
 
 		{title: "Laundry day", target: `<style>
-  .grass { position: absolute; left: 0; top: 186px; width: 300px; height: 14px; background: #24422f }
+  .grass { position: absolute; left: 0; top: 185px; width: 300px; height: 15px; background: #24422f }
   .poles {
     position: absolute;
     left: 0; top: 30px;
-    width: 300px; height: 156px;
+    width: 300px; height: 155px;
     display: flex;
     justify-content: space-between;
   }
-  .poles div { width: 6px; background: #5f6b5c }
-  .rope { position: absolute; left: 0; width: 300px; height: 2px; background: #9aa196 }
+  .poles div { width: 5px; background: #5f6b5c }
+  .rope { position: absolute; left: 0; width: 300px; height: 5px; background: #9aa196 }
   .top { top: 40px }
-  .bottom { top: 116px }
+  .bottom { top: 115px }
   .line {
     position: absolute;
-    left: 0; width: 300px; height: 60px;
+    left: 35px; width: 235px; height: 60px;
     display: flex;
-    justify-content: center;
     align-items: flex-start;
     gap: 10px;
   }
-  .line.top { top: 38px }
-  .line.bottom { top: 114px; flex-direction: row-reverse }
-  .shirt { width: 30px; height: 50px; background: #4cc9f0; display: flex; justify-content: center }
-  .shirt div { width: 4px; height: 10px; margin-top: -4px; background: #8a5a3c }
-  .shirt:nth-child(even) { width: 24px; height: 36px; background: #f48fb1 }
-  .shirt:nth-child(3n) { width: 40px; height: 44px; background: #ffd166 }
+  .line.bottom { flex-direction: row-reverse }
+  .shirt { width: 25px; height: 50px; background: #4cc9f0; display: flex; justify-content: center }
+  .shirt div { width: 5px; height: 10px; margin-top: -5px; background: #8a5a3c }
+  .shirt:nth-child(even) { width: 15px; height: 35px; background: #f48fb1 }
+  .shirt:nth-child(3n) { width: 35px; height: 45px; background: #ffd166 }
 </style>
 
 <div class="grass"></div>
@@ -958,7 +953,7 @@ var levels = []level{
   <div class="shirt"><div></div></div>
   <div class="shirt"><div></div></div>
 </div>`, scaffold: `<style>
-  .grass { position: absolute; left: 0; bottom: 0; width: 300px; height: 14px; background: #24422f }
+  .grass { position: absolute; left: 0; bottom: 0; width: 300px; height: 15px; background: #24422f }
 </style>
 
 <div class="grass"></div>
@@ -968,68 +963,68 @@ var levels = []level{
 		{title: "Metro line", target: `<style>
   .lights {
     position: absolute;
-    left: 0; top: 6px;
-    width: 300px; height: 8px;
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-  }
-  .lights div { width: 16px; height: 8px; background: #ffd166 }
-  .lights div:nth-child(odd) { background: #e9f5cd }
-  .tunnel { position: absolute; left: 0; top: 60px; width: 300px; height: 80px; background: #16283a }
-  .sleepers {
-    position: absolute;
-    left: 0; top: 122px;
-    width: 300px; height: 12px;
+    left: 0; top: 5px;
+    width: 300px; height: 10px;
     display: flex;
     justify-content: center;
     gap: 10px;
   }
-  .sleepers div { width: 10px; height: 12px; background: #3f2e1e }
-  .rail { position: absolute; left: 0; top: 126px; width: 300px; height: 4px; background: #7d857a }
+  .lights div { width: 20px; height: 10px; background: #ffd166 }
+  .lights div:nth-child(odd) { background: #e9f5cd }
+  .tunnel { position: absolute; left: 0; top: 60px; width: 300px; height: 80px; background: #16283a }
+  .sleepers {
+    position: absolute;
+    left: 0; top: 120px;
+    width: 300px; height: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  .sleepers div { width: 10px; height: 15px; background: #3f2e1e }
+  .rail { position: absolute; left: 0; top: 125px; width: 300px; height: 5px; background: #7d857a }
   .platform { position: absolute; left: 0; top: 140px; width: 300px; height: 60px; background: #2b4a63 }
   .edge {
     position: absolute;
     left: 0; top: 140px;
-    width: 300px; height: 6px;
+    width: 300px; height: 5px;
     display: flex;
     justify-content: center;
-    gap: 4px;
+    gap: 10px;
   }
-  .edge div { width: 16px; height: 6px; background: #ffd166 }
+  .edge div { width: 10px; height: 5px; background: #ffd166 }
   .benches {
     position: absolute;
-    left: 0; top: 164px;
-    width: 300px; height: 24px;
+    left: 0; top: 165px;
+    width: 300px; height: 20px;
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    gap: 8px;
+    gap: 5px;
   }
-  .benches div { width: 36px; height: 12px; background: #8a5a3c }
-  .benches div:nth-child(even) { width: 10px; height: 18px; background: #7d857a }
+  .benches div { width: 40px; height: 10px; background: #8a5a3c }
+  .benches div:nth-child(even) { width: 10px; height: 20px; background: #7d857a }
   .train {
     position: absolute;
-    left: 150px; top: 64px;
-    width: 136px; height: 24px;
+    left: 150px; top: 65px;
+    width: 130px; height: 25px;
     border-radius: 4px 10px 10px 4px;
     background: #e9f5cd;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
   }
-  .train div { width: 14px; height: 10px; background: #16283a }
+  .train div { width: 10px; height: 15px; background: #16283a }
   .train div:nth-child(3n) { background: #4cc9f0 }
   .line {
     position: absolute;
-    left: 6px; top: 92px;
-    width: 288px; height: 20px;
+    left: 5px; top: 90px;
+    width: 290px; height: 20px;
     display: flex;
     align-items: center;
   }
-  .line div { flex: 1; height: 8px; background: #4cc9f0 }
-  .line div:nth-child(even) { flex: none; width: 16px; height: 16px; border-radius: 50%; background: #e9f5cd }
+  .line div { flex: 1; height: 10px; background: #4cc9f0 }
+  .line div:nth-child(even) { flex: none; width: 20px; height: 20px; border-radius: 50%; background: #e9f5cd }
   .line div:nth-child(3) { flex: 2 }
 </style>
 
@@ -1119,17 +1114,16 @@ var levels = []level{
 
 		{title: "Apartment block", target: `<style>
   .ground { position: absolute; left: 0; top: 190px; width: 300px; height: 10px; background: #24422f }
-  .ledge { position: absolute; left: 59px; top: 15px; width: 182px; height: 8px; background: #2b3440 }
+  .ledge { position: absolute; left: 60px; top: 0; width: 180px; height: 10px; background: #2b3440 }
   .building {
     position: absolute;
-    left: 67px; top: 23px;
-    width: 166px; height: 167px;
+    left: 70px; top: 10px;
+    width: 160px; height: 180px;
     box-sizing: border-box;
     padding: 10px;
     background: #3a5068;
     display: flex;
     flex-direction: column;
-    gap: 5px;
   }
   .floor {
     flex: 1;
@@ -1137,12 +1131,12 @@ var levels = []level{
     justify-content: space-between;
     align-items: center;
   }
-  .floor div { width: 16px; height: 10px; background: #ffd166 }
+  .floor div { width: 15px; height: 10px; background: #ffd166 }
   .floor:nth-child(odd) div:nth-child(even) { background: #16283a }
   .floor:nth-child(even) div:nth-child(odd) { background: #16283a }
   .floor:nth-child(3n) div:nth-child(4) { background: #4cc9f0 }
   .floor:last-child { align-items: flex-end }
-  .floor:last-child div:nth-child(3) { height: 14px; background: #3f2e1e }
+  .floor:last-child div:nth-child(3) { height: 15px; background: #3f2e1e }
 </style>
 
 <div class="ground"></div>
@@ -1169,17 +1163,17 @@ var levels = []level{
   .table { position: absolute; left: 0; top: 160px; width: 300px; height: 40px; background: #3f2e1e }
   .carton {
     position: absolute;
-    left: 31px; top: 30px;
-    width: 238px; height: 130px;
+    left: 30px; top: 15px;
+    width: 240px; height: 145px;
     box-sizing: border-box;
-    padding: 8px;
+    padding: 5px;
     border-radius: 6px 6px 0 0;
     background: #b08b5a;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
   }
-  .row { flex: 1; display: flex; gap: 6px }
+  .row { flex: 1; display: flex; gap: 10px }
   .cup {
     flex: 1;
     border-radius: 8px;
@@ -1188,7 +1182,7 @@ var levels = []level{
     justify-content: center;
     align-items: center;
   }
-  .cup div { width: 16px; height: 20px; border-radius: 50%; background: #f3ead8 }
+  .cup div { width: 20px; height: 20px; border-radius: 50%; background: #f3ead8 }
   .cup:nth-child(3n) div { background: #d9a066 }
   .row:nth-child(even) .cup:nth-child(odd) div { background: #d9a066 }
 </style>
@@ -1239,10 +1233,10 @@ var levels = []level{
 		{title: "Chessboard", target: `<style>
   .board {
     position: absolute;
-    left: 70px; top: 20px;
-    width: 160px; height: 160px;
+    left: 60px; top: 10px;
+    width: 180px; height: 180px;
     box-sizing: border-box;
-    padding: 8px;
+    padding: 10px;
     background: #3f2e1e;
     display: flex;
     flex-direction: column;
@@ -1258,9 +1252,9 @@ var levels = []level{
   .row > div:nth-child(even) { background: #8a5a3c }
   .row:nth-child(even) > div { background: #8a5a3c }
   .row:nth-child(even) > div:nth-child(even) { background: #e9d8b4 }
-  .row > div > div { width: 8px; height: 8px; border-radius: 50%; background: #16283a }
+  .row > div > div { width: 10px; height: 10px; border-radius: 50%; background: #16283a }
   .row:nth-child(n + 5) > div > div { background: #f3ead8 }
-  .row:first-child > div > div, .row:last-child > div > div { width: 10px; height: 12px; border-radius: 2px }
+  .row:first-child > div > div, .row:last-child > div > div { border-radius: 2px }
 </style>
 
 <div class="board">
@@ -1273,7 +1267,7 @@ var levels = []level{
   <div class="row"><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div></div>
   <div class="row"><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div></div>
 </div>`, scaffold: `<style>
-  .board { position: absolute; left: 70px; bottom: 20px; width: 160px; height: 160px; background: #3f2e1e }
+  .board { position: absolute; left: 60px; bottom: 10px; width: 180px; height: 180px; background: #3f2e1e }
 </style>
 
 <div class="board"></div>
@@ -1283,8 +1277,8 @@ var levels = []level{
 		{title: "Calendar", target: `<style>
   .page {
     position: absolute;
-    left: 39px; top: 14px;
-    width: 222px; height: 172px;
+    left: 50px; top: 10px;
+    width: 200px; height: 180px;
     background: #e9f5cd;
     display: flex;
     flex-direction: column;
@@ -1301,12 +1295,12 @@ var levels = []level{
   .weeks {
     flex: 1;
     box-sizing: border-box;
-    padding: 8px;
+    padding: 15px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
   }
-  .week { flex: 1; display: flex; gap: 4px }
+  .week { flex: 1; display: flex; gap: 5px }
   .week div { flex: 1; background: #c7d3b4 }
   .week div:nth-child(n + 6) { background: #f48fb1 }
   .week:first-child div:nth-child(-n + 2) { background: none }
@@ -1323,7 +1317,7 @@ var levels = []level{
     <div class="week"><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
   </div>
 </div>`, scaffold: `<style>
-  .page { position: absolute; left: 39px; bottom: 14px; width: 222px; height: 172px; background: #e9f5cd }
+  .page { position: absolute; left: 50px; bottom: 10px; width: 200px; height: 180px; background: #e9f5cd }
 </style>
 
 <div class="page"></div>
@@ -1331,8 +1325,8 @@ var levels = []level{
 <!-- the rest is yours to build. -->`},
 
 		{title: "Freight train", target: `<style>
-  .ground { position: absolute; left: 0; top: 174px; width: 300px; height: 26px; background: #24422f }
-  .rail { position: absolute; left: 0; top: 170px; width: 300px; height: 4px; background: #9aa196 }
+  .ground { position: absolute; left: 0; top: 175px; width: 300px; height: 25px; background: #24422f }
+  .rail { position: absolute; left: 0; top: 170px; width: 300px; height: 5px; background: #9aa196 }
   .train {
     position: absolute;
     left: 0; top: 80px;
@@ -1340,28 +1334,28 @@ var levels = []level{
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    gap: 4px;
+    gap: 10px;
   }
-  .wagon { width: 64px; display: flex; flex-direction: column }
+  .wagon { width: 60px; display: flex; flex-direction: column }
   .body {
     height: 50px;
     background: #4cc9f0;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 4px;
+    gap: 10px;
   }
-  .body div { width: 10px; height: 14px; background: #16283a }
+  .body div { width: 10px; height: 20px; background: #16283a }
   .wagon:nth-child(even) .body { background: #ff7b54 }
-  .wagon:first-child .body { height: 66px; border-radius: 10px 0 0 0; background: #ffd166 }
-  .wagon:first-child .body div { height: 24px }
+  .wagon:first-child .body { height: 70px; border-radius: 10px 0 0 0; background: #ffd166 }
+  .wagon:first-child .body div { height: 30px }
   .wheels {
-    height: 14px;
-    padding: 0 6px;
+    height: 15px;
+    padding: 0 5px;
     display: flex;
     justify-content: space-between;
   }
-  .wheels div { width: 14px; border-radius: 50%; background: #7d857a }
+  .wheels div { width: 15px; border-radius: 50%; background: #7d857a }
 </style>
 
 <div class="ground"></div>
@@ -1373,19 +1367,19 @@ var levels = []level{
     <div class="wheels"><div></div><div></div></div>
   </div>
   <div class="wagon">
-    <div class="body"><div></div><div></div><div></div><div></div></div>
+    <div class="body"><div></div><div></div><div></div></div>
     <div class="wheels"><div></div><div></div></div>
   </div>
   <div class="wagon">
-    <div class="body"><div></div><div></div><div></div><div></div></div>
+    <div class="body"><div></div><div></div><div></div></div>
     <div class="wheels"><div></div><div></div></div>
   </div>
   <div class="wagon">
-    <div class="body"><div></div><div></div><div></div><div></div></div>
+    <div class="body"><div></div><div></div><div></div></div>
     <div class="wheels"><div></div><div></div></div>
   </div>
 </div>`, scaffold: `<style>
-  .rail { position: absolute; left: 0; bottom: 26px; width: 300px; height: 4px; background: #9aa196 }
+  .rail { position: absolute; left: 0; bottom: 25px; width: 300px; height: 5px; background: #9aa196 }
 </style>
 
 <div class="rail"></div>
@@ -1456,43 +1450,43 @@ var levels = []level{
     align-items: flex-start;
     gap: 20px;
   }
-  .sky div { width: 4px; height: 4px; margin-top: 4px; background: #e9f5cd }
-  .sky div:nth-child(odd) { margin-top: 16px }
-  .sky div:nth-child(3n) { width: 6px; height: 6px; margin-top: 30px; background: #ffd166 }
+  .sky div { width: 5px; height: 5px; margin-top: 5px; background: #e9f5cd }
+  .sky div:nth-child(odd) { margin-top: 15px }
+  .sky div:nth-child(3n) { width: 10px; height: 10px; margin-top: 30px; background: #ffd166 }
   .city {
     height: 120px;
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    gap: 4px;
+    gap: 10px;
   }
   .tower { display: flex; flex-direction: column; align-items: center }
-  .cap { width: 12px; height: 8px; background: #2b4a63 }
+  .cap { width: 15px; height: 10px; background: #2b4a63 }
   .body {
     box-sizing: border-box;
-    padding: 6px;
+    padding: 5px;
     background: #16283a;
     display: flex;
     flex-wrap: wrap;
     align-content: flex-start;
-    gap: 4px;
+    gap: 5px;
   }
-  .body div { width: 8px; height: 8px; background: #ffd166 }
+  .body div { width: 5px; height: 5px; background: #ffd166 }
   .tower:nth-child(even) .body div:nth-child(odd) { background: #4cc9f0 }
   .body div:nth-child(5n) { background: #24384d }
-  .tower:nth-child(3n + 1) .body { width: 44px; height: 92px }
-  .tower:nth-child(3n + 2) .body { width: 56px; height: 68px }
-  .tower:nth-child(3n) .body { width: 32px; height: 104px }
-  .tower:nth-child(3n) .cap { width: 4px; height: 14px; background: #ff7b54 }
+  .tower:nth-child(3n + 1) .body { width: 45px; height: 75px }
+  .tower:nth-child(3n + 2) .body { width: 55px; height: 55px }
+  .tower:nth-child(3n) .body { width: 25px; height: 95px }
+  .tower:nth-child(3n) .cap { width: 5px; height: 15px; background: #ff7b54 }
   .road {
     height: 30px;
     background: #1d3550;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
-  .road div { width: 18px; height: 3px; background: #e9f5cd }
+  .road div { width: 20px; height: 10px; background: #e9f5cd }
 </style>
 
 <div class="scene">
@@ -1508,29 +1502,6 @@ var levels = []level{
         <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
         <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
         <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-      </div>
-    </div>
-    <div class="tower">
-      <div class="cap"></div>
-      <div class="body">
-        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-        <div></div><div></div><div></div><div></div><div></div><div></div>
-      </div>
-    </div>
-    <div class="tower">
-      <div class="cap"></div>
-      <div class="body">
-        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-        <div></div><div></div>
-      </div>
-    </div>
-    <div class="tower">
-      <div class="cap"></div>
-      <div class="body">
-        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
         <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
       </div>
     </div>
@@ -1539,7 +1510,8 @@ var levels = []level{
       <div class="body">
         <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
         <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-        <div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
       </div>
     </div>
     <div class="tower">
@@ -1547,7 +1519,33 @@ var levels = []level{
       <div class="body">
         <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
         <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-        <div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+      </div>
+    </div>
+    <div class="tower">
+      <div class="cap"></div>
+      <div class="body">
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+      </div>
+    </div>
+    <div class="tower">
+      <div class="cap"></div>
+      <div class="body">
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+      </div>
+    </div>
+    <div class="tower">
+      <div class="cap"></div>
+      <div class="body">
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
       </div>
     </div>
   </div>
@@ -1579,8 +1577,8 @@ var levels = []level{
     align-items: center;
     gap: 50px;
   }
-  .rig { width: 22px; display: flex; flex-wrap: wrap; gap: 2px }
-  .rig div { width: 6px; height: 6px; background: #ffd166 }
+  .rig { width: 30px; display: flex; flex-wrap: wrap }
+  .rig div { width: 10px; height: 10px; background: #ffd166 }
   .rig div:nth-child(even) { background: #e9f5cd }
   .stand {
     height: 100px;
@@ -1589,9 +1587,8 @@ var levels = []level{
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 4px;
   }
-  .tier { padding: 3px 6px; background: #16283a; display: flex; gap: 3px }
+  .tier { padding: 5px; background: #16283a; display: flex; gap: 5px }
   .tier div { width: 10px; height: 10px; background: #4cc9f0 }
   .tier div:nth-child(even) { background: #e9f5cd }
   .tier:nth-child(even) div:nth-child(4n) { background: #ff7b54 }
@@ -1607,7 +1604,7 @@ var levels = []level{
   .pitch > div:nth-child(even) { background: #235838 }
   .pitch > div:nth-child(3n) { align-items: flex-start; padding-top: 10px }
   .pitch > div:nth-child(3n + 1) { align-items: flex-end; padding-bottom: 10px }
-  .pitch div div { width: 8px; height: 8px; border-radius: 50%; background: #ff7b54 }
+  .pitch div div { width: 10px; height: 10px; border-radius: 50%; background: #ff7b54 }
   .pitch > div:nth-child(n + 6) div { background: #4cc9f0 }
 </style>
 
@@ -1622,19 +1619,19 @@ var levels = []level{
   <div class="stand">
     <div class="tier">
       <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-      <div></div><div></div><div></div>
+      <div></div><div></div>
     </div>
     <div class="tier">
       <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-      <div></div><div></div><div></div><div></div><div></div>
+      <div></div><div></div><div></div><div></div>
     </div>
     <div class="tier">
       <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-      <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+      <div></div><div></div><div></div><div></div><div></div><div></div>
     </div>
     <div class="tier">
       <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-      <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
     </div>
   </div>
 
@@ -1666,23 +1663,23 @@ var levels = []level{
     left: 20px; top: 10px;
     width: 260px; height: 180px;
     box-sizing: border-box;
-    padding: 6px;
+    padding: 10px;
     background: #3f2e1e;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
   }
   .shelf {
     flex: 1;
-    padding: 0 6px;
+    padding: 0 10px;
     background: #24180f;
     display: flex;
     align-items: flex-end;
-    gap: 3px;
+    gap: 5px;
   }
   .shelf:nth-child(2) { flex-direction: row-reverse }
   .book {
-    width: 18px; height: 44px;
+    width: 15px; height: 45px;
     box-sizing: border-box;
     padding: 5px 0;
     background: #c2705a;
@@ -1690,12 +1687,12 @@ var levels = []level{
     flex-direction: column;
     justify-content: space-between;
   }
-  .book div { height: 3px; background: #ffd166 }
-  .book:nth-child(3n + 2) { height: 38px; background: #4cc9f0 }
-  .book:nth-child(3n) { width: 14px; height: 48px; background: #6ee787 }
+  .book div { height: 5px; background: #ffd166 }
+  .book:nth-child(3n + 2) { height: 40px; background: #4cc9f0 }
+  .book:nth-child(3n) { width: 10px; height: 50px; background: #6ee787 }
   .book:nth-child(4n) { height: 30px }
   .book:nth-child(4n) div { background: #e9f5cd }
-  .pot { margin-left: auto; width: 24px; height: 20px; border-radius: 0 0 6px 6px; background: #8a5a3c }
+  .pot { margin-left: auto; width: 25px; height: 20px; border-radius: 0 0 6px 6px; background: #8a5a3c }
 </style>
 
 <div class="case">
@@ -1749,37 +1746,37 @@ var levels = []level{
     flex-direction: column;
   }
   .traces {
-    height: 40px;
+    height: 35px;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 10px;
   }
-  .traces > div { display: flex; flex-direction: column; gap: 3px }
-  .traces div div { width: 30px; height: 3px; background: #6ee787 }
+  .traces > div { display: flex; flex-direction: column; gap: 5px }
+  .traces div div { width: 30px; height: 5px; background: #6ee787 }
   .traces > div:nth-child(even) div { background: #3f8f57 }
   .traces > div:nth-child(3n) div:nth-child(2) { width: 20px }
   .chips {
-    height: 120px;
+    height: 125px;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-content: center;
-    gap: 8px 20px;
+    gap: 5px 20px;
   }
-  .chip { display: flex; align-items: center; gap: 2px }
-  .pins { display: flex; flex-direction: column; gap: 4px }
-  .pins div { width: 6px; height: 4px; background: #9aa196 }
+  .chip { display: flex; align-items: center }
+  .pins { display: flex; flex-direction: column; gap: 10px }
+  .pins div { width: 10px; height: 5px; background: #9aa196 }
   .core {
-    width: 52px; height: 52px;
+    width: 60px; height: 60px;
     box-sizing: border-box;
-    padding: 7px;
+    padding: 5px;
     background: #0b1a12;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-content: center;
-    gap: 4px;
+    gap: 10px;
   }
   .core div { width: 10px; height: 10px; background: #ffd166 }
   .core div:nth-child(even) { background: #ff7b54 }
@@ -1793,7 +1790,7 @@ var levels = []level{
     align-items: center;
     gap: 10px;
   }
-  .leds div { width: 8px; height: 8px; border-radius: 50%; background: #6ee787 }
+  .leds div { width: 10px; height: 10px; border-radius: 50%; background: #6ee787 }
   .leds div:nth-child(3n) { background: #ff7b54 }
 </style>
 
@@ -1809,34 +1806,34 @@ var levels = []level{
 
   <div class="chips">
     <div class="chip">
-      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div></div>
       <div class="core"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
-      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div></div>
     </div>
     <div class="chip">
-      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div></div>
       <div class="core"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
-      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div></div>
     </div>
     <div class="chip">
-      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div></div>
       <div class="core"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
-      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div></div>
     </div>
     <div class="chip">
-      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div></div>
       <div class="core"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
-      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div></div>
     </div>
     <div class="chip">
-      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div></div>
       <div class="core"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
-      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div></div>
     </div>
     <div class="chip">
-      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div></div>
       <div class="core"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
-      <div class="pins"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="pins"><div></div><div></div><div></div><div></div></div>
     </div>
   </div>
 
@@ -1855,26 +1852,26 @@ var levels = []level{
 		{title: "The quilt", target: `<style>
   .quilt {
     position: absolute;
-    left: 22px; top: 18px;
-    width: 256px; height: 164px;
+    left: 15px; top: 10px;
+    width: 270px; height: 180px;
     box-sizing: border-box;
-    padding: 4px;
+    padding: 5px;
     background: #3f2e1e;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 10px;
   }
-  .row { flex: 1; display: flex; gap: 4px }
+  .row { flex: 1; display: flex; gap: 10px }
   .patch {
     flex: 1;
     box-sizing: border-box;
-    padding: 3px;
+    padding: 5px;
     background: #e9f5cd;
     display: flex;
     flex-wrap: wrap;
-    gap: 2px;
+    gap: 5px;
   }
-  .patch div { width: 15px; height: 14px; background: #c2705a }
+  .patch div { width: 10px; height: 10px; background: #c2705a }
   .patch div:nth-child(2), .patch div:nth-child(3) { background: #ffd166 }
   .patch:nth-child(even) div { background: #4cc9f0 }
   .patch:nth-child(even) div:nth-child(2), .patch:nth-child(even) div:nth-child(3) { background: #16283a }
@@ -1917,7 +1914,7 @@ var levels = []level{
     <div class="patch"><div></div><div></div><div></div><div></div></div>
   </div>
 </div>`, scaffold: `<style>
-  .quilt { position: absolute; left: 22px; bottom: 18px; width: 256px; height: 164px; background: #3f2e1e }
+  .quilt { position: absolute; left: 15px; bottom: 10px; width: 270px; height: 180px; background: #3f2e1e }
 </style>
 
 <div class="quilt"></div>
