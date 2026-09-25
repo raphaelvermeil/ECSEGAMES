@@ -155,7 +155,9 @@ export default function CsCompBanner({
           {TABS.filter((t) => !(t.view === "battle" && battleLocked)).map(
             (t) => {
               const active = view === t.view;
-              const isLocked = locked && !t.open;
+              // Execs can open the battle without a team to preview it.
+              const isLocked =
+                locked && !t.open && !(t.view === "battle" && canControlClock);
               return (
                 <button
                   key={t.view}

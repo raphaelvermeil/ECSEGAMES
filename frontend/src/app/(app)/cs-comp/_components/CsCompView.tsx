@@ -359,7 +359,10 @@ export default function CsCompView() {
   function selectView(v: View) {
     // The board is readable before joining anything; the battle and the
     // roster are not.
-    if (v !== "teams" && v !== "board" && locked) return;
+    // Execs are the exception: they can preview the battle teamless.
+    if (v !== "teams" && v !== "board" && locked) {
+      if (!(v === "battle" && canControlClock(me?.user))) return;
+    }
     if (v === "battle") {
       if (!battleOpen) return;
       verifyBattle().then((cs) => {
@@ -547,29 +550,33 @@ export default function CsCompView() {
         </div>
       )}
 
-      {view === "battle" && battleOpen && !locked && myTeam && current && (
-        <BattlePanel
-          challenge={current}
-          myTeamName={myTeam.name}
-          myTeamColor={myColor}
-          code={code}
-          solved={!!solved[partKey(current.level, current.part)]}
-          best={mineForCurrent?.matchPercent ?? null}
-          attempts={mineForCurrent?.attempts ?? 0}
-          result={result && result.id === current.id ? result.res : null}
-          claimedByMe={myClaim !== null}
-          claimedByName={claimedByOther?.name ?? null}
-          busy={busy}
-          diff={diff}
-          onToggleDiff={() => setDiff((d) => !d)}
-          onChangeCode={changeCode}
-          onReset={resetCode}
-          onSubmit={onSubmit}
-          onClaim={onClaim}
-          onUnclaim={onUnclaim}
-          onOpenPicker={() => setPicker("levels")}
-        />
-      )}
+      {view === "battle" &&
+        battleOpen &&
+        current &&
+        (myTeam || canControlClock(me?.user)) && (
+          <BattlePanel
+            challenge={current}
+            preview={myTeam === null}
+            myTeamName={myTeam?.name ?? ""}
+            myTeamColor={myColor}
+            code={code}
+            solved={!!solved[partKey(current.level, current.part)]}
+            best={mineForCurrent?.matchPercent ?? null}
+            attempts={mineForCurrent?.attempts ?? 0}
+            result={result && result.id === current.id ? result.res : null}
+            claimedByMe={myClaim !== null}
+            claimedByName={claimedByOther?.name ?? null}
+            busy={busy}
+            diff={diff}
+            onToggleDiff={() => setDiff((d) => !d)}
+            onChangeCode={changeCode}
+            onReset={resetCode}
+            onSubmit={onSubmit}
+            onClaim={onClaim}
+            onUnclaim={onUnclaim}
+            onOpenPicker={() => setPicker("levels")}
+          />
+        )}
 
       {view === "mine" && !locked && myTeam && (
         <MyTeamPanel

@@ -29,6 +29,7 @@ function toHex(r: number, g: number, b: number): string {
 
 export default function BattlePanel({
   challenge,
+  preview,
   myTeamName,
   myTeamColor,
   code,
@@ -49,6 +50,8 @@ export default function BattlePanel({
   onOpenPicker,
 }: {
   challenge: Challenge;
+  // An exec with no team: can look at everything, but can't claim or submit.
+  preview: boolean;
   myTeamName: string;
   myTeamColor: string;
   code: string;
@@ -252,19 +255,32 @@ export default function BattlePanel({
           CHANGE LEVEL / PART
         </button>
         <div className="flex-1" />
-        <span className="font-mono text-xs text-sched-text-muted">
-          playing for
-        </span>
-        <span className="flex items-center gap-2.5 font-display text-[17px] font-semibold tracking-[0.05em] text-sched-cream">
-          <span className="h-2.5 w-2.5" style={{ background: myTeamColor }} />
-          {myTeamName}
-        </span>
+        {preview ? (
+          <span className="font-mono text-xs tracking-[0.14em] text-sched-text-muted">
+            EXEC PREVIEW · submitting is off
+          </span>
+        ) : (
+          <>
+            <span className="font-mono text-xs text-sched-text-muted">
+              playing for
+            </span>
+            <span className="flex items-center gap-2.5 font-display text-[17px] font-semibold tracking-[0.05em] text-sched-cream">
+              <span
+                className="h-2.5 w-2.5"
+                style={{ background: myTeamColor }}
+              />
+              {myTeamName}
+            </span>
+          </>
+        )}
       </div>
 
       {/* Claims are how a squad splits the parts without two people
           building the same scene. One per person per level, so the button
           is also the only place that rule becomes visible. */}
-      <div className="mb-5 flex flex-wrap items-center gap-3">
+      <div
+        className={`mb-5 flex flex-wrap items-center gap-3 ${preview ? "hidden" : ""}`}
+      >
         {claimedByMe ? (
           <>
             <span className="font-mono text-[11px] tracking-[0.14em] text-sched-accent">
@@ -357,7 +373,8 @@ export default function BattlePanel({
             <button
               type="button"
               onClick={onSubmit}
-              disabled={busy}
+              disabled={busy || preview}
+              title={preview ? "Execs can't submit" : undefined}
               className="min-h-[46px] px-[22px] font-mono text-xs font-medium tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-60"
               style={{
                 background: solved ? "#16241c" : "#6ee787",
