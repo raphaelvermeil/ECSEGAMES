@@ -5,7 +5,7 @@ import SignedOutOnly from "./SignedOutOnly";
 // Update these two when the dates or the pitch change.
 const EVENT_DATES = "25 – 27 September 2026";
 const TAGLINE =
-  "Three days. Four teams. One trophy, and nobody has won it yet.";
+  "Three days where four teams fight for the glory of being the most deserving of a trophy that has never been claimed. Will you be the one to make the difference? Step into the Matrix, Neo. The ECSE Games are waiting.";
 
 export default function LandingHero() {
   return (
@@ -21,7 +21,7 @@ export default function LandingHero() {
         }}
       />
 
-      <div className="relative mx-auto max-w-4xl">
+      <div className="relative mx-auto max-w-5xl">
         <p className="font-mono text-xs uppercase tracking-[0.24em] text-sched-accent">
           {EVENT_DATES}
         </p>
