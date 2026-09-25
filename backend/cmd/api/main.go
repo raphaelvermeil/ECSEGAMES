@@ -106,6 +106,9 @@ func main() {
 		if err := eventStore.EnsureIndexes(idxCtx); err != nil {
 			log.Fatalf("events: ensure indexes: %v", err)
 		}
+		if err := eventStore.EnsureCategories(idxCtx); err != nil {
+			log.Fatalf("events: ensure categories: %v", err)
+		}
 		if err := auditStore.EnsureIndexes(idxCtx); err != nil {
 			log.Fatalf("audit: ensure indexes: %v", err)
 		}

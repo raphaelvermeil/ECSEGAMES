@@ -1,8 +1,9 @@
-import type { ScheduleEvent } from "@/lib/events";
+import type { EventCategory, ScheduleEvent } from "@/lib/events";
 import type { RailGroup } from "@/lib/schedule";
 import { categoryColor, formatTime, withAlpha } from "@/lib/schedule";
 
 export default function UpcomingRail({
+  categories,
   groups,
   count,
   emptyMessage,
@@ -11,6 +12,7 @@ export default function UpcomingRail({
   onOpen,
   onAdd,
 }: {
+  categories: EventCategory[];
   groups: RailGroup[];
   count: number;
   emptyMessage: string | null;
@@ -36,7 +38,7 @@ export default function UpcomingRail({
               {g.label}
             </div>
             {g.events.map((e) => {
-              const color = categoryColor(e.category);
+              const color = categoryColor(categories, e.categories[0]);
               return (
                 <button
                   key={e.id}
@@ -62,15 +64,23 @@ export default function UpcomingRail({
                       {e.shortDescription}
                     </span>
                   </span>
-                  <span
-                    className="flex items-center gap-[7px] whitespace-nowrap border px-[9px] py-1 font-mono text-[10px] font-medium uppercase tracking-[0.1em]"
-                    style={{ borderColor: withAlpha(color, 0.4), color }}
-                  >
-                    <span
-                      className="block h-[7px] w-[7px]"
-                      style={{ background: color }}
-                    />
-                    {e.category}
+                  <span className="flex flex-col items-end gap-[6px]">
+                    {e.categories.map((name) => {
+                      const c = categoryColor(categories, name);
+                      return (
+                        <span
+                          key={name}
+                          className="flex items-center gap-[7px] whitespace-nowrap border px-[9px] py-1 font-mono text-[10px] font-medium uppercase tracking-[0.1em]"
+                          style={{ borderColor: withAlpha(c, 0.4), color: c }}
+                        >
+                          <span
+                            className="block h-[7px] w-[7px]"
+                            style={{ background: c }}
+                          />
+                          {name}
+                        </span>
+                      );
+                    })}
                   </span>
                 </button>
               );

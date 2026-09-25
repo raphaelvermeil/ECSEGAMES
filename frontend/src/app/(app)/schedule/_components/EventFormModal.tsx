@@ -7,9 +7,7 @@ import api from "@/lib/api";
 import type { EventCategory, ScheduleEvent } from "@/lib/events";
 import { useScrollLock, useThemeColor } from "@/lib/overlay";
 import {
-  CATEGORIES,
   SHORT_DESCRIPTION_MAX,
-  categoryColor,
   formatDayLabel,
   formatModalDate,
   formatTime,
@@ -48,7 +46,7 @@ interface FormFields {
   longDescription: string;
   access: string;
   captain: string;
-  category: EventCategory;
+  categories: string[];
   // The start date. New events are always on the Games weekend; an existing
   // event keeps whatever date it has, even off-weekend, so editing its title
   // can't silently move it.
@@ -82,7 +80,7 @@ function initialFields(event: ScheduleEvent | null): FormFields {
       longDescription: event.longDescription,
       access: event.access,
       captain: event.captain,
-      category: event.category,
+      categories: event.categories,
       year: p.year,
       month: p.month,
       day: p.day,
@@ -97,7 +95,7 @@ function initialFields(event: ScheduleEvent | null): FormFields {
     longDescription: "",
     access: "",
     captain: "",
-    category: CATEGORIES[0],
+    categories: [],
     year: GAMES_YEAR,
     month: GAMES_MONTH,
     day: GAMES_DAYS[0],
@@ -166,12 +164,14 @@ function errorMessage(err: unknown): string {
 export default function EventFormModal({
   mode,
   event,
+  categories,
   onClose,
   onSaved,
   onDeleted,
 }: {
   mode: "create" | "edit";
   event: ScheduleEvent | null;
+  categories: EventCategory[];
   onClose: () => void;
   onSaved: (saved: ScheduleEvent) => void;
   onDeleted: () => void;
@@ -288,7 +288,7 @@ export default function EventFormModal({
       startsAt: start.toISOString(),
       endsAt: end.toISOString(),
       location: fields.location.trim(),
-      category: fields.category,
+      categories: fields.categories,
     };
 
     setSubmitting(true);
@@ -553,22 +553,31 @@ export default function EventFormModal({
           </div>
 
           <div>
-            <span className={labelClass}>CATEGORY</span>
+            <span className={labelClass}>CATEGORIES</span>
             <div
-              role="radiogroup"
-              aria-label="Category"
-              className="grid grid-cols-2 border border-sched-hair lg:flex"
+              role="group"
+              aria-label="Categories"
+              className="grid grid-cols-2 border border-sched-hair lg:flex lg:flex-wrap"
             >
-              {CATEGORIES.map((c) => {
-                const active = fields.category === c;
-                const color = categoryColor(c);
+              {categories.map(({ name: c, color }) => {
+                const active = fields.categories.includes(c);
                 return (
                   <button
                     key={c}
                     type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => set("category", c)}
+                    aria-pressed={active}
+                    // Kept in the category list's order, whatever order
+                    // they were clicked in.
+                    onClick={() =>
+                      set(
+                        "categories",
+                        categories
+                          .map((x) => x.name)
+                          .filter((n) =>
+                            n === c ? !active : fields.categories.includes(n),
+                          ),
+                      )
+                    }
                     className="flex min-h-11 items-center justify-center gap-2 px-[6px] py-[11px] font-mono text-[11px] font-medium uppercase tracking-[0.08em] lg:flex-1"
                     style={{
                       background: active

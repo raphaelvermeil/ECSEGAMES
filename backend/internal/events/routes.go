@@ -6,7 +6,11 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"regexp"
+	"slices"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/ecsegames/backend/internal/audit"
 	appmw "github.com/ecsegames/backend/internal/middleware"
@@ -63,6 +67,7 @@ func (h *Handler) actorName(ctx context.Context, clerkID string) string {
 func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey string) {
 	r.Get("/api/events", h.List)
 	r.Get("/api/events/{id}", h.Get)
+	r.Get("/api/categories", h.ListCategories)
 
 	r.Group(func(wr chi.Router) {
 		wr.Use(appmw.RequireAuth(clerkSecretKey))
@@ -71,6 +76,8 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 		wr.Post("/api/events", h.Create)
 		wr.Put("/api/events/{id}", h.Update)
 		wr.Delete("/api/events/{id}", h.Delete)
+		wr.Post("/api/categories", h.CreateCategory)
+		wr.Delete("/api/categories/{id}", h.DeleteCategory)
 	})
 }
 
@@ -78,11 +85,7 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 // and ?category=.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	filter := ListFilter{Category: Category(q.Get("category"))}
-	if filter.Category != "" && !IsValidCategory(filter.Category) {
-		http.Error(w, "invalid category", http.StatusBadRequest)
-		return
-	}
+	filter := ListFilter{Category: q.Get("category")}
 
 	if v := q.Get("from"); v != "" {
 		t, err := time.Parse(time.RFC3339, v)
@@ -168,22 +171,52 @@ type eventRequest struct {
 	StartsAt         time.Time `json:"startsAt"`
 	EndsAt           time.Time `json:"endsAt"`
 	Location         string    `json:"location"`
-	Category         Category  `json:"category"`
+	Categories       []string  `json:"categories"`
 }
 
 // validate checks the fields required by the event CRUD spec: non-empty
-// title, a real category, and endsAt strictly after startsAt.
-func (req eventRequest) validate() string {
+// title, only existing categories (none repeated), and endsAt strictly
+// after startsAt.
+func (req eventRequest) validate(known []Category) string {
 	if req.Title == "" {
 		return "title is required"
 	}
-	if !IsValidCategory(req.Category) {
-		return "invalid category"
+	for i, name := range req.Categories {
+		exists := slices.ContainsFunc(known, func(c Category) bool { return c.Name == name })
+		if !exists || slices.Contains(req.Categories[:i], name) {
+			return "invalid category"
+		}
 	}
 	if !req.EndsAt.After(req.StartsAt) {
 		return "endsAt must be after startsAt"
 	}
 	return ""
+}
+
+// decodeEvent reads and validates an event create/update body, writing the
+// error response itself when it returns false.
+func (h *Handler) decodeEvent(w http.ResponseWriter, r *http.Request) (eventRequest, bool) {
+	var req eventRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return req, false
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+	known, err := h.store.ListCategories(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return req, false
+	}
+	if msg := req.validate(known); msg != "" {
+		http.Error(w, msg, http.StatusBadRequest)
+		return req, false
+	}
+	if req.Categories == nil {
+		req.Categories = []string{}
+	}
+	return req, true
 }
 
 // Create adds a new event. Exec/admin only (enforced by route middleware).
@@ -194,13 +227,8 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req eventRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
-	}
-	if msg := req.validate(); msg != "" {
-		http.Error(w, msg, http.StatusBadRequest)
+	req, ok := h.decodeEvent(w, r)
+	if !ok {
 		return
 	}
 
@@ -214,7 +242,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		StartsAt:         req.StartsAt.UTC(),
 		EndsAt:           req.EndsAt.UTC(),
 		Location:         req.Location,
-		Category:         req.Category,
+		Categories:       req.Categories,
 		CreatedAt:        now,
 	}
 
@@ -257,13 +285,8 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req eventRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
-	}
-	if msg := req.validate(); msg != "" {
-		http.Error(w, msg, http.StatusBadRequest)
+	req, ok := h.decodeEvent(w, r)
+	if !ok {
 		return
 	}
 
@@ -276,7 +299,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		"startsAt":         req.StartsAt.UTC(),
 		"endsAt":           req.EndsAt.UTC(),
 		"location":         req.Location,
-		"category":         req.Category,
+		"categories":       req.Categories,
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
@@ -336,7 +359,7 @@ func diffEvent(before, after *Event) []audit.Diff {
 	add("Starts", before.StartsAt.Format(time.RFC3339), after.StartsAt.Format(time.RFC3339))
 	add("Ends", before.EndsAt.Format(time.RFC3339), after.EndsAt.Format(time.RFC3339))
 	add("Location", before.Location, after.Location)
-	add("Category", string(before.Category), string(after.Category))
+	add("Categories", strings.Join(before.Categories, ", "), strings.Join(after.Categories, ", "))
 	return diffs
 }
 
@@ -383,6 +406,99 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		log.Printf("events: audit record failed: %v", err)
 	}
 
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// ListCategories returns every category. Public, like the schedule it
+// colours.
+func (h *Handler) ListCategories(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	list, err := h.store.ListCategories(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, list)
+}
+
+var hexColor = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
+
+// maxCategoryName keeps a name short enough to fit on a filter chip.
+const maxCategoryName = 24
+
+// CreateCategory adds a category. Exec/admin only (enforced by route
+// middleware).
+func (h *Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name  string `json:"name"`
+		Color string `json:"color"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" || utf8.RuneCountInString(name) > maxCategoryName {
+		http.Error(w, "name must be 1 to 24 characters", http.StatusBadRequest)
+		return
+	}
+	if !hexColor.MatchString(req.Color) {
+		http.Error(w, "invalid color", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	created, err := h.store.CreateCategory(ctx, Category{
+		Name:      name,
+		Color:     req.Color,
+		CreatedAt: time.Now().UTC(),
+	})
+	if mongo.IsDuplicateKeyError(err) {
+		http.Error(w, "a category with that name already exists", http.StatusConflict)
+		return
+	}
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusCreated, created)
+}
+
+// DeleteCategory removes a category and takes it off every event that had
+// it. Competition can't be deleted: the scoring panel depends on it. Exec/
+// admin only (enforced by route middleware).
+func (h *Handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
+	id, err := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	c, err := h.store.GetCategory(ctx, id)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	if c.Name == CategoryCompetition {
+		http.Error(w, "the Competition category can't be deleted", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.store.DeleteCategory(ctx, *c); err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 

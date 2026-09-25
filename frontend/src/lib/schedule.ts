@@ -1,28 +1,33 @@
 import type { EventCategory, ScheduleEvent } from "@/lib/events";
 
-export const CATEGORIES: EventCategory[] = [
-  "Competition",
-  "Meals",
-  "Administration",
-  "Custom",
-];
-
 // Short description max length — enforced by both the live counter and
 // validation in EventFormModal.
 export const SHORT_DESCRIPTION_MAX = 80;
 
-export const CATEGORY_COLORS: Record<EventCategory, string> = {
-  Competition: "#ffd23f",
-  Meals: "#ff7b54",
-  Administration: "#4cc9f0",
-  Custom: "#c77dff",
-};
+// The colours an exec can pick from when creating a category. The first
+// four are the original categories' colours.
+export const CATEGORY_PALETTE = [
+  "#ffd23f",
+  "#ff7b54",
+  "#4cc9f0",
+  "#c77dff",
+  "#6ee787",
+  "#f15bb5",
+  "#9aa5ff",
+  "#e8e2c8",
+];
+
+// Colour for an event that has no categories left.
+const UNCATEGORIZED_COLOR = "#7f9482";
 
 // Neutral inactive-chip border — fixed, not category-tinted.
 export const INACTIVE_CHIP_BORDER = "rgba(127,148,130,.3)";
 
-export function categoryColor(category: EventCategory): string {
-  return CATEGORY_COLORS[category];
+export function categoryColor(
+  categories: EventCategory[],
+  name: string | undefined,
+): string {
+  return categories.find((c) => c.name === name)?.color ?? UNCATEGORIZED_COLOR;
 }
 
 // Adds an alpha channel to a "#rrggbb" hex colour.

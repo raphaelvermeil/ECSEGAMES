@@ -1,7 +1,14 @@
 import api from "@/lib/api";
 
-export type EventCategory =
-  "Competition" | "Meals" | "Administration" | "Custom";
+// Execs create and delete categories; events refer to them by name.
+export interface EventCategory {
+  id: string;
+  name: string;
+  color: string; // "#rrggbb"
+}
+
+// Scoring hangs off this category, so the backend won't let it be deleted.
+export const COMPETITION = "Competition";
 
 export interface ScheduleEvent {
   id: string;
@@ -13,7 +20,7 @@ export interface ScheduleEvent {
   startsAt: string;
   endsAt: string;
   location: string;
-  category: EventCategory;
+  categories: string[];
   createdAt: string;
 }
 
@@ -29,6 +36,17 @@ export interface ScheduleEvent {
 export async function listEvents(): Promise<ScheduleEvent[]> {
   try {
     const res = await api.get<ScheduleEvent[]>("/api/events");
+    return res.data;
+  } catch {
+    return [];
+  }
+}
+
+// Fetches every category, oldest first. Public like listEvents, and returns
+// [] on failure for the same reason.
+export async function listCategories(): Promise<EventCategory[]> {
+  try {
+    const res = await api.get<EventCategory[]>("/api/categories");
     return res.data;
   } catch {
     return [];
