@@ -168,7 +168,7 @@ export default function BattlePanel({
   }
 
   // Reports the cursor in canvas coordinates, so a student can read a left
-  // and a top off the target instead of guessing them. Colours already come
+  // and a bottom off the target instead of guessing them. Colours already come
   // off the image exactly; this is the other half of that.
   function trackTarget(e: React.MouseEvent<HTMLImageElement>) {
     const at = targetFraction(e);
@@ -177,7 +177,7 @@ export default function BattlePanel({
         ? null
         : {
             x: Math.floor(at.fx * CANVAS_WIDTH),
-            y: Math.floor(at.fy * CANVAS_HEIGHT),
+            y: Math.floor((1 - at.fy) * CANVAS_HEIGHT),
           },
     );
   }
@@ -408,7 +408,7 @@ export default function BattlePanel({
               </span>
 
               {/* Cursor position in the challenge's own coordinate space, so
-                  a left and a top can be read off the target rather than
+                  a left and a bottom can be read off the target rather than
                   guessed. Dim placeholder keeps the header from reflowing
                   when the pointer leaves. */}
               <span
@@ -416,8 +416,8 @@ export default function BattlePanel({
                 style={{ color: cursor ? "#e9f5cd" : "#4d6455" }}
               >
                 {cursor
-                  ? `LEFT ${cursor.x} · TOP ${cursor.y}`
-                  : "LEFT — · TOP —"}
+                  ? `LEFT ${cursor.x} · BOTTOM ${cursor.y}`
+                  : "LEFT — · BOTTOM —"}
               </span>
 
               <div className="flex-1" />
