@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { Trash } from "@/components/icons";
+import { Check, Trash } from "@/components/icons";
 import {
   CATEGORIES,
   createTask,
@@ -137,21 +137,76 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
               {cat.label} · {groupDone}/{group.length}
             </h3>
 
+            {/* Add sits above the list: at the bottom of an 80-row
+                checklist it was a scroll away, and a mission added during
+                the event is the thing an exec most wants to reach. */}
+            {canManage &&
+              (adding === cat.value ? (
+                <div className="mt-3 flex flex-col gap-2">
+                  <input
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    placeholder={`New ${cat.label} mission`}
+                    className={inputClass}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => add(cat.value)}
+                      className="bg-sched-accent px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-sched-fill"
+                    >
+                      Add
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdding(null);
+                        setDraft("");
+                      }}
+                      className="border border-sched-hair px-4 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-sched-text-muted"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdding(cat.value);
+                    setDraft("");
+                  }}
+                  className="mt-3 border border-sched-hair px-3 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-sched-text-muted transition-colors hover:border-sched-accent hover:text-sched-accent"
+                >
+                  + Add mission
+                </button>
+              ))}
+
             <ul className="mt-3 space-y-1.5">
               {group.map((task) => (
                 <li
                   key={task.id}
                   className="flex items-start gap-3 rounded-sm border border-sched-hair bg-sched-bg-raised px-3 py-2.5"
                 >
-                  {/* The whole row is the hit target: a bare checkbox is a
-                      hard tap on a phone in a dark bar. */}
-                  <input
-                    type="checkbox"
-                    checked={task.done}
-                    onChange={() => toggle(task)}
-                    aria-label={task.text}
-                    className="mt-0.5 h-[18px] w-[18px] flex-none accent-sched-accent"
-                  />
+                  {/* The native checkbox renders as a white square that
+                      fights the dark palette, so it is kept for semantics
+                      and keyboard support but visually replaced: the real
+                      input is sr-only and the box beside it is styled off
+                      peer-checked. The label gives it a bigger tap target
+                      than the 22px box for a phone in a dark bar. */}
+                  <label className="mt-px flex flex-none cursor-pointer items-center p-1">
+                    <input
+                      type="checkbox"
+                      checked={task.done}
+                      onChange={() => toggle(task)}
+                      aria-label={task.text}
+                      className="peer sr-only"
+                    />
+                    <span className="flex h-[22px] w-[22px] items-center justify-center rounded-[3px] border border-sched-hair bg-sched-bg text-transparent transition-colors peer-checked:border-sched-accent peer-checked:bg-sched-accent peer-checked:text-sched-fill peer-hover:border-sched-accent-dim peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-sched-accent">
+                      <Check width={14} height={14} strokeWidth={3} />
+                    </span>
+                  </label>
 
                   <div className="min-w-0 flex-1">
                     {editing === task.id ? (
@@ -181,7 +236,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                     ) : (
                       <>
                         <p
-                          className={`text-sm leading-snug ${
+                          className={`font-mono text-[13px] leading-relaxed ${
                             task.done
                               ? "text-sched-text-muted line-through"
                               : "text-sched-cream"
@@ -229,49 +284,6 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                 </li>
               ))}
             </ul>
-
-            {canManage &&
-              (adding === cat.value ? (
-                <div className="mt-2 flex flex-col gap-2">
-                  <input
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    placeholder={`New ${cat.label} mission`}
-                    className={inputClass}
-                    autoFocus
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => add(cat.value)}
-                      className="bg-sched-accent px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-sched-fill"
-                    >
-                      Add
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdding(null);
-                        setDraft("");
-                      }}
-                      className="border border-sched-hair px-4 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-sched-text-muted"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAdding(cat.value);
-                    setDraft("");
-                  }}
-                  className="mt-2 border border-sched-hair px-3 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-sched-text-muted transition-colors hover:border-sched-accent hover:text-sched-accent"
-                >
-                  + Add mission
-                </button>
-              ))}
           </section>
         );
       })}

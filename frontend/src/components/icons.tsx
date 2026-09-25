@@ -82,6 +82,11 @@ export const Pin = (p: SVGProps<SVGSVGElement>) => (
     <circle cx="12" cy="10" r="2.5" />
   </svg>
 );
+export const Check = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}>
+    <path d="m4 12 5.5 5.5L20 7" />
+  </svg>
+);
 export const Camera = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}>
     <path d="M3 9a2 2 0 0 1 2-2h2l1.5-2h7L17 7h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
