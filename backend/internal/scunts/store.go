@@ -16,6 +16,7 @@ const (
 	collectionName            = "scuntsSubmissions"
 	tasksCollectionName       = "scuntsTasks"
 	completionsCollectionName = "scuntsCompletions"
+	sectionsCollectionName    = "scuntsSections"
 )
 
 // ListLimit caps how many submissions a single listing returns. The gallery
@@ -29,6 +30,7 @@ type Store struct {
 	coll        *mongo.Collection
 	tasks       *mongo.Collection
 	completions *mongo.Collection
+	sections    *mongo.Collection
 }
 
 // NewStore returns a submission store backed by the given database.
@@ -37,12 +39,30 @@ func NewStore(database *mongo.Database) *Store {
 		coll:        database.Collection(collectionName),
 		tasks:       database.Collection(tasksCollectionName),
 		completions: database.Collection(completionsCollectionName),
+		sections:    database.Collection(sectionsCollectionName),
 	}
 }
 
 // EnsureIndexes creates the descending submittedAt index the gallery reads
-// in. Call once at startup.
+// in, and seeds the built-in checklist sections. Call once at startup.
 func (s *Store) EnsureIndexes(ctx context.Context) error {
+	// Unique prefix is what keeps two sections from both numbering as G1.
+	if _, err := s.sections.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "key", Value: 1}}, Options: options.Index().SetUnique(true)},
+		{Keys: bson.D{{Key: "prefix", Value: 1}}, Options: options.Index().SetUnique(true)},
+	}); err != nil {
+		return err
+	}
+	// $setOnInsert so an existing built-in is left exactly as it is.
+	for _, sec := range builtinSections {
+		if _, err := s.sections.UpdateOne(ctx,
+			bson.M{"key": sec.Key},
+			bson.M{"$setOnInsert": sec},
+			options.Update().SetUpsert(true),
+		); err != nil {
+			return err
+		}
+	}
 	if _, err := s.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "submittedAt", Value: -1}},
 	}); err != nil {
@@ -61,6 +81,42 @@ func (s *Store) EnsureIndexes(ctx context.Context) error {
 		Options: options.Index().SetUnique(true),
 	})
 	return err
+}
+
+// ListSections returns every checklist section in display order.
+func (s *Store) ListSections(ctx context.Context) ([]Section, error) {
+	cur, err := s.sections.Find(ctx, bson.M{},
+		options.Find().SetSort(bson.D{{Key: "order", Value: 1}}))
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+	list := []Section{}
+	return list, cur.All(ctx, &list)
+}
+
+// SectionExists reports whether tasks may be filed under key.
+func (s *Store) SectionExists(ctx context.Context, key Category) (bool, error) {
+	n, err := s.sections.CountDocuments(ctx, bson.M{"key": key})
+	return n > 0, err
+}
+
+// InsertSection adds a section after the existing ones. Its key is its own
+// ID, so two sections with similar names can never collide. A taken prefix
+// comes back as a mongo duplicate-key error.
+func (s *Store) InsertSection(ctx context.Context, label, prefix string) (*Section, error) {
+	var last Section
+	err := s.sections.FindOne(ctx, bson.M{},
+		options.FindOne().SetSort(bson.D{{Key: "order", Value: -1}})).Decode(&last)
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, err
+	}
+	id := primitive.NewObjectID()
+	sec := Section{ID: id, Key: Category(id.Hex()), Label: label, Prefix: prefix, Order: last.Order + 1}
+	if _, err := s.sections.InsertOne(ctx, sec); err != nil {
+		return nil, err
+	}
+	return &sec, nil
 }
 
 // ListTasks returns every mission, ordered by category then position.

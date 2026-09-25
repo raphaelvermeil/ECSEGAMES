@@ -47,6 +47,7 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 		// The mission checklist. Reading and ticking are open to any
 		// signed-in student: the whole team shares one list, so any
 		// teammate may tick or un-tick.
+		pr.Get("/api/scunts/sections", h.ListSections)
 		pr.Get("/api/scunts/tasks", h.ListTasks)
 		pr.Put("/api/scunts/tasks/{id}/done", h.SetDone)
 		pr.Delete("/api/scunts/tasks/{id}/done", h.ClearDone)
@@ -61,6 +62,7 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 			er.Post("/api/scunts/tasks", h.CreateTask)
 			er.Patch("/api/scunts/tasks/{id}", h.UpdateTask)
 			er.Delete("/api/scunts/tasks/{id}", h.DeleteTask)
+			er.Post("/api/scunts/sections", h.CreateSection)
 		})
 	})
 }
@@ -414,11 +416,9 @@ type taskRequest struct {
 
 // validate returns an error message, or "" when the request is usable.
 // Points is a pointer so an omitted value falls back to the default rather
-// than creating a mission worth nothing.
-func (req *taskRequest) validate(needCategory bool) string {
-	if needCategory && !IsValidCategory(req.Category) {
-		return "invalid category"
-	}
+// than creating a mission worth nothing. The category is checked against
+// the stored sections by CreateTask, since that needs the database.
+func (req *taskRequest) validate() string {
 	req.Text = strings.TrimSpace(req.Text)
 	req.Note = strings.TrimSpace(req.Note)
 	if req.Text == "" {
@@ -447,13 +447,23 @@ func (h *Handler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
-	if msg := req.validate(true); msg != "" {
+	if msg := req.validate(); msg != "" {
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
+
+	exists, err := h.store.SectionExists(ctx, req.Category)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	if !exists {
+		http.Error(w, "invalid category", http.StatusBadRequest)
+		return
+	}
 
 	saved, err := h.store.InsertTask(ctx, Task{
 		Category:  req.Category,
@@ -484,7 +494,7 @@ func (h *Handler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
-	if msg := req.validate(false); msg != "" {
+	if msg := req.validate(); msg != "" {
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
@@ -529,6 +539,69 @@ func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 	h.recordTask(ctx, r, audit.VerbDeleted, id, "removed a Scunts mission")
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// ListSections returns the checklist's headings in display order.
+func (h *Handler) ListSections(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	list, err := h.store.ListSections(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, list)
+}
+
+type sectionRequest struct {
+	Label  string `json:"label"`
+	Prefix string `json:"prefix"`
+}
+
+// CreateSection adds a new heading to the checklist, e.g. "Ultimate
+// Rallies" numbered U1, U2… Exec-only.
+func (h *Handler) CreateSection(w http.ResponseWriter, r *http.Request) {
+	var req sectionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	label := strings.TrimSpace(req.Label)
+	prefix := strings.ToUpper(strings.TrimSpace(req.Prefix))
+	if label == "" || len(label) > MaxSectionLabelLen {
+		http.Error(w, "invalid name", http.StatusBadRequest)
+		return
+	}
+	// Letters only, so a number like "UR12" always reads unambiguously.
+	if prefix == "" || len(prefix) > MaxSectionPrefixLen ||
+		strings.IndexFunc(prefix, func(c rune) bool { return c < 'A' || c > 'Z' }) != -1 {
+		http.Error(w, "prefix must be 1-3 letters", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	saved, err := h.store.InsertSection(ctx, label, prefix)
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			http.Error(w, "that prefix is already used", http.StatusConflict)
+			return
+		}
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	clerkID, _ := appmw.UserIDFromContext(r.Context())
+	_ = h.audit.Record(ctx, audit.Entry{
+		EntityType: audit.EntityScuntsSection,
+		EntityID:   saved.ID,
+		Verb:       audit.VerbCreated,
+		Actor:      h.actorName(ctx, clerkID),
+		At:         time.Now().UTC(),
+		Text:       "added the Scunts section " + saved.Label,
+	})
+	writeJSON(w, http.StatusCreated, saved)
 }
 
 // recordTask logs an exec's change to the list. Like submission takedowns

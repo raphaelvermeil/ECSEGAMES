@@ -4,14 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { Check, Trash } from "@/components/icons";
 import {
-  CATEGORIES,
   DEFAULT_TASK_POINTS,
+  createSection,
   createTask,
   deleteTask,
+  listSections,
   listTasks,
   setTaskDone,
   updateTask,
   type ScuntsCategory,
+  type ScuntsSection,
   type ScuntsTask,
 } from "@/lib/scunts";
 
@@ -37,6 +39,11 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
   // Which section is shown ("all" shows every one), and the search box.
   const [filter, setFilter] = useState<ScuntsCategory | "all">("all");
   const [query, setQuery] = useState("");
+  const [sections, setSections] = useState<ScuntsSection[]>([]);
+  // The exec "add section" form: open or not, and what's typed in it.
+  const [addingSection, setAddingSection] = useState(false);
+  const [sectionLabel, setSectionLabel] = useState("");
+  const [sectionPrefix, setSectionPrefix] = useState("");
 
   const load = useCallback(async () => listTasks(await getToken()), [getToken]);
 
@@ -44,8 +51,15 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
     let cancelled = false;
     (async () => {
       try {
-        const data = await load();
-        if (!cancelled) setTasks(data);
+        const token = await getToken();
+        const [data, secs] = await Promise.all([
+          listTasks(token),
+          listSections(token),
+        ]);
+        if (!cancelled) {
+          setTasks(data);
+          setSections(secs);
+        }
       } catch {
         if (!cancelled) setError("Could not load the mission list.");
       }
@@ -53,7 +67,29 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [load]);
+  }, [getToken]);
+
+  async function addSection() {
+    const label = sectionLabel.trim();
+    const prefix = sectionPrefix.trim();
+    if (!label || !prefix) return;
+    try {
+      const token = await getToken();
+      await createSection(token, label, prefix);
+      setSections(await listSections(token));
+      setAddingSection(false);
+      setSectionLabel("");
+      setSectionPrefix("");
+    } catch (err) {
+      const status = (err as { response?: { status?: number } }).response
+        ?.status;
+      setError(
+        status === 409
+          ? `Prefix "${prefix.toUpperCase()}" is already used by another section.`
+          : "Could not add that section. The prefix must be 1-3 letters.",
+      );
+    }
+  }
 
   // Tick optimistically so the box responds instantly, then reconcile with
   // the server. On failure the tick is rolled back rather than left showing
@@ -135,7 +171,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
 
   if (tasks === null) {
     return (
-      <p className="mt-3 font-mono text-xs text-sched-text-muted">Loading…</p>
+      <p className="mt-3 font-mono text-xs text-sched-text-muted">Loadingâ€¦</p>
     );
   }
 
@@ -146,10 +182,10 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="mt-3">
-      {/* Your team's running tally. Points are shown here only — ticking a
+      {/* Your team's running tally. Points are shown here only â€” ticking a
           mission doesn't write to the leaderboard; execs still award. */}
       <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-sched-accent">
-        {doneCount} / {tasks.length} done · {points} pts
+        {doneCount} / {tasks.length} done Â· {points} pts
       </p>
 
       {error && (
@@ -168,14 +204,14 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
       />
 
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {[{ value: "all" as const, label: "All" }, ...CATEGORIES].map((c) => (
+        {[{ key: "all", label: "All" }, ...sections].map((c) => (
           <button
-            key={c.value}
+            key={c.key}
             type="button"
-            onClick={() => setFilter(c.value)}
-            aria-pressed={filter === c.value}
+            onClick={() => setFilter(c.key)}
+            aria-pressed={filter === c.key}
             className={`border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.08em] transition-colors ${
-              filter === c.value
+              filter === c.key
                 ? "border-sched-accent bg-sched-accent text-sched-fill"
                 : "border-sched-hair text-sched-text-muted hover:border-sched-accent hover:text-sched-accent"
             }`}
@@ -183,16 +219,70 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
             {c.label}
           </button>
         ))}
+        {canManage && !addingSection && (
+          <button
+            type="button"
+            onClick={() => setAddingSection(true)}
+            className="border border-dashed border-sched-hair px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-sched-text-muted transition-colors hover:border-sched-accent hover:text-sched-accent"
+          >
+            + Add section
+          </button>
+        )}
       </div>
 
-      {CATEGORIES.filter((cat) => filter === "all" || filter === cat.value).map(
-        (cat) => {
+      {canManage && addingSection && (
+        <div className="mt-3 flex flex-col gap-2">
+          <input
+            value={sectionLabel}
+            onChange={(e) => setSectionLabel(e.target.value)}
+            placeholder="Section name (e.g. Ultimate Rallies)"
+            className={inputClass}
+            aria-label="Section name"
+            autoFocus
+          />
+          <div className="flex items-center gap-2">
+            <span className={fieldLabelClass}>Number prefix</span>
+            <input
+              value={sectionPrefix}
+              onChange={(e) => setSectionPrefix(e.target.value)}
+              placeholder="U"
+              maxLength={3}
+              className={pointsClass}
+              aria-label="Number prefix"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={addSection}
+              className="bg-sched-accent px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-sched-fill"
+            >
+              Add section
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAddingSection(false);
+                setSectionLabel("");
+                setSectionPrefix("");
+              }}
+              className="border border-sched-hair px-4 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-sched-text-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {sections
+        .filter((cat) => filter === "all" || filter === cat.key)
+        .map((cat) => {
           const group = tasks
-            .filter((t) => t.category === cat.value)
+            .filter((t) => t.category === cat.key)
             .map((t, i) => ({ ...t, code: `${cat.prefix}${i + 1}` }));
           const groupDone = group.filter((t) => t.done).length;
           // Matches the mission number (G12) or the start of any word in its
-          // text, so "pho" finds "Take a photo…".
+          // text, so "pho" finds "Take a photoâ€¦".
           const q = query.trim().toLowerCase();
           const shown = q
             ? group.filter(
@@ -207,16 +297,16 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
           // While searching, sections with no hits are dropped entirely.
           if (q && shown.length === 0) return null;
           return (
-            <section key={cat.value} className="mt-7">
+            <section key={cat.key} className="mt-7">
               <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-sched-text-muted">
-                {cat.label} · {groupDone}/{group.length}
+                {cat.label} Â· {groupDone}/{group.length}
               </h3>
 
               {/* Add sits above the list: at the bottom of an 80-row
                 checklist it was a scroll away, and a mission added during
                 the event is the thing an exec most wants to reach. */}
               {canManage &&
-                (adding === cat.value ? (
+                (adding === cat.key ? (
                   <div className="mt-3 flex flex-col gap-2">
                     <input
                       value={draft}
@@ -240,7 +330,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => add(cat.value)}
+                        onClick={() => add(cat.key)}
                         className="bg-sched-accent px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-sched-fill"
                       >
                         Add
@@ -261,7 +351,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                   <button
                     type="button"
                     onClick={() => {
-                      setAdding(cat.value);
+                      setAdding(cat.key);
                       setDraft("");
                       setDraftPoints(String(DEFAULT_TASK_POINTS));
                     }}
@@ -355,7 +445,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                           <p className="mt-1 font-mono text-[11px] text-sched-text-muted">
                             {task.points} pts
                             {task.done && task.doneByName
-                              ? ` · ticked by ${task.doneByName}`
+                              ? ` Â· ticked by ${task.doneByName}`
                               : ""}
                           </p>
                         </>
@@ -390,8 +480,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
               </ul>
             </section>
           );
-        },
-      )}
+        })}
     </div>
   );
 }

@@ -107,16 +107,39 @@ export function videoDuration(file: File): Promise<number> {
 
 // --- Mission checklist -----------------------------------------------------
 
-// The source sheets. Order here is the order the page renders them; prefix
-// is the letter each mission's number carries (G1, C1, B1, P1).
-export const CATEGORIES = [
-  { value: "general", label: "General", prefix: "G" },
-  { value: "coord", label: "Coords", prefix: "C" },
-  { value: "boilerRoom", label: "Boiler Room", prefix: "B" },
-  { value: "pubCrawl", label: "Pub Crawl", prefix: "P" },
-] as const;
+// Mirrors internal/scunts.Section. The list comes back in render order;
+// prefix is the letter(s) each mission's number carries (G1, B22).
+export interface ScuntsSection {
+  key: string;
+  label: string;
+  prefix: string;
+  order: number;
+}
 
-export type ScuntsCategory = (typeof CATEGORIES)[number]["value"];
+export type ScuntsCategory = string;
+
+export async function listSections(
+  token: string | null,
+): Promise<ScuntsSection[]> {
+  const res = await api.get<ScuntsSection[]>(
+    "/api/scunts/sections",
+    authHeader(token),
+  );
+  return res.data;
+}
+
+export async function createSection(
+  token: string | null,
+  label: string,
+  prefix: string,
+): Promise<ScuntsSection> {
+  const res = await api.post<ScuntsSection>(
+    "/api/scunts/sections",
+    { label, prefix },
+    authHeader(token),
+  );
+  return res.data;
+}
 
 // Mirrors internal/scunts.TaskView. `done` is resolved per request against
 // the caller's team, so two students on different teams see different
