@@ -287,9 +287,10 @@ func (s *Store) Insert(ctx context.Context, sub Submission) (*Submission, error)
 }
 
 // List returns submissions newest first, capped at ListLimit. Execs see
-// everything; anyone else sees accepted proof plus their own team's pending
-// proof, so a team knows its upload arrived.
-func (s *Store) List(ctx context.Context, team models.Team, isExec bool) ([]Submission, error) {
+// everything; anyone else sees accepted proof plus pending proof they
+// uploaded themselves, so they know it arrived. Teammates only learn a
+// mission is pending from the checklist, never see the media itself.
+func (s *Store) List(ctx context.Context, clerkID string, isExec bool) ([]Submission, error) {
 	opts := options.Find().
 		SetSort(bson.D{{Key: "submittedAt", Value: -1}}).
 		SetLimit(ListLimit)
@@ -298,7 +299,7 @@ func (s *Store) List(ctx context.Context, team models.Team, isExec bool) ([]Subm
 	if !isExec {
 		filter = bson.M{"$or": bson.A{
 			bson.M{"status": bson.M{"$ne": StatusPending}},
-			bson.M{"team": team},
+			bson.M{"submittedBy": clerkID},
 		}}
 	}
 	cur, err := s.coll.Find(ctx, filter, opts)

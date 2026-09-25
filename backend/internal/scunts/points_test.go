@@ -76,13 +76,18 @@ func newTask(t *testing.T, s *Store, points int) *Task {
 
 func newProof(t *testing.T, s *Store, task *Task, team models.Team) *Submission {
 	t.Helper()
+	return newProofBy(t, s, task, team, "test-clerk")
+}
+
+func newProofBy(t *testing.T, s *Store, task *Task, team models.Team, clerkID string) *Submission {
+	t.Helper()
 	sub, err := s.Insert(context.Background(), Submission{
 		Team:            team,
 		Key:             "scunts/" + string(team) + "/test.jpg",
 		Kind:            KindImage,
 		ContentType:     "image/jpeg",
 		Size:            1,
-		SubmittedBy:     "test-clerk",
+		SubmittedBy:     clerkID,
 		SubmittedByName: "Test Student",
 		SubmittedAt:     time.Now().UTC(),
 		TaskID:          task.ID,
@@ -328,34 +333,42 @@ func TestRemovePendingProof_LeavesOtherTeamsPoints(t *testing.T) {
 	}
 }
 
-func TestList_PendingVisibleOnlyToExecsAndOwnTeam(t *testing.T) {
+func TestList_PendingVisibleOnlyToExecsAndSubmitter(t *testing.T) {
 	h, s := testHandler(t)
 	ctx := context.Background()
 	task := newTask(t, s, 100)
-	acceptedSub := newProof(t, s, task, models.TeamComputer)
-	newProof(t, s, task, models.TeamSoftware)
-	newProof(t, s, task, models.TeamElectrical)
-	if code := accept(t, h, acceptedSub.ID); code != http.StatusNoContent {
+	other := newTask(t, s, 100)
+	accepted := newProofBy(t, s, task, models.TeamComputer, "computer-student")
+	mine := newProofBy(t, s, task, models.TeamSoftware, "me")
+	teammates := newProofBy(t, s, other, models.TeamSoftware, "my-teammate")
+	rival := newProofBy(t, s, task, models.TeamElectrical, "rival")
+	if code := accept(t, h, accepted.ID); code != http.StatusNoContent {
 		t.Fatalf("accept: got %d, want 204", code)
 	}
 
-	student, err := s.List(ctx, models.TeamSoftware, false)
+	student, err := s.List(ctx, "me", false)
 	if err != nil {
 		t.Fatalf("list as student: %v", err)
 	}
-	seen := map[models.Team]bool{}
+	seen := map[primitive.ObjectID]bool{}
 	for _, sub := range student {
-		seen[sub.Team] = true
+		seen[sub.ID] = true
 	}
-	if !seen[models.TeamComputer] || !seen[models.TeamSoftware] || seen[models.TeamElectrical] {
-		t.Fatalf("student saw teams %v, want computer (accepted) and software (own pending) only", seen)
+	if !seen[accepted.ID] || !seen[mine.ID] {
+		t.Fatalf("student should see accepted proof and their own pending proof; saw %v", seen)
+	}
+	if seen[teammates.ID] {
+		t.Fatalf("student saw a teammate's pending proof")
+	}
+	if seen[rival.ID] {
+		t.Fatalf("student saw another team's pending proof")
 	}
 
 	exec, err := s.List(ctx, "", true)
 	if err != nil {
 		t.Fatalf("list as exec: %v", err)
 	}
-	if len(exec) != 3 {
-		t.Fatalf("exec saw %d submissions, want 3", len(exec))
+	if len(exec) != 4 {
+		t.Fatalf("exec saw %d submissions, want 4", len(exec))
 	}
 }

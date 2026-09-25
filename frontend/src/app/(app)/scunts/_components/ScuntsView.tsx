@@ -104,7 +104,7 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
 
   // For execs, pending proof lives only under its own filter so the team
   // tabs show what's actually been accepted. Students only receive their
-  // own team's pending proof, which stays inline with a badge.
+  // own pending uploads, which stay inline with a badge.
   const isPending = (s: ScuntsSubmission) => s.status === "pending";
   const pending = (items ?? []).filter(isPending);
   const reviewed = canManage

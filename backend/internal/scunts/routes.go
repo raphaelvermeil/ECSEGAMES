@@ -267,7 +267,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 // List returns the gallery, newest first, each item carrying a presigned
 // URL the browser loads the media from. Pending proof is only included for
-// execs and the team that submitted it.
+// execs and the person who submitted it.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	if !h.ready(w) {
 		return
@@ -284,7 +284,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	isExec := u.Role == models.RoleExec || u.Role == models.RoleAdmin
 
-	list, err := h.store.List(ctx, u.Team, isExec)
+	list, err := h.store.List(ctx, clerkID, isExec)
 	if err != nil {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
