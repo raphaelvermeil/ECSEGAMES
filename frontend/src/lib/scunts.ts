@@ -107,12 +107,13 @@ export function videoDuration(file: File): Promise<number> {
 
 // --- Mission checklist -----------------------------------------------------
 
-// The three source sheets. Order here is the order the page renders them.
+// The source sheets. Order here is the order the page renders them; prefix
+// is the letter each mission's number carries (G1, C1, B1, P1).
 export const CATEGORIES = [
-  { value: "general", label: "General" },
-  { value: "coord", label: "Coords" },
-  { value: "boilerRoom", label: "Boiler Room" },
-  { value: "pubCrawl", label: "Pub Crawl" },
+  { value: "general", label: "General", prefix: "G" },
+  { value: "coord", label: "Coords", prefix: "C" },
+  { value: "boilerRoom", label: "Boiler Room", prefix: "B" },
+  { value: "pubCrawl", label: "Pub Crawl", prefix: "P" },
 ] as const;
 
 export type ScuntsCategory = (typeof CATEGORIES)[number]["value"];

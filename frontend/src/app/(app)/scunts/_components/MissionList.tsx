@@ -34,6 +34,9 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [editPoints, setEditPoints] = useState("");
+  // Which section is shown ("all" shows every one), and the search box.
+  const [filter, setFilter] = useState<ScuntsCategory | "all">("all");
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => listTasks(await getToken()), [getToken]);
 
@@ -155,191 +158,240 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
         </p>
       )}
 
-      {CATEGORIES.map((cat) => {
-        const group = tasks.filter((t) => t.category === cat.value);
-        const groupDone = group.filter((t) => t.done).length;
-        return (
-          <section key={cat.value} className="mt-7">
-            <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-sched-text-muted">
-              {cat.label} · {groupDone}/{group.length}
-            </h3>
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search missions (e.g. G12 or a word)"
+        className={`${inputClass} mt-4`}
+        aria-label="Search missions"
+      />
 
-            {/* Add sits above the list: at the bottom of an 80-row
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {[{ value: "all" as const, label: "All" }, ...CATEGORIES].map((c) => (
+          <button
+            key={c.value}
+            type="button"
+            onClick={() => setFilter(c.value)}
+            aria-pressed={filter === c.value}
+            className={`border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.08em] transition-colors ${
+              filter === c.value
+                ? "border-sched-accent bg-sched-accent text-sched-fill"
+                : "border-sched-hair text-sched-text-muted hover:border-sched-accent hover:text-sched-accent"
+            }`}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      {CATEGORIES.filter((cat) => filter === "all" || filter === cat.value).map(
+        (cat) => {
+          const group = tasks
+            .filter((t) => t.category === cat.value)
+            .map((t, i) => ({ ...t, code: `${cat.prefix}${i + 1}` }));
+          const groupDone = group.filter((t) => t.done).length;
+          // Matches the mission number (G12) or the start of any word in its
+          // text, so "pho" finds "Take a photo…".
+          const q = query.trim().toLowerCase();
+          const shown = q
+            ? group.filter(
+                (t) =>
+                  t.code.toLowerCase().startsWith(q) ||
+                  t.text
+                    .toLowerCase()
+                    .split(/\s+/)
+                    .some((w) => w.startsWith(q)),
+              )
+            : group;
+          // While searching, sections with no hits are dropped entirely.
+          if (q && shown.length === 0) return null;
+          return (
+            <section key={cat.value} className="mt-7">
+              <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-sched-text-muted">
+                {cat.label} · {groupDone}/{group.length}
+              </h3>
+
+              {/* Add sits above the list: at the bottom of an 80-row
                 checklist it was a scroll away, and a mission added during
                 the event is the thing an exec most wants to reach. */}
-            {canManage &&
-              (adding === cat.value ? (
-                <div className="mt-3 flex flex-col gap-2">
-                  <input
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    placeholder={`New ${cat.label} mission`}
-                    className={inputClass}
-                    aria-label="Mission text"
-                    autoFocus
-                  />
-                  <div className="flex items-center gap-2">
-                    <span className={fieldLabelClass}>Points</span>
+              {canManage &&
+                (adding === cat.value ? (
+                  <div className="mt-3 flex flex-col gap-2">
                     <input
-                      type="number"
-                      min={0}
-                      value={draftPoints}
-                      onChange={(e) => setDraftPoints(e.target.value)}
-                      className={pointsClass}
-                      aria-label="Points"
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      placeholder={`New ${cat.label} mission`}
+                      className={inputClass}
+                      aria-label="Mission text"
+                      autoFocus
                     />
+                    <div className="flex items-center gap-2">
+                      <span className={fieldLabelClass}>Points</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={draftPoints}
+                        onChange={(e) => setDraftPoints(e.target.value)}
+                        className={pointsClass}
+                        aria-label="Points"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => add(cat.value)}
+                        className="bg-sched-accent px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-sched-fill"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdding(null);
+                          setDraft("");
+                        }}
+                        className="border border-sched-hair px-4 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-sched-text-muted"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => add(cat.value)}
-                      className="bg-sched-accent px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-sched-fill"
-                    >
-                      Add
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdding(null);
-                        setDraft("");
-                      }}
-                      className="border border-sched-hair px-4 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-sched-text-muted"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAdding(cat.value);
-                    setDraft("");
-                    setDraftPoints(String(DEFAULT_TASK_POINTS));
-                  }}
-                  className="mt-3 border border-sched-hair px-3 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-sched-text-muted transition-colors hover:border-sched-accent hover:text-sched-accent"
-                >
-                  + Add mission
-                </button>
-              ))}
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdding(cat.value);
+                      setDraft("");
+                      setDraftPoints(String(DEFAULT_TASK_POINTS));
+                    }}
+                    className="mt-3 border border-sched-hair px-3 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-sched-text-muted transition-colors hover:border-sched-accent hover:text-sched-accent"
+                  >
+                    + Add mission
+                  </button>
+                ))}
 
-            <ul className="mt-3 space-y-1.5">
-              {group.map((task) => (
-                <li
-                  key={task.id}
-                  className="flex items-start gap-3 rounded-sm border border-sched-hair bg-sched-bg-raised px-3 py-2.5"
-                >
-                  {/* The native checkbox renders as a white square that
+              <ul className="mt-3 space-y-1.5">
+                {shown.map((task) => (
+                  <li
+                    key={task.id}
+                    className="flex items-start gap-3 rounded-sm border border-sched-hair bg-sched-bg-raised px-3 py-2.5"
+                  >
+                    {/* The native checkbox renders as a white square that
                       fights the dark palette, so it is kept for semantics
                       and keyboard support but visually replaced: the real
                       input is sr-only and the box beside it is styled off
                       peer-checked. The label gives it a bigger tap target
                       than the 22px box for a phone in a dark bar. */}
-                  <label className="mt-px flex flex-none cursor-pointer items-center p-1">
-                    <input
-                      type="checkbox"
-                      checked={task.done}
-                      onChange={() => toggle(task)}
-                      aria-label={task.text}
-                      className="peer sr-only"
-                    />
-                    <span className="flex h-[22px] w-[22px] items-center justify-center rounded-[3px] border border-sched-hair bg-sched-bg text-transparent transition-colors peer-checked:border-sched-accent peer-checked:bg-sched-accent peer-checked:text-sched-fill peer-hover:border-sched-accent-dim peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-sched-accent">
-                      <Check width={14} height={14} strokeWidth={3} />
-                    </span>
-                  </label>
+                    <label className="mt-px flex flex-none cursor-pointer items-center p-1">
+                      <input
+                        type="checkbox"
+                        checked={task.done}
+                        onChange={() => toggle(task)}
+                        aria-label={task.text}
+                        className="peer sr-only"
+                      />
+                      <span className="flex h-[22px] w-[22px] items-center justify-center rounded-[3px] border border-sched-hair bg-sched-bg text-transparent transition-colors peer-checked:border-sched-accent peer-checked:bg-sched-accent peer-checked:text-sched-fill peer-hover:border-sched-accent-dim peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-sched-accent">
+                        <Check width={14} height={14} strokeWidth={3} />
+                      </span>
+                    </label>
 
-                  <div className="min-w-0 flex-1">
-                    {editing === task.id ? (
-                      <div className="flex flex-col gap-2">
-                        <input
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                          className={inputClass}
-                          aria-label="Mission text"
-                        />
-                        <div className="flex items-center gap-2">
-                          <span className={fieldLabelClass}>Points</span>
+                    <div className="min-w-0 flex-1">
+                      {editing === task.id ? (
+                        <div className="flex flex-col gap-2">
                           <input
-                            type="number"
-                            min={0}
-                            value={editPoints}
-                            onChange={(e) => setEditPoints(e.target.value)}
-                            className={pointsClass}
-                            aria-label="Points"
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            className={inputClass}
+                            aria-label="Mission text"
                           />
+                          <div className="flex items-center gap-2">
+                            <span className={fieldLabelClass}>Points</span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={editPoints}
+                              onChange={(e) => setEditPoints(e.target.value)}
+                              className={pointsClass}
+                              aria-label="Points"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => saveEdit(task.id, task.points)}
+                              className="bg-sched-accent px-3 py-1.5 font-mono text-[11px] font-semibold text-sched-fill"
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditing(null)}
+                              className="border border-sched-hair px-3 py-1.5 font-mono text-[11px] text-sched-text-muted"
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => saveEdit(task.id, task.points)}
-                            className="bg-sched-accent px-3 py-1.5 font-mono text-[11px] font-semibold text-sched-fill"
+                      ) : (
+                        <>
+                          <p
+                            className={`font-mono text-[13px] leading-relaxed ${
+                              task.done
+                                ? "text-sched-text-muted line-through"
+                                : "text-sched-cream"
+                            }`}
                           >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditing(null)}
-                            className="border border-sched-hair px-3 py-1.5 font-mono text-[11px] text-sched-text-muted"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <p
-                          className={`font-mono text-[13px] leading-relaxed ${
-                            task.done
-                              ? "text-sched-text-muted line-through"
-                              : "text-sched-cream"
-                          }`}
-                        >
-                          {task.text}
-                        </p>
-                        {task.note && (
-                          <p className="mt-1 font-mono text-[11px] text-sched-text-muted">
-                            {task.note}
+                            <span className="mr-2 font-semibold text-sched-accent">
+                              {task.code}
+                            </span>
+                            {task.text}
                           </p>
-                        )}
-                        <p className="mt-1 font-mono text-[11px] text-sched-text-muted">
-                          {task.points} pts
-                          {task.done && task.doneByName
-                            ? ` · ticked by ${task.doneByName}`
-                            : ""}
-                        </p>
-                      </>
-                    )}
-                  </div>
-
-                  {canManage && editing !== task.id && (
-                    <div className="flex flex-none gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditing(task.id);
-                          setEditText(task.text);
-                          setEditPoints(String(task.points));
-                        }}
-                        className="border border-sched-hair px-[8px] py-[5px] font-mono text-[11px] text-sched-text-muted transition-colors hover:border-sched-accent hover:text-sched-accent"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => remove(task.id)}
-                        aria-label="Delete mission"
-                        className="border border-sched-coral px-[8px] py-[5px] text-sched-coral transition-colors hover:bg-sched-coral hover:text-sched-bg"
-                      >
-                        <Trash width={13} height={13} strokeWidth={2} />
-                      </button>
+                          {task.note && (
+                            <p className="mt-1 font-mono text-[11px] text-sched-text-muted">
+                              {task.note}
+                            </p>
+                          )}
+                          <p className="mt-1 font-mono text-[11px] text-sched-text-muted">
+                            {task.points} pts
+                            {task.done && task.doneByName
+                              ? ` · ticked by ${task.doneByName}`
+                              : ""}
+                          </p>
+                        </>
+                      )}
                     </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        );
-      })}
+
+                    {canManage && editing !== task.id && (
+                      <div className="flex flex-none gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditing(task.id);
+                            setEditText(task.text);
+                            setEditPoints(String(task.points));
+                          }}
+                          className="border border-sched-hair px-[8px] py-[5px] font-mono text-[11px] text-sched-text-muted transition-colors hover:border-sched-accent hover:text-sched-accent"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => remove(task.id)}
+                          aria-label="Delete mission"
+                          className="border border-sched-coral px-[8px] py-[5px] text-sched-coral transition-colors hover:bg-sched-coral hover:text-sched-bg"
+                        >
+                          <Trash width={13} height={13} strokeWidth={2} />
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        },
+      )}
     </div>
   );
 }
