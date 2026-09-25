@@ -14,7 +14,7 @@ import SignedOutOnly from "./SignedOutOnly";
 // what the page says never means touching markup.
 
 const ABOUT_BODY = [
-  "The ECSE Games are the ECSE Student Society's annual competition weekend: three days of events that range from genuinely athletic to entirely ridiculous, run by execs and fought over by four teams drawn from across the department.",
+  "The ECSE Games are the ECSE Student Society's competition weekend, running for the first time this year: three days of events that range from genuinely athletic to entirely ridiculous, run by execs and fought over by four teams drawn from across the department.",
   "Everyone is welcome regardless of year, program stream, or how competitive you actually are. Most events have a seated or low-effort alternative, and nothing requires drinking to take part.",
 ];
 
@@ -32,9 +32,9 @@ const HIGHLIGHTS = [
     icon: Trophy,
   },
   {
-    title: "Hackathon",
+    title: "CS comp",
     blurb:
-      "A set of timed challenges that put your frontend knowledge to the test.",
+      "A set of timed challenges that put your frontend knowledge to the test, plus a round of cybersecurity questions.",
     icon: CodeXml,
   },
   {

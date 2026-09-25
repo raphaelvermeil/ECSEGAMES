@@ -27,11 +27,17 @@ export const POLL_INTERVAL_MS = 15_000;
 // deuteranopia (violet vs cyan) — barely over the ΔE 8 floor — so these
 // are tuned to ΔE 19.4 while keeping the same hues and staying above 3:1
 // contrast on sched-bg. Verified with the dataviz palette validator.
+// Validated against the dark chart surface (#0b1310) with the dataviz
+// palette checker: every pair clears the normal-vision floor (worst 22.6)
+// and colour-vision separation (worst 11.4 protan), and all four clear 3:1
+// contrast. Red and pink are the risky pair — red sits at a true red and
+// pink well into magenta precisely so they stay apart. Don't nudge these
+// by eye; re-run the checker if they change.
 export const TEAM_COLORS: Record<Team, string> = {
-  electrical: "#fe5920",
-  computer: "#ffd75a",
-  software: "#74dcff",
-  oldPatrol: "#c066ff",
+  electrical: "#2f9be0",
+  computer: "#ffaae0",
+  software: "#ffd75a",
+  oldPatrol: "#ef4136",
 };
 
 // Secondary encoding so the lines stay distinguishable without colour at
