@@ -66,11 +66,16 @@ export default function StandingsPanel({
               style={{ background: "#6ee787" }}
             />
             <span className="font-mono text-[10px] font-medium tracking-[0.2em] text-[#6ee787]">
-              LIVE · UPDATING EVERY SUBMISSION
+              LIVE
+              <span className="hidden lg:inline">
+                {" "}
+                · UPDATING EVERY SUBMISSION
+              </span>
             </span>
           </div>
           <h2 className="mt-2.5 font-display text-2xl font-semibold tracking-[0.03em] text-sched-cream lg:text-[30px]">
-            CS comp · live standings
+            <span className="lg:hidden">CS comp live standings</span>
+            <span className="hidden lg:inline">CS comp · live standings</span>
           </h2>
           <p className="mt-2 max-w-[640px] font-mono text-xs leading-[1.7] text-sched-text-muted">
             Every team&rsquo;s solved parts land here the moment they submit. A
@@ -101,7 +106,7 @@ export default function StandingsPanel({
         </div>
       </div>
 
-      <div className="flex items-center gap-3.5 pb-2.5 pt-4">
+      <div className="hidden items-center gap-3.5 pb-2.5 pt-4 lg:flex">
         <span className="font-mono text-[10px] tracking-[0.16em] text-sched-text-muted">
           SKIPPED PARTS SIMPLY SCORE NOTHING
         </span>

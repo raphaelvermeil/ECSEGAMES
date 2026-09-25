@@ -44,8 +44,11 @@ export default function TeamsPanel({
         </h2>
         <span className="font-mono text-xs text-sched-text-muted">
           {openCount} of {teams.length} {teams.length === 1 ? "team" : "teams"}{" "}
-          still {openCount === 1 ? "has" : "have"} room · {TEAM_SIZE} coders per
-          team
+          still {openCount === 1 ? "has" : "have"} room
+          <span className="hidden lg:inline">
+            {" "}
+            · {TEAM_SIZE} coders per team
+          </span>
         </span>
       </div>
 
@@ -91,7 +94,7 @@ export default function TeamsPanel({
               challengeLabel,
             );
             const label = joined
-              ? "✓ YOUR TEAM — OPEN BATTLE"
+              ? "✓ YOUR TEAM"
               : full
                 ? "TEAM FULL"
                 : myTeamId !== null

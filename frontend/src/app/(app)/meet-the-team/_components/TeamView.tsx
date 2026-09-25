@@ -63,9 +63,7 @@ export default function TeamView({ members }: { members: TeamMember[] }) {
   // governs height.
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-[#0f1512] lg:static lg:h-auto lg:overflow-visible lg:min-h-[max(calc(100vh-72px),calc(var(--app-floor-h,72px)-72px))]">
-      <TeamBanner
-        subtitle={`${members.length} coords · tap a head to learn more`}
-      />
+      <TeamBanner subtitle="Tap a head to learn more" />
 
       {/* grow/shrink/basis-0/min-h-0 (instead of flex-1's percentage basis)
           hands ScaledScene the exact leftover box — see ScaledScene for why
