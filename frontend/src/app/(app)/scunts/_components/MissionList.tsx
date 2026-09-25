@@ -391,177 +391,183 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                 {shown.map((task) => (
                   <li
                     key={task.id}
-                    className="flex items-start gap-3 rounded-sm border border-sched-hair bg-sched-bg-raised px-3 py-2.5"
+                    className="rounded-sm border border-sched-hair bg-sched-bg-raised px-3 py-2.5"
                   >
-                    {/* A mission is crossed off only by an exec accepting
+                    <div className="flex items-start gap-3">
+                      {/* A mission is crossed off only by an exec accepting
                       proof, so this box is a status, not a control. */}
-                    <span
-                      aria-hidden
-                      className={`mt-1 flex h-[22px] w-[22px] flex-none items-center justify-center rounded-[3px] border ${
-                        task.done
-                          ? "border-sched-accent bg-sched-accent text-sched-fill"
-                          : "border-sched-hair bg-sched-bg text-transparent"
-                      }`}
-                    >
-                      <Check width={14} height={14} strokeWidth={3} />
-                    </span>
+                      <span
+                        aria-hidden
+                        className={`mt-1 flex h-[22px] w-[22px] flex-none items-center justify-center rounded-[3px] border ${
+                          task.done
+                            ? "border-sched-accent bg-sched-accent text-sched-fill"
+                            : "border-sched-hair bg-sched-bg text-transparent"
+                        }`}
+                      >
+                        <Check width={14} height={14} strokeWidth={3} />
+                      </span>
 
-                    <div className="min-w-0 flex-1">
-                      {editing === task.id ? (
-                        <div className="flex flex-col gap-2">
-                          <input
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            className={inputClass}
-                            aria-label="Mission text"
-                          />
-                          <div className="flex items-center gap-2">
-                            <span className={fieldLabelClass}>Points</span>
+                      <div className="min-w-0 flex-1">
+                        {editing === task.id ? (
+                          <div className="flex flex-col gap-2">
                             <input
-                              type="number"
-                              min={0}
-                              value={editPoints}
-                              onChange={(e) => setEditPoints(e.target.value)}
-                              className={pointsClass}
-                              aria-label="Points"
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              className={inputClass}
+                              aria-label="Mission text"
                             />
+                            <div className="flex items-center gap-2">
+                              <span className={fieldLabelClass}>Points</span>
+                              <input
+                                type="number"
+                                min={0}
+                                value={editPoints}
+                                onChange={(e) => setEditPoints(e.target.value)}
+                                className={pointsClass}
+                                aria-label="Points"
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => saveEdit(task.id, task.points)}
+                                className="bg-sched-accent px-3 py-1.5 font-mono text-[11px] font-semibold text-sched-fill"
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditing(null)}
+                                className="border border-sched-hair px-3 py-1.5 font-mono text-[11px] text-sched-text-muted"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => saveEdit(task.id, task.points)}
-                              className="bg-sched-accent px-3 py-1.5 font-mono text-[11px] font-semibold text-sched-fill"
-                            >
-                              Save
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditing(null)}
-                              className="border border-sched-hair px-3 py-1.5 font-mono text-[11px] text-sched-text-muted"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          {/* Tapping an open mission opens its proof form;
+                        ) : (
+                          <>
+                            {/* Tapping an open mission opens its proof form;
                             a completed one can't take more proof. */}
+                            <button
+                              type="button"
+                              disabled={task.done}
+                              onClick={() => {
+                                setProofFor(
+                                  proofFor === task.id ? null : task.id,
+                                );
+                                setDetails("");
+                              }}
+                              aria-expanded={proofFor === task.id}
+                              className={`block w-full text-left font-mono text-[13px] leading-relaxed ${
+                                task.done
+                                  ? "cursor-default text-sched-text-muted line-through"
+                                  : "text-sched-cream hover:text-sched-accent"
+                              }`}
+                            >
+                              <span className="mr-2 font-semibold text-sched-accent">
+                                {task.code}
+                              </span>
+                              {task.text}
+                            </button>
+                            {task.note && (
+                              <p className="mt-1 font-mono text-[11px] text-sched-text-muted">
+                                {task.note}
+                              </p>
+                            )}
+                            <p className="mt-1 font-mono text-[11px] text-sched-text-muted">
+                              {task.points} pts
+                              {task.done
+                                ? task.doneByName
+                                  ? ` · done, proof by ${task.doneByName}`
+                                  : " · done"
+                                : task.pending
+                                  ? " · proof awaiting review"
+                                  : ""}
+                            </p>
+                          </>
+                        )}
+                      </div>
+
+                      {canManage && editing !== task.id && (
+                        <div className="flex flex-none gap-1.5">
                           <button
                             type="button"
-                            disabled={task.done}
                             onClick={() => {
-                              setProofFor(
-                                proofFor === task.id ? null : task.id,
-                              );
-                              setDetails("");
+                              setEditing(task.id);
+                              setEditText(task.text);
+                              setEditPoints(String(task.points));
                             }}
-                            aria-expanded={proofFor === task.id}
-                            className={`block w-full text-left font-mono text-[13px] leading-relaxed ${
-                              task.done
-                                ? "cursor-default text-sched-text-muted line-through"
-                                : "text-sched-cream hover:text-sched-accent"
-                            }`}
+                            className="border border-sched-hair px-[8px] py-[5px] font-mono text-[11px] text-sched-text-muted transition-colors hover:border-sched-accent hover:text-sched-accent"
                           >
-                            <span className="mr-2 font-semibold text-sched-accent">
-                              {task.code}
-                            </span>
-                            {task.text}
+                            Edit
                           </button>
-                          {task.note && (
-                            <p className="mt-1 font-mono text-[11px] text-sched-text-muted">
-                              {task.note}
-                            </p>
-                          )}
-                          <p className="mt-1 font-mono text-[11px] text-sched-text-muted">
-                            {task.points} pts
-                            {task.done
-                              ? task.doneByName
-                                ? ` · done, proof by ${task.doneByName}`
-                                : " · done"
-                              : task.pending
-                                ? " · proof awaiting review"
-                                : ""}
-                          </p>
-
-                          {proofFor === task.id && !task.done && (
-                            <div className="mt-3 flex flex-col gap-2">
-                              {/* Details come first on purpose: picking a
-                                file submits straight away, so anything
-                                typed after that would be lost. */}
-                              <label
-                                htmlFor={`details-${task.id}`}
-                                className={fieldLabelClass}
-                              >
-                                1. Additional details (optional)
-                              </label>
-                              <textarea
-                                id={`details-${task.id}`}
-                                value={details}
-                                onChange={(e) => setDetails(e.target.value)}
-                                maxLength={MAX_CAPTION_LEN}
-                                rows={2}
-                                placeholder="e.g. Who's in the photo, where it was taken"
-                                className={inputClass}
-                              />
-                              <span className={`${fieldLabelClass} mt-2`}>
-                                2. Upload your photo or video
-                              </span>
-                              <label
-                                className={`inline-flex w-fit cursor-pointer items-center gap-2 bg-sched-accent px-5 py-[11px] font-display text-sm font-semibold tracking-[0.07em] text-sched-fill transition-[filter] hover:brightness-[1.12] ${
-                                  busy ? "pointer-events-none opacity-60" : ""
-                                }`}
-                              >
-                                <Camera
-                                  width={16}
-                                  height={16}
-                                  strokeWidth={2}
-                                />
-                                {busy
-                                  ? "Uploading…"
-                                  : `Upload proof for ${task.code}`}
-                                <input
-                                  type="file"
-                                  accept={ACCEPTED_TYPES}
-                                  onChange={(e) =>
-                                    submitProof(task, task.code, e)
-                                  }
-                                  disabled={busy}
-                                  className="hidden"
-                                />
-                              </label>
-                              <p className="font-mono text-[11px] text-sched-text-muted">
-                                Choosing a file submits it right away, so write
-                                your details first. Photos are shrunk
-                                automatically. Videos: up to 60 seconds.
-                              </p>
-                            </div>
-                          )}
-                        </>
+                          <button
+                            type="button"
+                            onClick={() => remove(task.id)}
+                            aria-label="Delete mission"
+                            className="border border-sched-coral px-[8px] py-[5px] text-sched-coral transition-colors hover:bg-sched-coral hover:text-sched-bg"
+                          >
+                            <Trash width={13} height={13} strokeWidth={2} />
+                          </button>
+                        </div>
                       )}
                     </div>
 
-                    {canManage && editing !== task.id && (
-                      <div className="flex flex-none gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditing(task.id);
-                            setEditText(task.text);
-                            setEditPoints(String(task.points));
-                          }}
-                          className="border border-sched-hair px-[8px] py-[5px] font-mono text-[11px] text-sched-text-muted transition-colors hover:border-sched-accent hover:text-sched-accent"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => remove(task.id)}
-                          aria-label="Delete mission"
-                          className="border border-sched-coral px-[8px] py-[5px] text-sched-coral transition-colors hover:bg-sched-coral hover:text-sched-bg"
-                        >
-                          <Trash width={13} height={13} strokeWidth={2} />
-                        </button>
+                    {/* Full card width rather than the text column beside
+                      the checkbox and exec buttons, which left it a narrow
+                      strip on a phone. Details come first on purpose:
+                      picking a file submits straight away, so anything
+                      typed after that would be lost. */}
+                    {proofFor === task.id && !task.done && (
+                      <div className="mt-3 flex flex-col gap-3 border-t border-sched-hair pt-4">
+                        <div className="flex flex-col gap-1.5">
+                          <label
+                            htmlFor={`details-${task.id}`}
+                            className={fieldLabelClass}
+                          >
+                            1. Add details{" "}
+                            <span className="normal-case tracking-normal">
+                              (optional)
+                            </span>
+                          </label>
+                          <textarea
+                            id={`details-${task.id}`}
+                            value={details}
+                            onChange={(e) => setDetails(e.target.value)}
+                            maxLength={MAX_CAPTION_LEN}
+                            rows={3}
+                            placeholder="Who's in it, where it was taken…"
+                            className={`${inputClass} resize-none`}
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <span className={fieldLabelClass}>
+                            2. Upload photo or video
+                          </span>
+                          <label
+                            className={`inline-flex w-full cursor-pointer items-center justify-center gap-2 bg-sched-accent px-5 py-3 font-display text-sm font-semibold tracking-[0.07em] text-sched-fill transition-[filter] hover:brightness-[1.12] sm:w-fit ${
+                              busy ? "pointer-events-none opacity-60" : ""
+                            }`}
+                          >
+                            <Camera width={16} height={16} strokeWidth={2} />
+                            {busy
+                              ? "Uploading…"
+                              : `Upload proof · ${task.code}`}
+                            <input
+                              type="file"
+                              accept={ACCEPTED_TYPES}
+                              onChange={(e) => submitProof(task, task.code, e)}
+                              disabled={busy}
+                              className="hidden"
+                            />
+                          </label>
+                          <p className="font-mono text-[11px] leading-relaxed text-sched-text-muted">
+                            Picking a file submits it right away.
+                            <br />
+                            Photos are shrunk automatically · videos up to 60 s.
+                          </p>
+                        </div>
                       </div>
                     )}
                   </li>
