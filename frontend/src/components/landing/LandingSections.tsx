@@ -14,7 +14,7 @@ import SignedOutOnly from "./SignedOutOnly";
 // what the page says never means touching markup.
 
 const ABOUT_BODY = [
-  "The ECSE Games are the ECSE Student Society's competition weekend, running for the first time this year: three days of events that range from genuinely athletic to entirely ridiculous, run by execs and fought over by four teams drawn from across the department.",
+  "The ECSE Games are a weekend of competition hosted by the ECSE Student Society, and this is the very first edition. Over three days, four teams go head to head: three from across the department, plus the Old Patrol, for those with too much FOMO to stay away. Every event is run by the coords and your lovely group of volunteers. Some events are more serious than others, but that's part of the fun.",
   "Everyone is welcome regardless of year, program stream, or how competitive you actually are. Most events have a seated or low-effort alternative, and nothing requires drinking to take part.",
 ];
 
@@ -34,13 +34,13 @@ const HIGHLIGHTS = [
   {
     title: "CS comp",
     blurb:
-      "A set of timed challenges that put your frontend knowledge to the test, plus a round of cybersecurity questions.",
+      "Timed challenges split between frontend and cybersecurity, with both halves weighted equally.",
     icon: CodeXml,
   },
   {
     title: "BOAT Races",
     blurb:
-      "Opening night. The weekend kicks off with the whole department in one room.",
+      "Opening night. The weekend kicks off with the whole department in one room, plus the ECSE friends who wanted in on the fun.",
     icon: CalendarDays,
   },
 ];
@@ -68,7 +68,7 @@ export default function LandingSections() {
   return (
     <>
       <section className="border-t border-sched-hair bg-sched-bg px-5 py-14 lg:px-10 lg:py-20">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-5xl">
           <SectionHeading
             eyebrow="The event"
             title="What are the ECSE Games?"
