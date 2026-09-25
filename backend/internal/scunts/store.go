@@ -218,6 +218,13 @@ func (s *Store) IsDone(ctx context.Context, taskID primitive.ObjectID, team mode
 	return n > 0, err
 }
 
+// HasPending reports whether a team already has proof for a task awaiting
+// review.
+func (s *Store) HasPending(ctx context.Context, taskID primitive.ObjectID, team models.Team) (bool, error) {
+	n, err := s.coll.CountDocuments(ctx, bson.M{"taskId": taskID, "team": team, "status": StatusPending})
+	return n > 0, err
+}
+
 // PendingTaskIDs returns the tasks a team has proof awaiting review for.
 func (s *Store) PendingTaskIDs(ctx context.Context, team models.Team) (map[primitive.ObjectID]bool, error) {
 	ids, err := s.coll.Distinct(ctx, "taskId", bson.M{"team": team, "status": StatusPending})

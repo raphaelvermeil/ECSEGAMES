@@ -125,7 +125,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
       const res = (err as { response?: { status?: number } }).response;
       setError(
         res?.status === 409
-          ? "Your team already completed that mission."
+          ? "Your team already completed this mission, or has proof pending approval."
           : !res && err instanceof Error && err.message !== "upload failed"
             ? err.message
             : "Upload failed. Please try again.",
@@ -446,11 +446,12 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                           </div>
                         ) : (
                           <>
-                            {/* Tapping an open mission opens its proof form;
-                            a completed one can't take more proof. */}
+                            {/* Tapping an open mission opens its proof form.
+                            A completed one, or one with proof still in
+                            review, is locked. */}
                             <button
                               type="button"
-                              disabled={task.done}
+                              disabled={task.done || task.pending}
                               onClick={() => {
                                 setProofFor(
                                   proofFor === task.id ? null : task.id,
@@ -459,7 +460,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                               }}
                               aria-expanded={proofFor === task.id}
                               className={`block w-full text-left font-mono text-[13px] leading-relaxed ${
-                                task.done
+                                task.done || task.pending
                                   ? "cursor-default text-sched-text-muted line-through"
                                   : "text-sched-cream hover:text-sched-accent"
                               }`}
@@ -480,9 +481,13 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                                 ? task.doneByName
                                   ? ` · done, proof by ${task.doneByName}`
                                   : " · done"
-                                : task.pending
-                                  ? " · proof awaiting review"
-                                  : ""}
+                                : ""}
+                              {task.pending && !task.done && (
+                                <span className="text-sched-coral">
+                                  {" "}
+                                  · pending approval
+                                </span>
+                              )}
                             </p>
                           </>
                         )}
@@ -518,7 +523,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                       strip on a phone. Details come first on purpose:
                       picking a file submits straight away, so anything
                       typed after that would be lost. */}
-                    {proofFor === task.id && !task.done && (
+                    {proofFor === task.id && !task.done && !task.pending && (
                       <div className="mt-3 flex flex-col gap-3 border-t border-sched-hair pt-4">
                         <div className="flex flex-col gap-1.5">
                           <label

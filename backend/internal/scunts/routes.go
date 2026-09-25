@@ -211,6 +211,17 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "your team already completed that mission", http.StatusConflict)
 		return
 	}
+	// One proof per mission at a time: a second upload while the first is
+	// still in review would just be a duplicate for execs to wade through.
+	pending, err := h.store.HasPending(ctx, taskID, u.Team)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	if pending {
+		http.Error(w, "your team's proof for that mission is pending approval", http.StatusConflict)
+		return
+	}
 
 	contentType, size, err := h.storage.Head(ctx, req.Key)
 	if err != nil {
