@@ -204,23 +204,64 @@ func (s *Store) CompletionsFor(ctx context.Context, team models.Team) (map[primi
 	return out, nil
 }
 
-// SetDone ticks a task for a team. Upsert rather than insert so a second
-// tap from a teammate is harmless rather than a duplicate-key error.
-func (s *Store) SetDone(ctx context.Context, taskID primitive.ObjectID, team models.Team, clerkID, name string) error {
-	_, err := s.completions.UpdateOne(ctx,
-		bson.M{"taskId": taskID, "team": team},
-		bson.M{"$set": bson.M{
-			"doneBy":     clerkID,
-			"doneByName": name,
-			"doneAt":     time.Now().UTC(),
-		}},
-		options.Update().SetUpsert(true),
-	)
+// InsertCompletion marks a task done for a team. It fails with a mongo
+// duplicate-key error if the team already has it, which is what makes
+// accepting proof pay out at most once.
+func (s *Store) InsertCompletion(ctx context.Context, c Completion) error {
+	_, err := s.completions.InsertOne(ctx, c)
 	return err
 }
 
-// ClearDone un-ticks a task for a team. Any teammate may do this, so
-// removing something already removed is not an error.
+// IsDone reports whether a team has already completed a task.
+func (s *Store) IsDone(ctx context.Context, taskID primitive.ObjectID, team models.Team) (bool, error) {
+	n, err := s.completions.CountDocuments(ctx, bson.M{"taskId": taskID, "team": team})
+	return n > 0, err
+}
+
+// PendingTaskIDs returns the tasks a team has proof awaiting review for.
+func (s *Store) PendingTaskIDs(ctx context.Context, team models.Team) (map[primitive.ObjectID]bool, error) {
+	ids, err := s.coll.Distinct(ctx, "taskId", bson.M{"team": team, "status": StatusPending})
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[primitive.ObjectID]bool, len(ids))
+	for _, v := range ids {
+		if id, ok := v.(primitive.ObjectID); ok {
+			out[id] = true
+		}
+	}
+	return out, nil
+}
+
+// Accept moves a pending submission to accepted with the given points. It
+// reports false if the submission was no longer pending (or is gone), so a
+// double click can't accept twice.
+func (s *Store) Accept(ctx context.Context, id primitive.ObjectID, points int) (bool, error) {
+	res, err := s.coll.UpdateOne(ctx,
+		bson.M{"_id": id, "status": StatusPending},
+		bson.M{"$set": bson.M{"status": StatusAccepted, "points": points, "acceptedAt": time.Now().UTC()}},
+	)
+	if err != nil {
+		return false, err
+	}
+	return res.ModifiedCount == 1, nil
+}
+
+// AcceptedPoints returns every accepted proof's points, oldest first, for
+// the leaderboard.
+func (s *Store) AcceptedPoints(ctx context.Context) ([]AcceptedPoint, error) {
+	cur, err := s.coll.Find(ctx, bson.M{"status": StatusAccepted},
+		options.Find().SetSort(bson.D{{Key: "acceptedAt", Value: 1}}))
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+	list := []AcceptedPoint{}
+	return list, cur.All(ctx, &list)
+}
+
+// ClearDone un-completes a task for a team, when its accepted proof is
+// taken down. Removing something already removed is not an error.
 func (s *Store) ClearDone(ctx context.Context, taskID primitive.ObjectID, team models.Team) error {
 	_, err := s.completions.DeleteOne(ctx, bson.M{"taskId": taskID, "team": team})
 	return err
@@ -238,13 +279,22 @@ func (s *Store) Insert(ctx context.Context, sub Submission) (*Submission, error)
 	return &sub, nil
 }
 
-// List returns submissions newest first, capped at ListLimit.
-func (s *Store) List(ctx context.Context) ([]Submission, error) {
+// List returns submissions newest first, capped at ListLimit. Execs see
+// everything; anyone else sees accepted proof plus their own team's pending
+// proof, so a team knows its upload arrived.
+func (s *Store) List(ctx context.Context, team models.Team, isExec bool) ([]Submission, error) {
 	opts := options.Find().
 		SetSort(bson.D{{Key: "submittedAt", Value: -1}}).
 		SetLimit(ListLimit)
 
-	cur, err := s.coll.Find(ctx, bson.M{}, opts)
+	filter := bson.M{}
+	if !isExec {
+		filter = bson.M{"$or": bson.A{
+			bson.M{"status": bson.M{"$ne": StatusPending}},
+			bson.M{"team": team},
+		}}
+	}
+	cur, err := s.coll.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}

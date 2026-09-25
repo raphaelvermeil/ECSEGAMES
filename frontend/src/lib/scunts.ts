@@ -1,3 +1,4 @@
+import imageCompression from "browser-image-compression";
 import api from "@/lib/api";
 
 // Mirrors internal/scunts.Submission. photoUrl is a presigned R2 link the
@@ -13,6 +14,12 @@ export interface ScuntsSubmission {
   submittedByName: string;
   submittedAt: string;
   photoUrl: string;
+  // The mission this is proof for; absent on uploads from before proof was
+  // tied to missions.
+  taskId?: string;
+  // Absent reads as accepted: older uploads were always public.
+  status?: "pending" | "accepted";
+  points?: number;
 }
 
 // Kept in step with the same constants in internal/scunts/scunts.go. The
@@ -57,6 +64,7 @@ export async function deleteSubmission(
 export async function upload(
   token: string | null,
   file: File,
+  taskId: string,
   caption: string,
 ): Promise<ScuntsSubmission> {
   const { data: signed } = await api.post<{ uploadUrl: string; key: string }>(
@@ -78,10 +86,58 @@ export async function upload(
 
   const { data } = await api.post<ScuntsSubmission>(
     "/api/scunts/submissions",
-    { key: signed.key, caption },
+    { key: signed.key, taskId, caption },
     authHeader(token),
   );
   return data;
+}
+
+export async function acceptSubmission(
+  token: string | null,
+  id: string,
+): Promise<void> {
+  await api.post(
+    `/api/scunts/submissions/${id}/accept`,
+    null,
+    authHeader(token),
+  );
+}
+
+// Compression target for photos. 1600px on the long edge is still sharp on
+// a laptop, and it takes an 8 MB phone original down to a few hundred KB —
+// which matters both for campus upload speeds and for a gallery that loads
+// every tile. Converting to JPEG also sidesteps iPhone HEIC, which no
+// browser but Safari can display.
+const IMAGE_OPTIONS = {
+  maxWidthOrHeight: 1600,
+  maxSizeMB: 1,
+  fileType: "image/jpeg",
+  useWebWorker: true,
+};
+
+// prepareProof gets a picked file ready to upload: photos are shrunk,
+// videos are checked against the size and length caps. Throws an Error
+// with a message fit to show the user.
+export async function prepareProof(file: File): Promise<File> {
+  if (!file.type.startsWith("video/")) {
+    return imageCompression(file, IMAGE_OPTIONS);
+  }
+  if (file.size > MAX_VIDEO_BYTES) {
+    throw new Error(
+      "That video is over 100 MB. Record a shorter clip, or lower your camera quality.",
+    );
+  }
+  // Length is checked here rather than server-side: reading duration from a
+  // container needs a parser the backend has no other use for. Unreadable
+  // metadata isn't fatal — the size cap already bounds it.
+  let seconds = 0;
+  try {
+    seconds = await videoDuration(file);
+  } catch {}
+  if (seconds > MAX_VIDEO_SECONDS) {
+    throw new Error("Videos must be 60 seconds or shorter.");
+  }
+  return file;
 }
 
 // videoDuration resolves the length of a video file without uploading it,
@@ -154,6 +210,23 @@ export interface ScuntsTask {
   done: boolean;
   doneByName?: string;
   doneAt?: string;
+  // True while the caller's team has proof for it awaiting review.
+  pending?: boolean;
+}
+
+// missionCodes numbers each mission within its section (G1, G2… B1…), in
+// the order the list shows them.
+export function missionCodes(
+  tasks: ScuntsTask[],
+  sections: ScuntsSection[],
+): Map<string, string> {
+  const codes = new Map<string, string>();
+  for (const sec of sections) {
+    tasks
+      .filter((t) => t.category === sec.key)
+      .forEach((t, i) => codes.set(t.id, `${sec.prefix}${i + 1}`));
+  }
+  return codes;
 }
 
 export async function listTasks(token: string | null): Promise<ScuntsTask[]> {
@@ -162,21 +235,6 @@ export async function listTasks(token: string | null): Promise<ScuntsTask[]> {
     authHeader(token),
   );
   return res.data;
-}
-
-// Ticking is server-side rather than local state, which is the whole point:
-// a teammate on another phone sees it on their next load.
-export async function setTaskDone(
-  token: string | null,
-  id: string,
-  done: boolean,
-): Promise<void> {
-  const url = `/api/scunts/tasks/${id}/done`;
-  if (done) {
-    await api.put(url, null, authHeader(token));
-  } else {
-    await api.delete(url, authHeader(token));
-  }
 }
 
 // Mirrors scunts.DefaultTaskPoints. Sent explicitly rather than relying on

@@ -2,16 +2,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { Check, Trash } from "@/components/icons";
+import { Camera, Check, Trash } from "@/components/icons";
 import {
+  ACCEPTED_TYPES,
   DEFAULT_TASK_POINTS,
+  MAX_CAPTION_LEN,
   createSection,
   createTask,
   deleteTask,
   listSections,
   listTasks,
-  setTaskDone,
+  prepareProof,
   updateTask,
+  upload,
   type ScuntsCategory,
   type ScuntsSection,
   type ScuntsTask,
@@ -44,6 +47,11 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
   const [addingSection, setAddingSection] = useState(false);
   const [sectionLabel, setSectionLabel] = useState("");
   const [sectionPrefix, setSectionPrefix] = useState("");
+  // The mission whose proof form is open, its details box, and upload state.
+  const [proofFor, setProofFor] = useState<string | null>(null);
+  const [details, setDetails] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => listTasks(await getToken()), [getToken]);
 
@@ -91,26 +99,39 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
     }
   }
 
-  // Tick optimistically so the box responds instantly, then reconcile with
-  // the server. On failure the tick is rolled back rather than left showing
-  // a state the rest of the team won't see.
-  async function toggle(task: ScuntsTask) {
-    const next = !task.done;
-    setTasks(
-      (prev) =>
-        prev?.map((t) => (t.id === task.id ? { ...t, done: next } : t)) ?? null,
-    );
+  // Upload proof for one mission. It lands as pending: the mission only
+  // crosses off once an exec accepts it.
+  async function submitProof(
+    task: ScuntsTask,
+    code: string,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = e.target.files?.[0];
+    // Clear immediately so picking the same file twice still fires onChange.
+    e.target.value = "";
+    if (!file) return;
+
+    setError(null);
+    setNotice(null);
+    setBusy(true);
     try {
-      await setTaskDone(await getToken(), task.id, next);
+      const toSend = await prepareProof(file);
+      await upload(await getToken(), toSend, task.id, details.trim());
+      setProofFor(null);
+      setDetails("");
+      setNotice(`Proof for ${code} sent. An exec will review it.`);
       setTasks(await load());
-    } catch {
-      setError("Could not save that. Check your connection.");
-      setTasks(
-        (prev) =>
-          prev?.map((t) =>
-            t.id === task.id ? { ...t, done: task.done } : t,
-          ) ?? null,
+    } catch (err) {
+      const res = (err as { response?: { status?: number } }).response;
+      setError(
+        res?.status === 409
+          ? "Your team already completed that mission."
+          : !res && err instanceof Error && err.message !== "upload failed"
+            ? err.message
+            : "Upload failed. Please try again.",
       );
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -171,7 +192,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
 
   if (tasks === null) {
     return (
-      <p className="mt-3 font-mono text-xs text-sched-text-muted">Loadingâ€¦</p>
+      <p className="mt-3 font-mono text-xs text-sched-text-muted">Loading…</p>
     );
   }
 
@@ -182,15 +203,20 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="mt-3">
-      {/* Your team's running tally. Points are shown here only â€” ticking a
+      {/* Your team's running tally. Points are shown here only — ticking a
           mission doesn't write to the leaderboard; execs still award. */}
       <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-sched-accent">
-        {doneCount} / {tasks.length} done Â· {points} pts
+        {doneCount} / {tasks.length} done · {points} pts
       </p>
 
       {error && (
         <p className="mt-2 font-mono text-xs text-sched-coral" role="alert">
           {error}
+        </p>
+      )}
+      {notice && (
+        <p className="mt-2 font-mono text-xs text-sched-accent" role="status">
+          {notice}
         </p>
       )}
 
@@ -282,7 +308,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
             .map((t, i) => ({ ...t, code: `${cat.prefix}${i + 1}` }));
           const groupDone = group.filter((t) => t.done).length;
           // Matches the mission number (G12) or the start of any word in its
-          // text, so "pho" finds "Take a photoâ€¦".
+          // text, so "pho" finds "Take a photo…".
           const q = query.trim().toLowerCase();
           const shown = q
             ? group.filter(
@@ -299,7 +325,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
           return (
             <section key={cat.key} className="mt-7">
               <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-sched-text-muted">
-                {cat.label} Â· {groupDone}/{group.length}
+                {cat.label} · {groupDone}/{group.length}
               </h3>
 
               {/* Add sits above the list: at the bottom of an 80-row
@@ -367,24 +393,18 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                     key={task.id}
                     className="flex items-start gap-3 rounded-sm border border-sched-hair bg-sched-bg-raised px-3 py-2.5"
                   >
-                    {/* The native checkbox renders as a white square that
-                      fights the dark palette, so it is kept for semantics
-                      and keyboard support but visually replaced: the real
-                      input is sr-only and the box beside it is styled off
-                      peer-checked. The label gives it a bigger tap target
-                      than the 22px box for a phone in a dark bar. */}
-                    <label className="mt-px flex flex-none cursor-pointer items-center p-1">
-                      <input
-                        type="checkbox"
-                        checked={task.done}
-                        onChange={() => toggle(task)}
-                        aria-label={task.text}
-                        className="peer sr-only"
-                      />
-                      <span className="flex h-[22px] w-[22px] items-center justify-center rounded-[3px] border border-sched-hair bg-sched-bg text-transparent transition-colors peer-checked:border-sched-accent peer-checked:bg-sched-accent peer-checked:text-sched-fill peer-hover:border-sched-accent-dim peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-sched-accent">
-                        <Check width={14} height={14} strokeWidth={3} />
-                      </span>
-                    </label>
+                    {/* A mission is crossed off only by an exec accepting
+                      proof, so this box is a status, not a control. */}
+                    <span
+                      aria-hidden
+                      className={`mt-1 flex h-[22px] w-[22px] flex-none items-center justify-center rounded-[3px] border ${
+                        task.done
+                          ? "border-sched-accent bg-sched-accent text-sched-fill"
+                          : "border-sched-hair bg-sched-bg text-transparent"
+                      }`}
+                    >
+                      <Check width={14} height={14} strokeWidth={3} />
+                    </span>
 
                     <div className="min-w-0 flex-1">
                       {editing === task.id ? (
@@ -425,18 +445,29 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                         </div>
                       ) : (
                         <>
-                          <p
-                            className={`font-mono text-[13px] leading-relaxed ${
+                          {/* Tapping an open mission opens its proof form;
+                            a completed one can't take more proof. */}
+                          <button
+                            type="button"
+                            disabled={task.done}
+                            onClick={() => {
+                              setProofFor(
+                                proofFor === task.id ? null : task.id,
+                              );
+                              setDetails("");
+                            }}
+                            aria-expanded={proofFor === task.id}
+                            className={`block w-full text-left font-mono text-[13px] leading-relaxed ${
                               task.done
-                                ? "text-sched-text-muted line-through"
-                                : "text-sched-cream"
+                                ? "cursor-default text-sched-text-muted line-through"
+                                : "text-sched-cream hover:text-sched-accent"
                             }`}
                           >
                             <span className="mr-2 font-semibold text-sched-accent">
                               {task.code}
                             </span>
                             {task.text}
-                          </p>
+                          </button>
                           {task.note && (
                             <p className="mt-1 font-mono text-[11px] text-sched-text-muted">
                               {task.note}
@@ -444,10 +475,68 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                           )}
                           <p className="mt-1 font-mono text-[11px] text-sched-text-muted">
                             {task.points} pts
-                            {task.done && task.doneByName
-                              ? ` Â· ticked by ${task.doneByName}`
-                              : ""}
+                            {task.done
+                              ? task.doneByName
+                                ? ` · done, proof by ${task.doneByName}`
+                                : " · done"
+                              : task.pending
+                                ? " · proof awaiting review"
+                                : ""}
                           </p>
+
+                          {proofFor === task.id && !task.done && (
+                            <div className="mt-3 flex flex-col gap-2">
+                              {/* Details come first on purpose: picking a
+                                file submits straight away, so anything
+                                typed after that would be lost. */}
+                              <label
+                                htmlFor={`details-${task.id}`}
+                                className={fieldLabelClass}
+                              >
+                                1. Additional details (optional)
+                              </label>
+                              <textarea
+                                id={`details-${task.id}`}
+                                value={details}
+                                onChange={(e) => setDetails(e.target.value)}
+                                maxLength={MAX_CAPTION_LEN}
+                                rows={2}
+                                placeholder="e.g. Who's in the photo, where it was taken"
+                                className={inputClass}
+                              />
+                              <span className={`${fieldLabelClass} mt-2`}>
+                                2. Upload your photo or video
+                              </span>
+                              <label
+                                className={`inline-flex w-fit cursor-pointer items-center gap-2 bg-sched-accent px-5 py-[11px] font-display text-sm font-semibold tracking-[0.07em] text-sched-fill transition-[filter] hover:brightness-[1.12] ${
+                                  busy ? "pointer-events-none opacity-60" : ""
+                                }`}
+                              >
+                                <Camera
+                                  width={16}
+                                  height={16}
+                                  strokeWidth={2}
+                                />
+                                {busy
+                                  ? "Uploading…"
+                                  : `Upload proof for ${task.code}`}
+                                <input
+                                  type="file"
+                                  accept={ACCEPTED_TYPES}
+                                  onChange={(e) =>
+                                    submitProof(task, task.code, e)
+                                  }
+                                  disabled={busy}
+                                  className="hidden"
+                                />
+                              </label>
+                              <p className="font-mono text-[11px] text-sched-text-muted">
+                                Choosing a file submits it right away, so write
+                                your details first. Photos are shrunk
+                                automatically. Videos: up to 60 seconds.
+                              </p>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>

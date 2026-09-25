@@ -70,11 +70,11 @@ type Task struct {
 }
 
 // Completion records that one team finished one task. There is at most one
-// per (task, team) — enforced by a unique index, which is what makes the
-// toggle race-safe when two teammates tap the same box at once.
+// per (task, team) — enforced by a unique index, which is what stops two
+// execs accepting proof for the same mission and paying out twice.
 //
-// It is deliberately team-scoped rather than user-scoped: the whole team
-// shares one checklist, and any teammate may tick or un-tick.
+// It is team-scoped rather than user-scoped: the whole team shares one
+// checklist. Completions are only written by an exec accepting proof.
 type Completion struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty" json:"-"`
 	TaskID     primitive.ObjectID `bson:"taskId" json:"-"`
@@ -93,4 +93,6 @@ type TaskView struct {
 	Done       bool       `json:"done"`
 	DoneByName string     `json:"doneByName,omitempty"`
 	DoneAt     *time.Time `json:"doneAt,omitempty"`
+	// Pending is true while the caller's team has proof awaiting review.
+	Pending bool `json:"pending,omitempty"`
 }
