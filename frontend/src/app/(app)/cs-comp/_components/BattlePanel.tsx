@@ -334,7 +334,7 @@ export default function BattlePanel({
               style={{
                 width: 46,
                 borderRight: "1px solid rgba(63,143,87,.16)",
-                height: 566,
+                height: 612,
               }}
             >
               <div style={{ whiteSpace: "pre" }}>{gutter}</div>
@@ -350,7 +350,7 @@ export default function BattlePanel({
               spellCheck={false}
               aria-label="Your HTML and CSS"
               className="min-w-0 flex-1 resize-none bg-[#0d1712] px-4 py-3.5 font-mono text-xs leading-[1.6] text-[#d7ecd2] outline-none"
-              style={{ height: 566, tabSize: 2 }}
+              style={{ height: 612, tabSize: 2 }}
             />
           </div>
           <div className="flex items-center gap-3.5 border-t border-sched-hair px-4 py-3.5">
@@ -403,7 +403,7 @@ export default function BattlePanel({
             style={{ border: "1px solid var(--color-sched-hair)" }}
           >
             <div className="flex items-center gap-2.5 border-b border-sched-hair bg-[#16241c] px-4 py-3">
-              <span className="font-mono text-[11px] font-medium tracking-[0.16em] text-sched-cream">
+              <span className="flex-none font-mono text-[11px] font-medium tracking-[0.16em] text-sched-cream">
                 TARGET
               </span>
 
@@ -412,7 +412,7 @@ export default function BattlePanel({
                   guessed. Dim placeholder keeps the header from reflowing
                   when the pointer leaves. */}
               <span
-                className="font-mono text-[10px] tracking-[0.1em]"
+                className="whitespace-nowrap font-mono text-[10px] tabular-nums tracking-[0.04em]"
                 style={{ color: cursor ? "#e9f5cd" : "#4d6455" }}
               >
                 {cursor
@@ -449,7 +449,7 @@ export default function BattlePanel({
                 disabled={!targetURL}
                 title="Sample a colour straight off the target"
                 aria-pressed={picking}
-                className="min-h-[26px] px-2.5 font-mono text-[10px] font-medium tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-[26px] whitespace-nowrap px-2.5 font-mono text-[10px] font-medium tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-40"
                 style={{
                   background: picking ? "#6ee787" : "none",
                   border: `1px solid ${picking ? "#6ee787" : "var(--color-sched-hair)"}`,
