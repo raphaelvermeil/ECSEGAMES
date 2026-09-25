@@ -5,7 +5,6 @@ import { useAuth } from "@clerk/nextjs";
 import api from "@/lib/api";
 import { ChevronRight } from "@/components/icons";
 import { TEAMS, type ScoreEntry, type Team } from "@/lib/scores";
-import type { EventCategory } from "@/lib/events";
 import type { AuditEntry } from "@/lib/history";
 import { verbColor } from "@/lib/history";
 import { formatFooterTimestamp } from "@/lib/schedule";
@@ -54,10 +53,10 @@ function currentEntry(
 
 export default function ScoringPanel({
   eventId,
-  category,
+  isCompetition,
 }: {
   eventId: string;
-  category: EventCategory;
+  isCompetition: boolean;
 }) {
   const { getToken } = useAuth();
   const [scores, setScores] = useState<ScoreEntry[] | null>(null);
@@ -191,7 +190,6 @@ export default function ScoringPanel({
     }
   }
 
-  const isCompetition = category === "Competition";
   const hasVisiblePoints = scores?.some((s) => !s.cleared) ?? false;
 
   // Non-Competition events only show a panel at all once they've actually

@@ -100,9 +100,9 @@ Standard Go layout: `cmd/` holds entry points, `internal/` holds private package
 **Role-based access (RBAC):** three roles, ranked `admin > exec > student`
 ([internal/models/user.go](backend/internal/models/user.go)). `RequireRole(repo, minimum)`
 looks up the caller's role and rejects (403) if it ranks below `minimum`. Current policy:
-the schedule (`GET /api/events`, `GET /api/events/{id}`) and `GET /api/leaderboard` are
+the schedule (`GET /api/events`, `GET /api/events/{id}`, `GET /api/categories`) and `GET /api/leaderboard` are
 public with no auth at all — the leaderboard returns only aggregates, never event identity
-or actor. Event writes, event history, and the per-event scores surface (reads included)
+or actor. Event and category writes, event history, and the per-event scores surface (reads included)
 require `RoleExec` or above; history carries the who-awarded-what paper trail, so it sits
 behind the same gate as the scores it describes. The CS comp is any signed-in user, except
 `POST /api/cscomp/clock` which is exec-only.

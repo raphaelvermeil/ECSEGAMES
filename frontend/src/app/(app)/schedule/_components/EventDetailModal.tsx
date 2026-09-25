@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, Clock, Pin, X } from "@/components/icons";
-import type { ScheduleEvent } from "@/lib/events";
+import {
+  COMPETITION,
+  type EventCategory,
+  type ScheduleEvent,
+} from "@/lib/events";
 import { useFocusTrap, useScrollLock } from "@/lib/overlay";
 import {
   categoryColor,
@@ -18,11 +22,13 @@ import ScoringPanel from "./ScoringPanel";
 
 export default function EventDetailModal({
   event,
+  categories,
   canManage,
   onClose,
   onEdit,
 }: {
   event: ScheduleEvent;
+  categories: EventCategory[];
   canManage: boolean;
   onClose: () => void;
   onEdit: () => void;
@@ -65,7 +71,6 @@ export default function EventDetailModal({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  const color = categoryColor(event.category);
   const ongoing = isOngoing(event);
   const start = new Date(event.startsAt);
   const end = new Date(event.endsAt);
@@ -120,15 +125,23 @@ export default function EventDetailModal({
           <>
             <div className="border-b border-sched-hair px-5 pb-[22px] pt-[26px] lg:px-[30px]">
               <div className="flex items-start justify-between gap-5">
-                <span
-                  className="flex items-center gap-2 border px-[11px] py-[5px] text-[10px] font-medium uppercase tracking-[0.12em]"
-                  style={{ borderColor: withAlpha(color, 0.4), color }}
-                >
-                  <span
-                    className="block h-[7px] w-[7px]"
-                    style={{ background: color }}
-                  />
-                  {event.category}
+                <span className="flex flex-wrap gap-[6px]">
+                  {event.categories.map((name) => {
+                    const c = categoryColor(categories, name);
+                    return (
+                      <span
+                        key={name}
+                        className="flex items-center gap-2 border px-[11px] py-[5px] text-[10px] font-medium uppercase tracking-[0.12em]"
+                        style={{ borderColor: withAlpha(c, 0.4), color: c }}
+                      >
+                        <span
+                          className="block h-[7px] w-[7px]"
+                          style={{ background: c }}
+                        />
+                        {name}
+                      </span>
+                    );
+                  })}
                 </span>
                 <div className="flex items-center gap-[10px]">
                   {canManage && (
@@ -212,7 +225,10 @@ export default function EventDetailModal({
             )}
 
             {canManage && (
-              <ScoringPanel eventId={event.id} category={event.category} />
+              <ScoringPanel
+                eventId={event.id}
+                isCompetition={event.categories.includes(COMPETITION)}
+              />
             )}
 
             {canManage && (

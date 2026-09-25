@@ -2,10 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Clock, Pin } from "@/components/icons";
-import type { EventCategory, ScheduleEvent } from "@/lib/events";
+import { useAuth } from "@clerk/nextjs";
+import { ChevronRight, Clock, Pin, X } from "@/components/icons";
+import api from "@/lib/api";
 import {
-  CATEGORIES,
+  COMPETITION,
+  type EventCategory,
+  type ScheduleEvent,
+} from "@/lib/events";
+import {
+  CATEGORY_PALETTE,
   INACTIVE_CHIP_BORDER,
   buildDayBuckets,
   buildRailGroups,
@@ -22,23 +28,25 @@ import EventFormModal from "./EventFormModal";
 import ScheduleBanner from "./ScheduleBanner";
 import UpcomingRail from "./UpcomingRail";
 
-const ALL_ON: Record<EventCategory, boolean> = {
-  Competition: true,
-  Meals: true,
-  Administration: true,
-  Custom: true,
-};
-
 export default function ScheduleView({
   events,
+  categories,
   canManage,
 }: {
   events: ScheduleEvent[];
+  categories: EventCategory[];
   canManage: boolean;
 }) {
   const router = useRouter();
-  const [filters, setFilters] =
-    useState<Record<EventCategory, boolean>>(ALL_ON);
+  const { getToken } = useAuth();
+  // Names of the categories toggled off. Tracking "off" rather than "on"
+  // means a category an exec just created starts out visible.
+  const [hidden, setHidden] = useState<string[]>([]);
+  // The exec's "new category" form; null while it's closed.
+  const [draft, setDraft] = useState<{ name: string; color: string } | null>(
+    null,
+  );
+  const [categoryError, setCategoryError] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
@@ -101,10 +109,17 @@ export default function ScheduleView({
     const t = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(t);
   }, []);
-  const allFiltered = CATEGORIES.every((c) => filters[c]);
+  const allFiltered = categories.every((c) => !hidden.includes(c.name));
+  // An event shows while any of its categories is on. One with no
+  // categories left has nothing to filter it by, so it always shows.
   const filtered = useMemo(
-    () => events.filter((e) => filters[e.category]),
-    [events, filters],
+    () =>
+      events.filter(
+        (e) =>
+          e.categories.length === 0 ||
+          e.categories.some((c) => !hidden.includes(c)),
+      ),
+    [events, hidden],
   );
   const ongoing = useMemo(() => filtered.filter(isOngoing), [filtered]);
   const dayBuckets = useMemo(() => buildDayBuckets(filtered), [filtered]);
@@ -127,11 +142,50 @@ export default function ScheduleView({
   const railCount = railGroups.reduce((n, g) => n + g.events.length, 0);
   const openEvent = events.find((e) => e.id === openEventId) ?? null;
 
-  function toggleFilter(c: EventCategory) {
-    setFilters((f) => ({ ...f, [c]: !f[c] }));
+  function toggleFilter(name: string) {
+    setHidden((h) =>
+      h.includes(name) ? h.filter((n) => n !== name) : [...h, name],
+    );
   }
   function clearFilters() {
-    setFilters(ALL_ON);
+    setHidden([]);
+  }
+
+  async function createCategory() {
+    if (!draft || draft.name.trim() === "") return;
+    setCategoryError(null);
+    try {
+      const token = await getToken();
+      await api.post(
+        "/api/categories",
+        { name: draft.name.trim(), color: draft.color },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setDraft(null);
+      router.refresh();
+    } catch (err) {
+      setCategoryError(requestError(err, "Could not create the category."));
+    }
+  }
+
+  async function deleteCategory(c: EventCategory) {
+    if (
+      !window.confirm(
+        `Delete "${c.name}"? It will be removed from every event that has it.`,
+      )
+    ) {
+      return;
+    }
+    setCategoryError(null);
+    try {
+      const token = await getToken();
+      await api.delete(`/api/categories/${c.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      router.refresh();
+    } catch (err) {
+      setCategoryError(requestError(err, "Could not delete the category."));
+    }
   }
 
   const railEmptyMessage =
@@ -234,16 +288,13 @@ export default function ScheduleView({
               aria-label="Category filters"
               className="mb-4 flex gap-2 overflow-x-auto lg:flex-wrap lg:gap-[10px] lg:overflow-visible"
             >
-              {CATEGORIES.map((c) => {
-                const active = filters[c];
-                const color = categoryColor(c);
+              {categories.map((c) => {
+                const active = !hidden.includes(c.name);
+                const color = c.color;
                 return (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => toggleFilter(c)}
-                    className="flex flex-none items-center gap-[7px] px-[13px] py-2 font-mono text-[11px] font-medium uppercase tracking-[0.08em] transition-colors lg:gap-[9px] lg:px-[14px] lg:text-xs lg:tracking-[0.09em]"
+                  <div
+                    key={c.id}
+                    className="flex flex-none items-stretch transition-colors"
                     style={{
                       background: active
                         ? withAlpha(color, 0.12)
@@ -252,19 +303,117 @@ export default function ScheduleView({
                       color: active ? color : "var(--color-sched-text-muted)",
                     }}
                   >
-                    <span
-                      className="block h-2 w-2 lg:h-[9px] lg:w-[9px]"
-                      style={{
-                        background: active
-                          ? color
-                          : "var(--color-sched-text-muted)",
-                      }}
-                    />
-                    {c}
-                  </button>
+                    <button
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => toggleFilter(c.name)}
+                      className="flex items-center gap-[7px] px-[13px] py-2 font-mono text-[11px] font-medium uppercase tracking-[0.08em] lg:gap-[9px] lg:px-[14px] lg:text-xs lg:tracking-[0.09em]"
+                    >
+                      <span
+                        className="block h-2 w-2 lg:h-[9px] lg:w-[9px]"
+                        style={{
+                          background: active
+                            ? color
+                            : "var(--color-sched-text-muted)",
+                        }}
+                      />
+                      {c.name}
+                    </button>
+                    {canManage && c.name !== COMPETITION && (
+                      <button
+                        type="button"
+                        onClick={() => deleteCategory(c)}
+                        aria-label={`Delete category ${c.name}`}
+                        className="-ml-[6px] flex items-center pl-[4px] pr-[10px] opacity-70 hover:opacity-100"
+                      >
+                        <X width={12} height={12} strokeWidth={2.2} />
+                      </button>
+                    )}
+                  </div>
                 );
               })}
+              {canManage && draft === null && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryError(null);
+                    setDraft({ name: "", color: CATEGORY_PALETTE[0] });
+                  }}
+                  className="flex-none border border-dashed px-[13px] py-2 font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-sched-accent lg:px-[14px] lg:text-xs lg:tracking-[0.09em]"
+                  style={{ borderColor: INACTIVE_CHIP_BORDER }}
+                >
+                  + New
+                </button>
+              )}
             </div>
+
+            {canManage && draft !== null && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  createCategory();
+                }}
+                className="mb-4 flex flex-wrap items-center gap-[10px]"
+              >
+                <input
+                  autoFocus
+                  value={draft.name}
+                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                  maxLength={24}
+                  placeholder="Category name"
+                  aria-label="New category name"
+                  className="min-h-9 min-w-0 flex-1 border border-sched-hair bg-sched-bg-raised px-3 font-mono text-xs text-sched-cream outline-none placeholder:text-[#4d6455] focus:border-sched-accent-dim lg:max-w-[240px] lg:flex-none"
+                />
+                <div
+                  role="radiogroup"
+                  aria-label="Category colour"
+                  className="flex gap-[6px]"
+                >
+                  {CATEGORY_PALETTE.map((hex) => (
+                    <button
+                      key={hex}
+                      type="button"
+                      role="radio"
+                      aria-checked={draft.color === hex}
+                      aria-label={hex}
+                      onClick={() => setDraft({ ...draft, color: hex })}
+                      className="h-6 w-6"
+                      style={{
+                        background: hex,
+                        outline:
+                          draft.color === hex
+                            ? "2px solid var(--color-sched-cream)"
+                            : "none",
+                        outlineOffset: 2,
+                      }}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="submit"
+                  disabled={draft.name.trim() === ""}
+                  className="min-h-9 border border-sched-accent-dim px-[14px] font-mono text-[11px] font-medium tracking-[0.12em] text-sched-accent disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  ADD
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDraft(null)}
+                  className="min-h-9 px-2 font-mono text-[11px] tracking-[0.12em] text-sched-text-muted"
+                >
+                  CANCEL
+                </button>
+              </form>
+            )}
+
+            {categoryError && (
+              <p
+                role="alert"
+                className="-mt-2 mb-4 font-mono text-xs text-sched-coral"
+              >
+                {categoryError}
+              </p>
+            )}
 
             {ongoing.length > 0 && (
               <div className="mb-4 flex flex-col gap-[10px] border border-dashed border-sched-hair bg-sched-bg-raised px-[18px] py-[14px] lg:flex-row lg:flex-wrap lg:items-center lg:gap-[22px]">
@@ -278,7 +427,12 @@ export default function ScheduleView({
                       type="button"
                       onClick={() => setOpenEventId(e.id)}
                       className="flex min-h-11 w-full items-center justify-between gap-[10px] border-l-[3px] bg-sched-bg px-[14px] py-[9px] text-left transition-colors hover:bg-[#17251d] lg:min-h-0 lg:w-auto lg:justify-start"
-                      style={{ borderLeftColor: categoryColor(e.category) }}
+                      style={{
+                        borderLeftColor: categoryColor(
+                          categories,
+                          e.categories[0],
+                        ),
+                      }}
                     >
                       <span className="font-mono text-[13px] text-sched-cream">
                         {e.title}
@@ -380,20 +534,31 @@ export default function ScheduleView({
                   >
                     {activeBucket && activeBucket.events.length > 0 ? (
                       activeBucket.events.map((e) => {
-                        const color = categoryColor(e.category);
+                        const color = categoryColor(
+                          categories,
+                          e.categories[0],
+                        );
                         const chip = (
-                          <span
-                            className="flex items-center gap-[7px] whitespace-nowrap border px-[10px] py-[5px] font-mono text-[10px] font-medium uppercase tracking-[0.11em]"
-                            style={{
-                              borderColor: withAlpha(color, 0.4),
-                              color,
-                            }}
-                          >
-                            <span
-                              className="block h-[7px] w-[7px]"
-                              style={{ background: color }}
-                            />
-                            {e.category}
+                          <span className="flex flex-wrap justify-end gap-[6px]">
+                            {e.categories.map((name) => {
+                              const c = categoryColor(categories, name);
+                              return (
+                                <span
+                                  key={name}
+                                  className="flex items-center gap-[7px] whitespace-nowrap border px-[10px] py-[5px] font-mono text-[10px] font-medium uppercase tracking-[0.11em]"
+                                  style={{
+                                    borderColor: withAlpha(c, 0.4),
+                                    color: c,
+                                  }}
+                                >
+                                  <span
+                                    className="block h-[7px] w-[7px]"
+                                    style={{ background: c }}
+                                  />
+                                  {name}
+                                </span>
+                              );
+                            })}
                           </span>
                         );
                         return (
@@ -503,6 +668,7 @@ export default function ScheduleView({
 
           <div className="hidden lg:block">
             <UpcomingRail
+              categories={categories}
               groups={railGroups}
               count={railCount}
               emptyMessage={railEmptyMessage}
@@ -529,6 +695,7 @@ export default function ScheduleView({
         {formMode === null && openEvent && (
           <EventDetailModal
             event={openEvent}
+            categories={categories}
             canManage={canManage}
             onClose={() => setOpenEventId(null)}
             onEdit={() => {
@@ -542,6 +709,7 @@ export default function ScheduleView({
           <EventFormModal
             mode={formMode}
             event={formMode === "edit" ? formEvent : null}
+            categories={categories}
             onClose={() => {
               setFormMode(null);
               setFormEvent(null);
@@ -578,4 +746,13 @@ function EmptyState({
       )}
     </div>
   );
+}
+
+// The backend's plain-text error message when it sent one (e.g. a duplicate
+// name), otherwise the fallback.
+function requestError(err: unknown, fallback: string): string {
+  const data = (err as { response?: { data?: unknown } }).response?.data;
+  return typeof data === "string" && data.trim() !== ""
+    ? data.trim()
+    : fallback;
 }
