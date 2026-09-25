@@ -168,7 +168,7 @@ export default function BattlePanel({
   }
 
   // Reports the cursor in canvas coordinates, so a student can read a left
-  // and a top off the target instead of guessing them. Colours already come
+  // and a bottom off the target instead of guessing them. Colours already come
   // off the image exactly; this is the other half of that.
   function trackTarget(e: React.MouseEvent<HTMLImageElement>) {
     const at = targetFraction(e);
@@ -177,7 +177,7 @@ export default function BattlePanel({
         ? null
         : {
             x: Math.floor(at.fx * CANVAS_WIDTH),
-            y: Math.floor(at.fy * CANVAS_HEIGHT),
+            y: Math.floor((1 - at.fy) * CANVAS_HEIGHT),
           },
     );
   }
@@ -334,7 +334,7 @@ export default function BattlePanel({
               style={{
                 width: 46,
                 borderRight: "1px solid rgba(63,143,87,.16)",
-                height: 566,
+                height: 612,
               }}
             >
               <div style={{ whiteSpace: "pre" }}>{gutter}</div>
@@ -350,7 +350,7 @@ export default function BattlePanel({
               spellCheck={false}
               aria-label="Your HTML and CSS"
               className="min-w-0 flex-1 resize-none bg-[#0d1712] px-4 py-3.5 font-mono text-xs leading-[1.6] text-[#d7ecd2] outline-none"
-              style={{ height: 566, tabSize: 2 }}
+              style={{ height: 612, tabSize: 2 }}
             />
           </div>
           <div className="flex items-center gap-3.5 border-t border-sched-hair px-4 py-3.5">
@@ -403,21 +403,21 @@ export default function BattlePanel({
             style={{ border: "1px solid var(--color-sched-hair)" }}
           >
             <div className="flex items-center gap-2.5 border-b border-sched-hair bg-[#16241c] px-4 py-3">
-              <span className="font-mono text-[11px] font-medium tracking-[0.16em] text-sched-cream">
+              <span className="flex-none font-mono text-[11px] font-medium tracking-[0.16em] text-sched-cream">
                 TARGET
               </span>
 
               {/* Cursor position in the challenge's own coordinate space, so
-                  a left and a top can be read off the target rather than
+                  a left and a bottom can be read off the target rather than
                   guessed. Dim placeholder keeps the header from reflowing
                   when the pointer leaves. */}
               <span
-                className="font-mono text-[10px] tracking-[0.1em]"
+                className="whitespace-nowrap font-mono text-[10px] tabular-nums tracking-[0.04em]"
                 style={{ color: cursor ? "#e9f5cd" : "#4d6455" }}
               >
                 {cursor
-                  ? `LEFT ${cursor.x} · TOP ${cursor.y}`
-                  : "LEFT — · TOP —"}
+                  ? `LEFT ${cursor.x} · BOTTOM ${cursor.y}`
+                  : "LEFT — · BOTTOM —"}
               </span>
 
               <div className="flex-1" />
@@ -449,7 +449,7 @@ export default function BattlePanel({
                 disabled={!targetURL}
                 title="Sample a colour straight off the target"
                 aria-pressed={picking}
-                className="min-h-[26px] px-2.5 font-mono text-[10px] font-medium tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-[26px] whitespace-nowrap px-2.5 font-mono text-[10px] font-medium tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-40"
                 style={{
                   background: picking ? "#6ee787" : "none",
                   border: `1px solid ${picking ? "#6ee787" : "var(--color-sched-hair)"}`,

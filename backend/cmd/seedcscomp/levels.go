@@ -506,8 +506,8 @@ var levels = []level{
   <div><div class="roof"></div><div class="win"></div><div class="door"></div></div>
   <div><div class="roof"></div><div class="win"></div><div class="door"></div></div>
 </div>`, scaffold: `<style>
-  .ground { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #24422f }
-  .house { position: absolute; left: 10px; top: 60px; width: 48px; height: 110px; background: #c2705a }
+  .ground { position: absolute; left: 0; bottom: 0; width: 300px; height: 30px; background: #24422f }
+  .house { position: absolute; left: 10px; bottom: 30px; width: 48px; height: 110px; background: #c2705a }
 </style>
 
 <div class="ground"></div>
@@ -545,8 +545,8 @@ var levels = []level{
   <div></div>
   <div></div>
 </div>`, scaffold: `<style>
-  .pallet { position: absolute; left: 100px; top: 176px; width: 100px; height: 24px; background: #4a3a26 }
-  .hook { position: absolute; left: 138px; top: 14px; width: 24px; height: 10px; border-radius: 5px; background: #9aa196 }
+  .pallet { position: absolute; left: 100px; bottom: 0; width: 100px; height: 24px; background: #4a3a26 }
+  .hook { position: absolute; left: 138px; bottom: 176px; width: 24px; height: 10px; border-radius: 5px; background: #9aa196 }
 </style>
 
 <div class="pallet"></div>
@@ -584,7 +584,7 @@ var levels = []level{
   <div class="fan"><div class="head"></div><div class="body"></div></div>
   <div class="fan"><div class="head"></div><div class="body"></div></div>
 </div>`, scaffold: `<style>
-  .pitch { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #2c5e40 }
+  .pitch { position: absolute; left: 0; bottom: 0; width: 300px; height: 30px; background: #2c5e40 }
 </style>
 
 <div class="pitch"></div>
@@ -620,7 +620,7 @@ var levels = []level{
   <div></div><div></div><div></div>
   <div></div><div></div><div></div>
 </div>`, scaffold: `<style>
-  .cabinet { position: absolute; left: 60px; top: 20px; width: 180px; height: 170px; border-radius: 6px; background: #24384d }
+  .cabinet { position: absolute; left: 60px; bottom: 10px; width: 180px; height: 170px; border-radius: 6px; background: #24384d }
 </style>
 
 <div class="cabinet"></div>
@@ -655,7 +655,7 @@ var levels = []level{
     <div></div><div></div><div></div><div></div><div></div>
     <div></div><div></div><div></div><div></div><div></div>
 </div>`, scaffold: `<style>
-  .grass { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #24422f }
+  .grass { position: absolute; left: 0; bottom: 0; width: 300px; height: 30px; background: #24422f }
 </style>
 
 <div class="grass"></div>
@@ -779,7 +779,7 @@ var levels = []level{
 <div class="dashes">
     <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
 </div>`, scaffold: `<style>
-  .lot { position: absolute; left: 0; top: 20px; width: 300px; height: 160px; background: #2b3440 }
+  .lot { position: absolute; left: 0; bottom: 20px; width: 300px; height: 160px; background: #2b3440 }
 </style>
 
 <div class="lot"></div>
@@ -851,7 +851,7 @@ var levels = []level{
   <div></div><div></div><div></div><div></div><div></div>
   <div></div><div></div><div></div><div></div><div></div>
 </div>`, scaffold: `<style>
-  .soil { position: absolute; left: 0; top: 150px; width: 300px; height: 50px; background: #3f2e1e }
+  .soil { position: absolute; left: 0; bottom: 0; width: 300px; height: 50px; background: #3f2e1e }
 </style>
 
 <div class="soil"></div>
@@ -897,7 +897,7 @@ var levels = []level{
 <div class="keys r4">
     <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
 </div>`, scaffold: `<style>
-  .case { position: absolute; left: 10px; top: 40px; width: 280px; height: 108px; border-radius: 8px; background: #2b3440 }
+  .case { position: absolute; left: 10px; bottom: 52px; width: 280px; height: 108px; border-radius: 8px; background: #2b3440 }
 </style>
 
 <div class="case"></div>
@@ -958,7 +958,7 @@ var levels = []level{
   <div class="shirt"><div></div></div>
   <div class="shirt"><div></div></div>
 </div>`, scaffold: `<style>
-  .grass { position: absolute; left: 0; top: 186px; width: 300px; height: 14px; background: #24422f }
+  .grass { position: absolute; left: 0; bottom: 0; width: 300px; height: 14px; background: #24422f }
 </style>
 
 <div class="grass"></div>
@@ -1072,7 +1072,7 @@ var levels = []level{
   <div></div>
   <div></div>
 </div>`, scaffold: `<style>
-  .tunnel { position: absolute; left: 0; top: 60px; width: 300px; height: 80px; background: #16283a }
+  .tunnel { position: absolute; left: 0; bottom: 60px; width: 300px; height: 80px; background: #16283a }
 </style>
 
 <div class="tunnel"></div>
@@ -1119,17 +1119,17 @@ var levels = []level{
 
 		{title: "Apartment block", target: `<style>
   .ground { position: absolute; left: 0; top: 190px; width: 300px; height: 10px; background: #24422f }
-  .ledge { position: absolute; left: 62px; top: 14px; width: 176px; height: 8px; background: #2b3440 }
+  .ledge { position: absolute; left: 59px; top: 15px; width: 182px; height: 8px; background: #2b3440 }
   .building {
     position: absolute;
-    left: 70px; top: 22px;
-    width: 160px; height: 168px;
+    left: 67px; top: 23px;
+    width: 166px; height: 167px;
     box-sizing: border-box;
     padding: 10px;
     background: #3a5068;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 5px;
   }
   .floor {
     flex: 1;
@@ -1137,23 +1137,28 @@ var levels = []level{
     justify-content: space-between;
     align-items: center;
   }
-  .floor div { width: 20px; height: 22px; background: #ffd166 }
-  .floor div:nth-child(even) { background: #16283a }
-  .floor:nth-child(odd) div:nth-child(3) { background: #4cc9f0 }
+  .floor div { width: 16px; height: 10px; background: #ffd166 }
+  .floor:nth-child(odd) div:nth-child(even) { background: #16283a }
+  .floor:nth-child(even) div:nth-child(odd) { background: #16283a }
+  .floor:nth-child(3n) div:nth-child(4) { background: #4cc9f0 }
   .floor:last-child { align-items: flex-end }
-  .floor:last-child div:nth-child(3) { width: 24px; height: 34px; background: #3f2e1e }
+  .floor:last-child div:nth-child(3) { height: 14px; background: #3f2e1e }
 </style>
 
 <div class="ground"></div>
 <div class="ledge"></div>
 
 <div class="building">
-  <div class="floor"><div></div><div></div><div></div><div></div><div></div></div>
-  <div class="floor"><div></div><div></div><div></div><div></div><div></div></div>
-  <div class="floor"><div></div><div></div><div></div><div></div><div></div></div>
-  <div class="floor"><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="floor"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="floor"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="floor"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="floor"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="floor"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="floor"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="floor"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="floor"><div></div><div></div><div></div><div></div><div></div><div></div></div>
 </div>`, scaffold: `<style>
-  .ground { position: absolute; left: 0; top: 190px; width: 300px; height: 10px; background: #24422f }
+  .ground { position: absolute; left: 0; bottom: 0; width: 300px; height: 10px; background: #24422f }
 </style>
 
 <div class="ground"></div>
@@ -1164,8 +1169,8 @@ var levels = []level{
   .table { position: absolute; left: 0; top: 160px; width: 300px; height: 40px; background: #3f2e1e }
   .carton {
     position: absolute;
-    left: 31px; top: 50px;
-    width: 238px; height: 110px;
+    left: 31px; top: 30px;
+    width: 238px; height: 130px;
     box-sizing: border-box;
     padding: 8px;
     border-radius: 6px 6px 0 0;
@@ -1183,9 +1188,9 @@ var levels = []level{
     justify-content: center;
     align-items: center;
   }
-  .cup div { width: 20px; height: 26px; border-radius: 50%; background: #f3ead8 }
+  .cup div { width: 16px; height: 20px; border-radius: 50%; background: #f3ead8 }
   .cup:nth-child(3n) div { background: #d9a066 }
-  .row:nth-child(2) .cup:nth-child(odd) div { background: #d9a066 }
+  .row:nth-child(even) .cup:nth-child(odd) div { background: #d9a066 }
 </style>
 
 <div class="table"></div>
@@ -1207,8 +1212,24 @@ var levels = []level{
     <div class="cup"></div>
     <div class="cup"><div></div></div>
   </div>
+  <div class="row">
+    <div class="cup"><div></div></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"></div>
+  </div>
+  <div class="row">
+    <div class="cup"></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"></div>
+    <div class="cup"><div></div></div>
+    <div class="cup"><div></div></div>
+  </div>
 </div>`, scaffold: `<style>
-  .table { position: absolute; left: 0; top: 160px; width: 300px; height: 40px; background: #3f2e1e }
+  .table { position: absolute; left: 0; bottom: 0; width: 300px; height: 40px; background: #3f2e1e }
 </style>
 
 <div class="table"></div>
@@ -1252,7 +1273,7 @@ var levels = []level{
   <div class="row"><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div></div>
   <div class="row"><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div></div>
 </div>`, scaffold: `<style>
-  .board { position: absolute; left: 70px; top: 20px; width: 160px; height: 160px; background: #3f2e1e }
+  .board { position: absolute; left: 70px; bottom: 20px; width: 160px; height: 160px; background: #3f2e1e }
 </style>
 
 <div class="board"></div>
@@ -1302,7 +1323,7 @@ var levels = []level{
     <div class="week"><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
   </div>
 </div>`, scaffold: `<style>
-  .page { position: absolute; left: 39px; top: 14px; width: 222px; height: 172px; background: #e9f5cd }
+  .page { position: absolute; left: 39px; bottom: 14px; width: 222px; height: 172px; background: #e9f5cd }
 </style>
 
 <div class="page"></div>
@@ -1364,7 +1385,7 @@ var levels = []level{
     <div class="wheels"><div></div><div></div></div>
   </div>
 </div>`, scaffold: `<style>
-  .rail { position: absolute; left: 0; top: 170px; width: 300px; height: 4px; background: #9aa196 }
+  .rail { position: absolute; left: 0; bottom: 26px; width: 300px; height: 4px; background: #9aa196 }
 </style>
 
 <div class="rail"></div>
@@ -1536,7 +1557,7 @@ var levels = []level{
     <div></div><div></div><div></div><div></div><div></div>
   </div>
 </div>`, scaffold: `<style>
-  .road { position: absolute; left: 0; top: 170px; width: 300px; height: 30px; background: #1d3550 }
+  .road { position: absolute; left: 0; bottom: 0; width: 300px; height: 30px; background: #1d3550 }
 </style>
 
 <div class="road"></div>
@@ -1630,8 +1651,8 @@ var levels = []level{
     <div><div></div></div>
   </div>
 </div>`, scaffold: `<style>
-  .stand { position: absolute; left: 0; top: 40px; width: 300px; height: 100px; background: #1d3550 }
-  .pitch { position: absolute; left: 0; top: 140px; width: 300px; height: 60px; background: #2c5e40 }
+  .stand { position: absolute; left: 0; bottom: 60px; width: 300px; height: 100px; background: #1d3550 }
+  .pitch { position: absolute; left: 0; bottom: 0; width: 300px; height: 60px; background: #2c5e40 }
 </style>
 
 <div class="stand"></div>
@@ -1711,7 +1732,7 @@ var levels = []level{
     <div class="pot"></div>
   </div>
 </div>`, scaffold: `<style>
-  .case { position: absolute; left: 20px; top: 10px; width: 260px; height: 180px; background: #3f2e1e }
+  .case { position: absolute; left: 20px; bottom: 10px; width: 260px; height: 180px; background: #3f2e1e }
 </style>
 
 <div class="case"></div>
@@ -1824,7 +1845,7 @@ var levels = []level{
     <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
   </div>
 </div>`, scaffold: `<style>
-  .board { position: absolute; left: 0; top: 0; width: 300px; height: 200px; background: #123024 }
+  .board { position: absolute; left: 0; bottom: 0; width: 300px; height: 200px; background: #123024 }
 </style>
 
 <div class="board"></div>
@@ -1896,7 +1917,7 @@ var levels = []level{
     <div class="patch"><div></div><div></div><div></div><div></div></div>
   </div>
 </div>`, scaffold: `<style>
-  .quilt { position: absolute; left: 22px; top: 18px; width: 256px; height: 164px; background: #3f2e1e }
+  .quilt { position: absolute; left: 22px; bottom: 18px; width: 256px; height: 164px; background: #3f2e1e }
 </style>
 
 <div class="quilt"></div>

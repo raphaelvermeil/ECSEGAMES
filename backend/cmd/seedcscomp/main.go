@@ -125,12 +125,17 @@ func points(level int) int {
 // missing background and an empty border-radius are left off rather than
 // written out, because that is what the target images were drawn from.
 //
-// pretty controls spacing only — the compact form goes into the target
-// document, the spaced form into the starter code a student reads.
+// pretty is the starter code a student reads, the compact form the target
+// document. The starter measures from the bottom, as the editor's cursor
+// readout does; the target keeps top, which lays out the same box.
 func css(r rect, pretty bool) string {
 	var b strings.Builder
 	b.WriteString("left: " + strconv.Itoa(r.x) + "px")
-	b.WriteString("; top: " + strconv.Itoa(r.y) + "px")
+	if pretty {
+		b.WriteString("; bottom: " + strconv.Itoa(200-r.y-r.h) + "px")
+	} else {
+		b.WriteString("; top: " + strconv.Itoa(r.y) + "px")
+	}
 	b.WriteString("; width: " + strconv.Itoa(r.w) + "px")
 	b.WriteString("; height: " + strconv.Itoa(r.h) + "px")
 	if r.bg != "" {

@@ -156,6 +156,10 @@ func (rd *Renderer) Render(ctx context.Context, html string) ([]byte, error) {
 		network.Enable(),
 		network.SetBlockedURLs().WithURLPatterns(blockEverything),
 		emulation.SetScriptExecutionDisabled(true),
+		// Content that spills past the canvas is invisible in the UI's
+		// scrolling="no" preview, so it must not paint scrollbars into the
+		// screenshot either — they cost ~12% of the score for nothing seen.
+		emulation.SetScrollbarsHidden(true),
 		chromedp.EmulateViewport(canvasWidth, canvasHeight, chromedp.EmulateScale(canvasScale)),
 		chromedp.Navigate(url),
 		chromedp.CaptureScreenshot(&buf),
