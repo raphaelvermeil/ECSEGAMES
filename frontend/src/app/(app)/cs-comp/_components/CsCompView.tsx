@@ -595,7 +595,8 @@ export default function CsCompView() {
             The standings are hidden for the final hour.
           </p>
           <p className="mt-2 font-mono text-xs text-sched-text-muted">
-            Keep solving the challenges! The winners will be revealed at the end.
+            Keep solving the challenges! The winners will be revealed at the
+            end.
           </p>
         </div>
       )}

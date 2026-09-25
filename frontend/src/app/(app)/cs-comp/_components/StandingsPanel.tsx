@@ -57,8 +57,8 @@ export default function StandingsPanel({
 
   return (
     <div className="bg-sched-bg px-5 pb-14 pt-8 lg:px-[60px] lg:pb-[60px] lg:pt-[34px]">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-        <div className="flex-1">
+      <div>
+        <div>
           <div className="flex items-center gap-[11px]">
             <span
               aria-hidden="true"
@@ -67,42 +67,16 @@ export default function StandingsPanel({
             />
             <span className="font-mono text-[10px] font-medium tracking-[0.2em] text-[#6ee787]">
               LIVE
-              <span className="hidden lg:inline">
-                {" "}
-                · UPDATING EVERY SUBMISSION
-              </span>
             </span>
           </div>
           <h2 className="mt-2.5 font-display text-2xl font-semibold tracking-[0.03em] text-sched-cream lg:text-[30px]">
-            <span className="lg:hidden">CS comp live standings</span>
-            <span className="hidden lg:inline">CS comp · live standings</span>
+            CS comp live standings
           </h2>
           <p className="mt-2 max-w-[640px] font-mono text-xs leading-[1.7] text-sched-text-muted">
             Every team&rsquo;s solved parts land here the moment they submit. A
             part counts once it matches the target closely enough for the server
             to call it solved.
           </p>
-        </div>
-
-        <div
-          className="w-full flex-none px-[18px] py-4 lg:w-[300px]"
-          style={{ background: "#101a15", borderLeft: "3px solid #ff7b54" }}
-        >
-          <div className="font-mono text-[9px] font-medium tracking-[0.18em] text-[#ff7b54]">
-            NOT THE GLOBAL LEADERBOARD
-          </div>
-          <p className="mt-2 font-mono text-[11px] leading-[1.65] text-sched-text-muted">
-            CS comp squads compete on their own, and these points don&rsquo;t go
-            straight to the global leaderboard. When the comp ends, the judges
-            average each department&rsquo;s squad scores and add that to the
-            department&rsquo;s Games total.
-          </p>
-          <Link
-            href="/leaderboard"
-            className="mt-2.5 inline-block font-mono text-[10px] font-medium tracking-[0.14em] text-[#ff7b54] hover:underline"
-          >
-            OPEN GLOBAL LEADERBOARD →
-          </Link>
         </div>
       </div>
 
@@ -248,6 +222,29 @@ export default function StandingsPanel({
           </div>
         </>
       )}
+
+      {/* Below the standings rather than beside the heading, where its
+          height pushed the table down. */}
+      <div
+        className="mt-8 px-[18px] py-4"
+        style={{ background: "#101a15", borderLeft: "3px solid #ff7b54" }}
+      >
+        <div className="font-mono text-[9px] font-medium tracking-[0.18em] text-[#ff7b54]">
+          NOT THE GLOBAL LEADERBOARD
+        </div>
+        <p className="mt-2 font-mono text-[11px] leading-[1.65] text-sched-text-muted">
+          CS comp squads compete on their own, and these points don&rsquo;t go
+          straight to the global leaderboard. When the comp ends, the judges
+          average each department&rsquo;s squad scores and add that to the
+          department&rsquo;s Games total.
+        </p>
+        <Link
+          href="/leaderboard"
+          className="mt-2.5 inline-block font-mono text-[10px] font-medium tracking-[0.14em] text-[#ff7b54] hover:underline"
+        >
+          OPEN GLOBAL LEADERBOARD →
+        </Link>
+      </div>
     </div>
   );
 }

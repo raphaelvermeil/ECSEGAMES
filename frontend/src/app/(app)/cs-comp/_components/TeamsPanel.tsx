@@ -45,10 +45,6 @@ export default function TeamsPanel({
         <span className="font-mono text-xs text-sched-text-muted">
           {openCount} of {teams.length} {teams.length === 1 ? "team" : "teams"}{" "}
           still {openCount === 1 ? "has" : "have"} room
-          <span className="hidden lg:inline">
-            {" "}
-            · {TEAM_SIZE} coders per team
-          </span>
         </span>
       </div>
 
