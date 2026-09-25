@@ -154,29 +154,38 @@ export async function setTaskDone(
   }
 }
 
+// Mirrors scunts.DefaultTaskPoints. Sent explicitly rather than relying on
+// the server default, so the value shown in the form is the value stored.
+export const DEFAULT_TASK_POINTS = 100;
+
 export async function createTask(
   token: string | null,
   category: ScuntsCategory,
   text: string,
   note: string,
+  points: number,
 ): Promise<ScuntsTask> {
   const res = await api.post<ScuntsTask>(
     "/api/scunts/tasks",
-    { category, text, note },
+    { category, text, note, points },
     authHeader(token),
   );
   return res.data;
 }
 
+// Points must be sent on every edit: the server falls back to the default
+// when the field is absent, so omitting it would quietly reset a mission
+// worth 250 back to 100 the next time someone fixed a typo.
 export async function updateTask(
   token: string | null,
   id: string,
   text: string,
   note: string,
+  points: number,
 ): Promise<ScuntsTask> {
   const res = await api.patch<ScuntsTask>(
     `/api/scunts/tasks/${id}`,
-    { text, note },
+    { text, note, points },
     authHeader(token),
   );
   return res.data;

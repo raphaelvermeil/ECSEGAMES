@@ -5,6 +5,7 @@ import { useAuth } from "@clerk/nextjs";
 import { Check, Trash } from "@/components/icons";
 import {
   CATEGORIES,
+  DEFAULT_TASK_POINTS,
   createTask,
   deleteTask,
   listTasks,
@@ -14,8 +15,12 @@ import {
   type ScuntsTask,
 } from "@/lib/scunts";
 
-const inputClass =
-  "box-border w-full border border-sched-hair bg-sched-bg px-[12px] py-[11px] font-mono text-sm text-sched-cream placeholder:text-[#5d7063] [color-scheme:dark] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sched-accent";
+const fieldClass =
+  "box-border border border-sched-hair bg-sched-bg px-[12px] py-[11px] font-mono text-sm text-sched-cream placeholder:text-[#5d7063] [color-scheme:dark] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sched-accent";
+const inputClass = `${fieldClass} w-full`;
+const pointsClass = `${fieldClass} w-[104px]`;
+const fieldLabelClass =
+  "font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-sched-text-muted";
 
 export default function MissionList({ canManage }: { canManage: boolean }) {
   const { getToken } = useAuth();
@@ -24,9 +29,11 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
   // Which category the exec "add" form is open on, and what's typed in it.
   const [adding, setAdding] = useState<ScuntsCategory | null>(null);
   const [draft, setDraft] = useState("");
+  const [draftPoints, setDraftPoints] = useState(String(DEFAULT_TASK_POINTS));
   // The task currently being edited, if any.
   const [editing, setEditing] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [editPoints, setEditPoints] = useState("");
 
   const load = useCallback(async () => listTasks(await getToken()), [getToken]);
 
@@ -68,12 +75,26 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
     }
   }
 
+  // An empty or non-numeric box falls back to the default instead of
+  // creating a mission worth nothing.
+  function pointsOr(value: string, fallback: number) {
+    const n = Number(value);
+    return Number.isFinite(n) && n >= 0 ? Math.round(n) : fallback;
+  }
+
   async function add(category: ScuntsCategory) {
     const text = draft.trim();
     if (!text) return;
     try {
-      await createTask(await getToken(), category, text, "");
+      await createTask(
+        await getToken(),
+        category,
+        text,
+        "",
+        pointsOr(draftPoints, DEFAULT_TASK_POINTS),
+      );
       setDraft("");
+      setDraftPoints(String(DEFAULT_TASK_POINTS));
       setAdding(null);
       setTasks(await load());
     } catch {
@@ -81,11 +102,17 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
     }
   }
 
-  async function saveEdit(id: string) {
+  async function saveEdit(id: string, current: number) {
     const text = editText.trim();
     if (!text) return;
     try {
-      await updateTask(await getToken(), id, text, "");
+      await updateTask(
+        await getToken(),
+        id,
+        text,
+        "",
+        pointsOr(editPoints, current),
+      );
       setEditing(null);
       setTasks(await load());
     } catch {
@@ -148,8 +175,20 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder={`New ${cat.label} mission`}
                     className={inputClass}
+                    aria-label="Mission text"
                     autoFocus
                   />
+                  <div className="flex items-center gap-2">
+                    <span className={fieldLabelClass}>Points</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={draftPoints}
+                      onChange={(e) => setDraftPoints(e.target.value)}
+                      className={pointsClass}
+                      aria-label="Points"
+                    />
+                  </div>
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -176,6 +215,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                   onClick={() => {
                     setAdding(cat.value);
                     setDraft("");
+                    setDraftPoints(String(DEFAULT_TASK_POINTS));
                   }}
                   className="mt-3 border border-sched-hair px-3 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-sched-text-muted transition-colors hover:border-sched-accent hover:text-sched-accent"
                 >
@@ -215,11 +255,23 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
                           className={inputClass}
+                          aria-label="Mission text"
                         />
+                        <div className="flex items-center gap-2">
+                          <span className={fieldLabelClass}>Points</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={editPoints}
+                            onChange={(e) => setEditPoints(e.target.value)}
+                            className={pointsClass}
+                            aria-label="Points"
+                          />
+                        </div>
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            onClick={() => saveEdit(task.id)}
+                            onClick={() => saveEdit(task.id, task.points)}
                             className="bg-sched-accent px-3 py-1.5 font-mono text-[11px] font-semibold text-sched-fill"
                           >
                             Save
@@ -266,6 +318,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                         onClick={() => {
                           setEditing(task.id);
                           setEditText(task.text);
+                          setEditPoints(String(task.points));
                         }}
                         className="border border-sched-hair px-[8px] py-[5px] font-mono text-[11px] text-sched-text-muted transition-colors hover:border-sched-accent hover:text-sched-accent"
                       >
