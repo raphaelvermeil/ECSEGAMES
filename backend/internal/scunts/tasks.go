@@ -7,12 +7,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Category is which of the event's three mission sheets a task came from.
-// They run on different nights, so the list is grouped rather than merged.
+// Category is which mission sheet a task came from. They run at different
+// times and places, so the list is grouped rather than merged: coord
+// missions target a specific person, the night lists are tied to a venue.
 type Category string
 
 const (
 	CategoryGeneral    Category = "general"
+	CategoryCoord      Category = "coord"
 	CategoryBoilerRoom Category = "boilerRoom"
 	CategoryPubCrawl   Category = "pubCrawl"
 )
@@ -20,7 +22,7 @@ const (
 // IsValidCategory gates what an exec may create a task under.
 func IsValidCategory(c Category) bool {
 	switch c {
-	case CategoryGeneral, CategoryBoilerRoom, CategoryPubCrawl:
+	case CategoryGeneral, CategoryCoord, CategoryBoilerRoom, CategoryPubCrawl:
 		return true
 	default:
 		return false

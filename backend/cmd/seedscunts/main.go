@@ -76,6 +76,63 @@ var general = []seedTask{
 	{Text: "Have two teammates recreate an intense sports face-off before playing rock-paper-scissors."},
 	{Text: "Make up a completely fake urban legend about wherever you currently are and tell it dramatically on camera."},
 	{Text: "Find a stranger willing to give your team a random mission, then complete it as long as it is safe, free, legal, and reasonable."},
+
+	// The ECSE-specific missions: campus buildings, BOAT races, merch, and
+	// the Matrix thread that runs through the weekend.
+	{Text: "Touch grass."},
+	{Text: "Get a prof endorsement."},
+	{Text: "Eat a meal where everything is green."},
+	{Text: "Wug in the Factory."},
+	{Text: "Wug in the ECSESS lounge."},
+	{Text: "Wug in Trottier."},
+	{Text: "Wug in McConnell."},
+	{Text: "Wug in Macdonald."},
+	{Text: "Wug in Macdonald-Harrington."},
+	{Text: "Wug in the FDA."},
+	{Text: "Wug in Wong."},
+	{Text: "Do a French lesson on Duolingo."},
+	{Text: "Interview 5 ECSE students and ask them what their favourite language is.", Note: "One video, under a minute, and every interviewee asked individually"},
+	{Text: "Make a sign for your team for BOAT races."},
+	{Text: "Make a sign for every other team at BOAT races."},
+	{Text: "Take a breadboard to the bread section at the grocery store."},
+	{Text: "Chicken run.", Note: "Up to your interpretation"},
+	{Text: "Milk power hour: once an hour for 24 hours."},
+	{Text: "Make a chant for your team."},
+	{Text: "Find a leprechaun.", Note: "Green, obviously"},
+	{Text: "Make an interpretative dance about how the ECSE PNU colour changed from grey to green.", Note: "No words allowed"},
+	{Text: "Make a Godiva's Hymn verse."},
+	{Text: "Walk in slow motion down University street."},
+	{Text: "Spell ECSE using your bodies."},
+	{Text: "Find the oldest piece of ECSE merch you can.", Note: "The oldest one gets the most points"},
+	{Text: "Take a picture with a white rabbit."},
+	{Text: "Play on a VR headset."},
+	{Text: "Stage a kung fu fight scene."},
+	{Text: "Code a puzzle for a coord to solve."},
+	{Text: "Use deodorant."},
+	{Text: "Make a human pyramid in an elevator."},
+	{Text: "Recreate THE bullet time scene."},
+	{Text: "Take a photo with someone wearing all black and sunglasses."},
+	{Text: "Find something red and something blue, then recreate the red pill / blue pill scene."},
+}
+
+// Coord missions: each one targets a specific coord by name, so this list
+// only makes sense while that person is around. Names are as the sheet
+// wrote them, nicknames included.
+var coord = []seedTask{
+	{Text: "Layla — Out-diva THE diva in a diva contest."},
+	{Text: "Alicia — Take a team picture with Alicia in the centre doing HER signature pose."},
+	{Text: "Bilar — Rub his head and make a wish.", Note: "If he grants it, bonus points"},
+	{Text: "Raph — Get him strawberry yogurt."},
+	{Text: "Tim — Do the \"Don't you wish you were more athletic\" joke on him."},
+	{Text: "Eli — Give Eli a gluten-free BEvERage (cider, gluten-free beer, etc.)."},
+	{Text: "Arold — Give Arold the biggest group hug in the world, because he's the best :)", Note: "Consensually"},
+	{Text: "Stella — Bring Stella a soccer ball and make her juggle."},
+	{Text: "Lia — Ask her if she got rejected from ECSESS."},
+	{Text: "Zhisong — Give Zhisong a bouquet of flowers, because she deserves her flowers."},
+	{Text: "Melissa — Give Melissa a hat."},
+	{Text: "Sean F — Give Sean F sunglasses and do a 0.5.", Note: "Bonus points if multiple coords are in the pic with sunglasses"},
+	{Text: "Sean Z — Take a picture of Zini's calf."},
+	{Text: "Amir — Give Amir a construction cone.", Note: "Preferably not theft"},
 }
 
 // Boiler Room @ Reggie's. The source sheet has 20 numbered rows but seven
@@ -167,6 +224,7 @@ func main() {
 		tasks    []seedTask
 	}{
 		{scunts.CategoryGeneral, general},
+		{scunts.CategoryCoord, coord},
 		{scunts.CategoryBoilerRoom, boilerRoom},
 		{scunts.CategoryPubCrawl, pubCrawl},
 	} {

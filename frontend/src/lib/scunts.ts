@@ -110,6 +110,7 @@ export function videoDuration(file: File): Promise<number> {
 // The three source sheets. Order here is the order the page renders them.
 export const CATEGORIES = [
   { value: "general", label: "General" },
+  { value: "coord", label: "Coords" },
   { value: "boilerRoom", label: "Boiler Room" },
   { value: "pubCrawl", label: "Pub Crawl" },
 ] as const;
