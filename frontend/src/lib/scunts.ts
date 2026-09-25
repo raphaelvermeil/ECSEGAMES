@@ -104,3 +104,87 @@ export function videoDuration(file: File): Promise<number> {
     el.src = url;
   });
 }
+
+// --- Mission checklist -----------------------------------------------------
+
+// The three source sheets. Order here is the order the page renders them.
+export const CATEGORIES = [
+  { value: "general", label: "General" },
+  { value: "boilerRoom", label: "Boiler Room" },
+  { value: "pubCrawl", label: "Pub Crawl" },
+] as const;
+
+export type ScuntsCategory = (typeof CATEGORIES)[number]["value"];
+
+// Mirrors internal/scunts.TaskView. `done` is resolved per request against
+// the caller's team, so two students on different teams see different
+// values for the same mission.
+export interface ScuntsTask {
+  id: string;
+  category: ScuntsCategory;
+  text: string;
+  note?: string;
+  points: number;
+  order: number;
+  done: boolean;
+  doneByName?: string;
+  doneAt?: string;
+}
+
+export async function listTasks(token: string | null): Promise<ScuntsTask[]> {
+  const res = await api.get<ScuntsTask[]>(
+    "/api/scunts/tasks",
+    authHeader(token),
+  );
+  return res.data;
+}
+
+// Ticking is server-side rather than local state, which is the whole point:
+// a teammate on another phone sees it on their next load.
+export async function setTaskDone(
+  token: string | null,
+  id: string,
+  done: boolean,
+): Promise<void> {
+  const url = `/api/scunts/tasks/${id}/done`;
+  if (done) {
+    await api.put(url, null, authHeader(token));
+  } else {
+    await api.delete(url, authHeader(token));
+  }
+}
+
+export async function createTask(
+  token: string | null,
+  category: ScuntsCategory,
+  text: string,
+  note: string,
+): Promise<ScuntsTask> {
+  const res = await api.post<ScuntsTask>(
+    "/api/scunts/tasks",
+    { category, text, note },
+    authHeader(token),
+  );
+  return res.data;
+}
+
+export async function updateTask(
+  token: string | null,
+  id: string,
+  text: string,
+  note: string,
+): Promise<ScuntsTask> {
+  const res = await api.patch<ScuntsTask>(
+    `/api/scunts/tasks/${id}`,
+    { text, note },
+    authHeader(token),
+  );
+  return res.data;
+}
+
+export async function deleteTask(
+  token: string | null,
+  id: string,
+): Promise<void> {
+  await api.delete(`/api/scunts/tasks/${id}`, authHeader(token));
+}

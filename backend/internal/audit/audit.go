@@ -35,6 +35,7 @@ const (
 	// an exec taking media down leaves a durable trace, readable in the
 	// database even though no screen renders it.
 	EntityScuntsSubmission EntityType = "scuntsSubmission"
+	EntityScuntsTask       EntityType = "scuntsTask"
 )
 
 // Diff is one changed field, before and after. Values are pre-formatted

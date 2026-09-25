@@ -44,11 +44,23 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 		pr.Post("/api/scunts/submissions", h.Create)
 		pr.Get("/api/scunts/submissions", h.List)
 
+		// The mission checklist. Reading and ticking are open to any
+		// signed-in student: the whole team shares one list, so any
+		// teammate may tick or un-tick.
+		pr.Get("/api/scunts/tasks", h.ListTasks)
+		pr.Put("/api/scunts/tasks/{id}/done", h.SetDone)
+		pr.Delete("/api/scunts/tasks/{id}/done", h.ClearDone)
+
 		// Takedown is the one exec-only action: because everyone signed in
 		// can see every upload, someone has to be able to remove one.
 		pr.Group(func(er chi.Router) {
 			er.Use(appmw.RequireRole(userRepo, models.RoleExec))
 			er.Delete("/api/scunts/submissions/{id}", h.Delete)
+
+			// Only execs shape the list itself.
+			er.Post("/api/scunts/tasks", h.CreateTask)
+			er.Patch("/api/scunts/tasks/{id}", h.UpdateTask)
+			er.Delete("/api/scunts/tasks/{id}", h.DeleteTask)
 		})
 	})
 }
@@ -315,4 +327,221 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// ---------------------------------------------------------------------------
+// Mission checklist
+//
+// Unlike submissions, none of this touches R2 — so these routes work even
+// when media storage is unconfigured, and deliberately skip h.ready.
+// ---------------------------------------------------------------------------
+
+// ListTasks returns every mission with the caller's team's tick state, so
+// the same list reads differently for Software than for Electrical.
+func (h *Handler) ListTasks(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.caller(w, r)
+	if !ok {
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	tasks, err := h.store.ListTasks(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	done, err := h.store.CompletionsFor(ctx, u.Team)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+
+	views := make([]TaskView, 0, len(tasks))
+	for _, t := range tasks {
+		v := TaskView{Task: t}
+		if c, ok := done[t.ID]; ok {
+			at := c.DoneAt
+			v.Done, v.DoneByName, v.DoneAt = true, c.DoneByName, &at
+		}
+		views = append(views, v)
+	}
+	writeJSON(w, http.StatusOK, views)
+}
+
+// SetDone ticks a mission for the caller's team.
+func (h *Handler) SetDone(w http.ResponseWriter, r *http.Request) {
+	h.toggleDone(w, r, true)
+}
+
+// ClearDone un-ticks it. Any teammate may undo any tick — the checklist
+// belongs to the team, not to whoever happened to tap first.
+func (h *Handler) ClearDone(w http.ResponseWriter, r *http.Request) {
+	h.toggleDone(w, r, false)
+}
+
+func (h *Handler) toggleDone(w http.ResponseWriter, r *http.Request, done bool) {
+	u, ok := h.caller(w, r)
+	if !ok {
+		return
+	}
+	id, err := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	if done {
+		err = h.store.SetDone(ctx, id, u.Team, u.ClerkID, displayName(u))
+	} else {
+		err = h.store.ClearDone(ctx, id, u.Team)
+	}
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+type taskRequest struct {
+	Category Category `json:"category"`
+	Text     string   `json:"text"`
+	Note     string   `json:"note"`
+	Points   *int     `json:"points"`
+}
+
+// validate returns an error message, or "" when the request is usable.
+// Points is a pointer so an omitted value falls back to the default rather
+// than creating a mission worth nothing.
+func (req *taskRequest) validate(needCategory bool) string {
+	if needCategory && !IsValidCategory(req.Category) {
+		return "invalid category"
+	}
+	req.Text = strings.TrimSpace(req.Text)
+	req.Note = strings.TrimSpace(req.Note)
+	if req.Text == "" {
+		return "text is required"
+	}
+	if len(req.Text) > MaxTaskTextLen || len(req.Note) > MaxTaskTextLen {
+		return "text is too long"
+	}
+	if req.Points != nil && (*req.Points < 0 || *req.Points > 100000) {
+		return "invalid points"
+	}
+	return ""
+}
+
+func (req taskRequest) points() int {
+	if req.Points == nil {
+		return DefaultTaskPoints
+	}
+	return *req.Points
+}
+
+// CreateTask adds a mission to a category. Exec-only.
+func (h *Handler) CreateTask(w http.ResponseWriter, r *http.Request) {
+	var req taskRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	if msg := req.validate(true); msg != "" {
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	saved, err := h.store.InsertTask(ctx, Task{
+		Category:  req.Category,
+		Text:      req.Text,
+		Note:      req.Note,
+		Points:    req.points(),
+		CreatedAt: time.Now().UTC(),
+	})
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	h.recordTask(ctx, r, audit.VerbCreated, saved.ID, "added a Scunts mission")
+	writeJSON(w, http.StatusCreated, TaskView{Task: *saved})
+}
+
+// UpdateTask edits a mission's wording, note or value. Exec-only. The
+// category is fixed once created — moving a mission between nights would
+// need a re-order, and renaming in place covers the real case.
+func (h *Handler) UpdateTask(w http.ResponseWriter, r *http.Request) {
+	id, err := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	var req taskRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	if msg := req.validate(false); msg != "" {
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	saved, err := h.store.UpdateTask(ctx, id, req.Text, req.Note, req.points())
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	h.recordTask(ctx, r, audit.VerbEdited, id, "edited a Scunts mission")
+	writeJSON(w, http.StatusOK, TaskView{Task: *saved})
+}
+
+// DeleteTask removes a mission and every team's tick of it. Exec-only.
+func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+	id, err := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	if _, err := h.store.GetTask(ctx, id); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	if err := h.store.DeleteTask(ctx, id); err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	h.recordTask(ctx, r, audit.VerbDeleted, id, "removed a Scunts mission")
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// recordTask logs an exec's change to the list. Like submission takedowns
+// these carry a zero EventID: they belong to no event, so they never show
+// up in an event's history, but the trail exists in the database.
+func (h *Handler) recordTask(ctx context.Context, r *http.Request, verb audit.Verb, id primitive.ObjectID, text string) {
+	clerkID, _ := appmw.UserIDFromContext(r.Context())
+	_ = h.audit.Record(ctx, audit.Entry{
+		EntityType: audit.EntityScuntsTask,
+		EntityID:   id,
+		Verb:       verb,
+		Actor:      h.actorName(ctx, clerkID),
+		At:         time.Now().UTC(),
+		Text:       text,
+	})
 }
