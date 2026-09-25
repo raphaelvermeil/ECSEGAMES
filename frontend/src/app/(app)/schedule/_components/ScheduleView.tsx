@@ -362,7 +362,7 @@ export default function ScheduleView({
                   maxLength={24}
                   placeholder="Category name"
                   aria-label="New category name"
-                  className="min-h-9 min-w-0 flex-1 border border-sched-hair bg-sched-bg-raised px-3 font-mono text-xs text-sched-cream outline-none placeholder:text-[#4d6455] focus:border-sched-accent-dim lg:max-w-[240px] lg:flex-none"
+                  className="min-h-11 w-full border border-sched-hair bg-sched-bg-raised px-3 font-mono text-base text-sched-cream outline-none placeholder:text-[#4d6455] focus:border-sched-accent-dim lg:min-h-9 lg:w-[240px] lg:text-xs"
                 />
                 <div
                   role="radiogroup"
@@ -377,7 +377,7 @@ export default function ScheduleView({
                       aria-checked={draft.color === hex}
                       aria-label={hex}
                       onClick={() => setDraft({ ...draft, color: hex })}
-                      className="h-6 w-6"
+                      className="h-8 w-8 lg:h-6 lg:w-6"
                       style={{
                         background: hex,
                         outline:
@@ -389,20 +389,24 @@ export default function ScheduleView({
                     />
                   ))}
                 </div>
-                <button
-                  type="submit"
-                  disabled={draft.name.trim() === ""}
-                  className="min-h-9 border border-sched-accent-dim px-[14px] font-mono text-[11px] font-medium tracking-[0.12em] text-sched-accent disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  ADD
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDraft(null)}
-                  className="min-h-9 px-2 font-mono text-[11px] tracking-[0.12em] text-sched-text-muted"
-                >
-                  CANCEL
-                </button>
+                {/* On a phone the name, colours and buttons each get their
+                    own row, so the name field has the full width. */}
+                <div className="flex w-full gap-[10px] lg:w-auto">
+                  <button
+                    type="submit"
+                    disabled={draft.name.trim() === ""}
+                    className="min-h-11 flex-1 border border-sched-accent-dim px-[14px] font-mono text-[11px] font-medium tracking-[0.12em] text-sched-accent disabled:cursor-not-allowed disabled:opacity-40 lg:min-h-9 lg:flex-none"
+                  >
+                    ADD
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDraft(null)}
+                    className="min-h-11 flex-1 border border-sched-hair px-2 font-mono text-[11px] tracking-[0.12em] text-sched-text-muted lg:min-h-9 lg:flex-none lg:border-transparent"
+                  >
+                    CANCEL
+                  </button>
+                </div>
               </form>
             )}
 
