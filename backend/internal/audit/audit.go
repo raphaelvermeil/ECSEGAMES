@@ -36,6 +36,7 @@ const (
 	// database even though no screen renders it.
 	EntityScuntsSubmission EntityType = "scuntsSubmission"
 	EntityScuntsTask       EntityType = "scuntsTask"
+	EntityScuntsSection    EntityType = "scuntsSection"
 )
 
 // Diff is one changed field, before and after. Values are pre-formatted

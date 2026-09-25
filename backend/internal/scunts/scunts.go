@@ -1,11 +1,12 @@
 // Package scunts stores the photo and video proof students submit for the
 // Scunts scavenger hunt.
 //
-// It deliberately stores evidence and nothing else: there is no task list,
-// no approve/reject state, and no points. Execs look at the gallery and
-// award points through the existing scoring panel, so this package writes
-// nothing into scoreEntries and does not touch the Games leaderboard — the
-// same separation internal/cscomp keeps.
+// Each submission is proof for one mission. It starts pending, visible only
+// to execs and the submitting team; an exec accepting it marks the mission
+// done for that team and snapshots the mission's points onto it. Those
+// accepted points reach the Games leaderboard through AcceptedPoints, which
+// cmd/api wires into the scores handler — this package never writes to
+// scoreEntries itself.
 //
 // The media itself lives in Cloudflare R2, not in Mongo and not on the
 // container's disk (which is wiped on every deploy). A submission document
@@ -109,6 +110,32 @@ type Submission struct {
 	SubmittedByName string             `bson:"submittedByName" json:"submittedByName"`
 	SubmittedAt     time.Time          `bson:"submittedAt" json:"submittedAt"`
 
+	// TaskID is the mission this is proof for. Absent on submissions made
+	// before proof was tied to missions.
+	TaskID primitive.ObjectID `bson:"taskId,omitempty" json:"taskId,omitempty"`
+	// Status is pending until an exec accepts it. Absent (older
+	// submissions) reads as accepted, since those were always public.
+	Status SubmissionStatus `bson:"status,omitempty" json:"status,omitempty"`
+	// Points is the mission's value snapshotted at acceptance, so editing a
+	// mission later doesn't rewrite the leaderboard.
+	Points     int        `bson:"points,omitempty" json:"points,omitempty"`
+	AcceptedAt *time.Time `bson:"acceptedAt,omitempty" json:"acceptedAt,omitempty"`
+
 	// PhotoURL is filled in on the way out only.
 	PhotoURL string `bson:"-" json:"photoUrl"`
+}
+
+// SubmissionStatus is where a submission is in review.
+type SubmissionStatus string
+
+const (
+	StatusPending  SubmissionStatus = "pending"
+	StatusAccepted SubmissionStatus = "accepted"
+)
+
+// AcceptedPoint is one accepted proof's contribution to the leaderboard.
+type AcceptedPoint struct {
+	Team   models.Team `bson:"team"`
+	Points int         `bson:"points"`
+	At     time.Time   `bson:"acceptedAt"`
 }

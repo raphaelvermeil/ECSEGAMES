@@ -155,6 +155,20 @@ func main() {
 			log.Printf("scunts: media storage unavailable, submissions disabled: %v", err)
 		}
 		scunts.Mount(r, scunts.NewHandler(scuntsStore, scuntsStorage, userRepo, auditStore), userRepo, cfg.ClerkSecretKey)
+
+		// Accepted Scunts proof counts on the Games leaderboard. Set before
+		// the server starts listening, so no request sees it half-wired.
+		scoreHandler.ExtraPoints = func(ctx context.Context) ([]scores.LeaderboardPoint, error) {
+			accepted, err := scuntsStore.AcceptedPoints(ctx)
+			if err != nil {
+				return nil, err
+			}
+			out := make([]scores.LeaderboardPoint, 0, len(accepted))
+			for _, a := range accepted {
+				out = append(out, scores.LeaderboardPoint{Team: a.Team, Value: a.Points, At: a.At})
+			}
+			return out, nil
+		}
 	} else {
 		log.Printf("database not connected: user API disabled")
 	}

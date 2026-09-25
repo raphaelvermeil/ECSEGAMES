@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -28,6 +29,10 @@ type Handler struct {
 	// eventExists checks the event an award is for is real, so points can't
 	// be attached to a made-up or deleted event ID.
 	eventExists func(context.Context, primitive.ObjectID) (bool, error)
+	// ExtraPoints, when set, supplies awards from outside the event scores
+	// (accepted Scunts proof) that the leaderboard counts too. Set by
+	// cmd/api, which keeps this package from importing scunts.
+	ExtraPoints func(context.Context) ([]LeaderboardPoint, error)
 }
 
 // NewHandler builds the handler backed by the given score and audit stores.
@@ -119,6 +124,22 @@ func (h *Handler) Leaderboard(w http.ResponseWriter, r *http.Request) {
 			Team:  e.Team,
 			Value: e.Value,
 			At:    e.AwardedAt,
+		})
+	}
+	if h.ExtraPoints != nil {
+		extra, err := h.ExtraPoints(ctx)
+		if err != nil {
+			http.Error(w, "storage error", http.StatusInternalServerError)
+			return
+		}
+		for _, p := range extra {
+			board.Totals[p.Team] += p.Value
+		}
+		// The client running-sums Points in order, so the merged list has
+		// to stay oldest-first.
+		board.Points = append(board.Points, extra...)
+		sort.SliceStable(board.Points, func(i, j int) bool {
+			return board.Points[i].At.Before(board.Points[j].At)
 		})
 	}
 	writeJSON(w, http.StatusOK, board)

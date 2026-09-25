@@ -19,15 +19,32 @@ const (
 	CategoryPubCrawl   Category = "pubCrawl"
 )
 
-// IsValidCategory gates what an exec may create a task under.
-func IsValidCategory(c Category) bool {
-	switch c {
-	case CategoryGeneral, CategoryCoord, CategoryBoilerRoom, CategoryPubCrawl:
-		return true
-	default:
-		return false
-	}
+// Section is one heading on the checklist. Key is what tasks store as their
+// Category; Prefix is the letter(s) a mission's number carries (G1, B22).
+// The four built-ins below are seeded at boot; execs can add more.
+type Section struct {
+	ID     primitive.ObjectID `bson:"_id,omitempty" json:"-"`
+	Key    Category           `bson:"key" json:"key"`
+	Label  string             `bson:"label" json:"label"`
+	Prefix string             `bson:"prefix" json:"prefix"`
+	Order  int                `bson:"order" json:"order"`
 }
+
+// builtinSections keep their existing keys so tasks created before sections
+// were stored still land under them.
+var builtinSections = []Section{
+	{Key: CategoryGeneral, Label: "General", Prefix: "G", Order: 0},
+	{Key: CategoryCoord, Label: "Coords", Prefix: "C", Order: 1},
+	{Key: CategoryBoilerRoom, Label: "Boiler Room", Prefix: "B", Order: 2},
+	{Key: CategoryPubCrawl, Label: "Pub Crawl", Prefix: "P", Order: 3},
+}
+
+// MaxSectionLabelLen and MaxSectionPrefixLen bound a new section's name and
+// number prefix.
+const (
+	MaxSectionLabelLen  = 60
+	MaxSectionPrefixLen = 3
+)
 
 // DefaultTaskPoints is what a new task is worth. Every mission is flat-rated
 // for now — the source sheets carry 1-3 point values that are deliberately
@@ -53,11 +70,11 @@ type Task struct {
 }
 
 // Completion records that one team finished one task. There is at most one
-// per (task, team) — enforced by a unique index, which is what makes the
-// toggle race-safe when two teammates tap the same box at once.
+// per (task, team) — enforced by a unique index, which is what stops two
+// execs accepting proof for the same mission and paying out twice.
 //
-// It is deliberately team-scoped rather than user-scoped: the whole team
-// shares one checklist, and any teammate may tick or un-tick.
+// It is team-scoped rather than user-scoped: the whole team shares one
+// checklist. Completions are only written by an exec accepting proof.
 type Completion struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty" json:"-"`
 	TaskID     primitive.ObjectID `bson:"taskId" json:"-"`
@@ -76,4 +93,6 @@ type TaskView struct {
 	Done       bool       `json:"done"`
 	DoneByName string     `json:"doneByName,omitempty"`
 	DoneAt     *time.Time `json:"doneAt,omitempty"`
+	// Pending is true while the caller's team has proof awaiting review.
+	Pending bool `json:"pending,omitempty"`
 }
