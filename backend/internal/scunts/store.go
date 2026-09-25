@@ -319,8 +319,14 @@ func (s *Store) Get(ctx context.Context, id primitive.ObjectID) (*Submission, er
 
 // Delete removes a submission outright. Unlike a score entry there is no
 // soft delete: the R2 object is gone too, so a tombstone would point at
-// nothing.
-func (s *Store) Delete(ctx context.Context, id primitive.ObjectID) error {
-	_, err := s.coll.DeleteOne(ctx, bson.M{"_id": id})
-	return err
+// nothing. Taking down accepted proof also reopens its mission for that
+// team, and its points leave the leaderboard with the record.
+func (s *Store) Delete(ctx context.Context, sub *Submission) error {
+	if _, err := s.coll.DeleteOne(ctx, bson.M{"_id": sub.ID}); err != nil {
+		return err
+	}
+	if sub.Status == StatusAccepted && !sub.TaskID.IsZero() {
+		return s.ClearDone(ctx, sub.TaskID, sub.Team)
+	}
+	return nil
 }

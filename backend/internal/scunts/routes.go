@@ -321,17 +321,9 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
-	if err := h.store.Delete(ctx, id); err != nil {
+	if err := h.store.Delete(ctx, sub); err != nil {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
-	}
-	// Taking down accepted proof reopens the mission, and its points leave
-	// the leaderboard with the record.
-	if sub.Status == StatusAccepted && !sub.TaskID.IsZero() {
-		if err := h.store.ClearDone(ctx, sub.TaskID, sub.Team); err != nil {
-			http.Error(w, "storage error", http.StatusInternalServerError)
-			return
-		}
 	}
 
 	clerkID, _ := appmw.UserIDFromContext(r.Context())
