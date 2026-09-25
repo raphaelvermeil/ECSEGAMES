@@ -36,11 +36,13 @@ const (
 //
 // Images are compressed in the browser before upload (roughly 400 KB), so
 // the image cap is a backstop against an uncompressed original rather than
-// an expected size. The video cap is the real constraint: a 30-second phone
-// clip is 30-200 MB depending on whether the phone records 1080p or 4K.
+// an expected size. Videos are likewise compressed in the browser (a
+// 60-second clip lands around 20 MB); the video cap is sized for the
+// fallback, where a browser that can't compress sends the original, and a
+// 60-second 1080p-4K phone clip is roughly 100-400 MB.
 const (
 	MaxImageBytes int64 = 10 << 20  // 10 MB
-	MaxVideoBytes int64 = 100 << 20 // 100 MB
+	MaxVideoBytes int64 = 300 << 20 // 300 MB
 	MaxCaptionLen       = 200
 )
 

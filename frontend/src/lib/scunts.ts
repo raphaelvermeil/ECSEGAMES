@@ -26,7 +26,10 @@ export interface ScuntsSubmission {
 // server re-checks everything here against the object it actually stored;
 // these exist to fail a doomed upload before megabytes are transferred.
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+// Videos are normally compressed well under this (see compressVideo); the
+// cap is sized for the fallback, where a browser that can't compress sends
+// the phone's original.
+export const MAX_VIDEO_BYTES = 300 * 1024 * 1024;
 export const MAX_VIDEO_SECONDS = 60;
 export const MAX_CAPTION_LEN = 200;
 
@@ -116,20 +119,19 @@ const IMAGE_OPTIONS = {
 };
 
 // prepareProof gets a picked file ready to upload: photos are shrunk,
-// videos are checked against the size and length caps. Throws an Error
-// with a message fit to show the user.
-export async function prepareProof(file: File): Promise<File> {
+// videos are length-checked and compressed. onProgress reports video
+// compression from 0 to 1. Throws an Error with a message fit to show the
+// user.
+export async function prepareProof(
+  file: File,
+  onProgress?: (fraction: number) => void,
+): Promise<File> {
   if (!file.type.startsWith("video/")) {
     return imageCompression(file, IMAGE_OPTIONS);
   }
-  if (file.size > MAX_VIDEO_BYTES) {
-    throw new Error(
-      "That video is over 100 MB. Record a shorter clip, or lower your camera quality.",
-    );
-  }
   // Length is checked here rather than server-side: reading duration from a
   // container needs a parser the backend has no other use for. Unreadable
-  // metadata isn't fatal — the size cap already bounds it.
+  // metadata isn't fatal — the size cap still bounds it.
   let seconds = 0;
   try {
     seconds = await videoDuration(file);
@@ -137,7 +139,98 @@ export async function prepareProof(file: File): Promise<File> {
   if (seconds > MAX_VIDEO_SECONDS) {
     throw new Error("Videos must be 60 seconds or shorter.");
   }
-  return file;
+
+  const smaller = await compressVideo(file, onProgress);
+  const toSend = smaller && smaller.size < file.size ? smaller : file;
+  if (toSend.size > MAX_VIDEO_BYTES) {
+    throw new Error(
+      "That video is too large to upload. Record a shorter clip, or lower your camera quality.",
+    );
+  }
+  return toSend;
+}
+
+// Target for compressed video: 720p on the short side at 2.5 Mbps, which
+// puts a 60-second clip around 20 MB. Plenty to judge whether a mission was
+// done, and far quicker to upload on campus data than a phone's original.
+const VIDEO_SHORT_SIDE = 720;
+const VIDEO_BITRATE = 2_500_000;
+
+// compressVideo re-encodes a video to VIDEO_SHORT_SIDE / VIDEO_BITRATE using
+// the browser's hardware encoder (WebCodecs, via Mediabunny). Resolves null
+// when this browser can't do it — no WebCodecs, an unsupported codec, or a
+// failure mid-way — so the caller falls back to uploading the original.
+async function compressVideo(
+  file: File,
+  onProgress?: (fraction: number) => void,
+): Promise<File | null> {
+  if (typeof VideoEncoder === "undefined") return null;
+  try {
+    // Loaded on demand so the library only downloads when someone actually
+    // picks a video, not on every visit to the page.
+    const {
+      ALL_FORMATS,
+      BlobSource,
+      BufferTarget,
+      Conversion,
+      Input,
+      Mp4OutputFormat,
+      Output,
+      Quality,
+    } = await import("mediabunny");
+
+    const input = new Input({
+      formats: ALL_FORMATS,
+      source: new BlobSource(file),
+    });
+    const target = new BufferTarget();
+    const output = new Output({
+      // In-memory fast start puts the index at the front of the file, so
+      // the gallery can start playing before the whole clip downloads.
+      format: new Mp4OutputFormat({ fastStart: "in-memory" }),
+      target,
+    });
+
+    const conversion = await Conversion.init({
+      input,
+      output,
+      video: (track) => {
+        // Scale by the short side so portrait and landscape both land at
+        // 720p, and never upscale a clip that's already smaller.
+        const w = track.displayWidth;
+        const h = track.displayHeight;
+        const resize =
+          Math.min(w, h) > VIDEO_SHORT_SIDE
+            ? h > w
+              ? { width: VIDEO_SHORT_SIDE }
+              : { height: VIDEO_SHORT_SIDE }
+            : {};
+        return {
+          ...resize,
+          codec: "avc",
+          quality: new Quality({ bitrate: VIDEO_BITRATE }),
+          forceTranscode: true,
+        };
+      },
+      // Audio is left as-is: phone audio is already small, and copying it
+      // avoids needing an audio encoder, which older iPhones lack.
+      showWarnings: false,
+    });
+
+    // A dropped audio track would silently mute the proof (a story told to
+    // a stranger, say), so any discarded track means "send the original".
+    if (!conversion.isValid || conversion.discardedTracks.length > 0) {
+      return null;
+    }
+    if (onProgress) conversion.onProgress = (p) => onProgress(p);
+    await conversion.execute();
+
+    if (!target.buffer) return null;
+    const name = file.name.replace(/\.[^.]*$/, "") + ".mp4";
+    return new File([target.buffer], name, { type: "video/mp4" });
+  } catch {
+    return null;
+  }
 }
 
 // videoDuration resolves the length of a video file without uploading it,

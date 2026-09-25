@@ -51,6 +51,8 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
   const [proofFor, setProofFor] = useState<string | null>(null);
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
+  // Video compression progress, 0-1, or null when not compressing.
+  const [compressing, setCompressing] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => listTasks(await getToken()), [getToken]);
@@ -115,7 +117,9 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
     setNotice(null);
     setBusy(true);
     try {
-      const toSend = await prepareProof(file);
+      if (file.type.startsWith("video/")) setCompressing(0);
+      const toSend = await prepareProof(file, setCompressing);
+      setCompressing(null);
       await upload(await getToken(), toSend, task.id, details.trim());
       setProofFor(null);
       setDetails("");
@@ -132,6 +136,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
       );
     } finally {
       setBusy(false);
+      setCompressing(null);
     }
   }
 
@@ -557,7 +562,9 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                           >
                             <Camera width={16} height={16} strokeWidth={2} />
                             {busy
-                              ? "Uploading…"
+                              ? compressing !== null
+                                ? `Compressing ${Math.round(compressing * 100)}%…`
+                                : "Uploading…"
                               : `Upload proof · ${task.code}`}
                             <input
                               type="file"
