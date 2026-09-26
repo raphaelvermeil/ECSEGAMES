@@ -58,26 +58,24 @@ func (h *Handler) actorName(ctx context.Context, clerkID string) string {
 	return u.Name
 }
 
-// Mount registers score routes on r in two groups with different gates.
+// Mount registers every score route behind the exec/admin gate.
 //
-// The per-event scoring surface — reads included — stays exec/admin only,
+// The per-event scoring surface — reads included — is exec/admin only,
 // matching the design: the live scoring panel is exec-only, unlike the
 // read-only event history. There is no PATCH route: Create both awards and
 // corrects a team's points (see scoreRequest.validate), so a single write
 // path covers both.
 //
-// /api/leaderboard is the deliberate exception: standings are public, with
-// no auth at all. A scoreboard is meant to be read — by students who
-// haven't signed up, by people watching from outside the Games entirely —
-// and it is safe to open because Leaderboard returns aggregates and bare
-// timestamped awards, never event identity, actor, or description (see
-// Leaderboard).
+// /api/leaderboard is gated the same way. It was public once — a scoreboard
+// is meant to be read — but standings are now held back from students while
+// the Games run, so the whole scores surface sits behind the same gate. The
+// page gate alone would not be enough: without this, anyone could read the
+// standings straight from the API.
 func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey string) {
-	r.Get("/api/leaderboard", h.Leaderboard)
-
 	r.Group(func(pr chi.Router) {
 		pr.Use(appmw.RequireAuth(clerkSecretKey))
 		pr.Use(appmw.RequireRole(userRepo, models.RoleExec))
+		pr.Get("/api/leaderboard", h.Leaderboard)
 		pr.Get("/api/events/{eventID}/scores", h.List)
 		pr.Post("/api/events/{eventID}/scores", h.Create)
 		pr.Delete("/api/events/{eventID}/scores/{id}", h.Delete)

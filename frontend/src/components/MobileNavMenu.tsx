@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useAuth, useUser } from "@clerk/nextjs";
 import api from "@/lib/api";
 import { NAV_LINKS } from "@/lib/nav";
+import { isExec, useRole } from "@/lib/useRole";
 import { useFocusTrap, useScrollLock } from "@/lib/overlay";
 import { teamLabel, type Team } from "@/lib/scores";
 
@@ -29,8 +30,14 @@ export default function MobileNavMenu({
   const [team, setTeam] = useState<Team | "" | null>(null);
   // Same rule as the desktop Navbar: signed-in only tabs are hidden signed
   // out, and the public set is shown while Clerk is still resolving.
+  // Exec-only tabs are hidden from students rather than shown and then
+  // redirected. The role arrives a moment after Clerk resolves, so the tab
+  // appears once it is known — never the other way round.
+  const role = useRole();
   const links =
-    isLoaded && isSignedIn ? NAV_LINKS : NAV_LINKS.filter((l) => l.public);
+    isLoaded && isSignedIn
+      ? NAV_LINKS.filter((l) => !l.exec || isExec(role))
+      : NAV_LINKS.filter((l) => l.public);
 
   // Takes `open` because the drawer stays mounted and returns null when shut.
   //

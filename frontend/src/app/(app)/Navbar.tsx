@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Show, UserButton, useAuth } from "@clerk/nextjs";
 import { NAV_LINKS } from "@/lib/nav";
+import { isExec, useRole } from "@/lib/useRole";
 
 // Desktop only — every page renders its own mobile header (ScheduleBanner
 // for /schedule, PageBanner elsewhere) with its own logo/bell/account
@@ -15,8 +16,14 @@ export default function Navbar() {
   // than shown and then bounced to sign-in. While Clerk is still resolving
   // show the public set — erring that way means a tab appears, never one
   // that flashes and vanishes.
+  // Exec-only tabs are hidden from students rather than shown and then
+  // redirected. The role arrives a moment after Clerk resolves, so the tab
+  // appears once it is known — never the other way round.
+  const role = useRole();
   const links =
-    isLoaded && isSignedIn ? NAV_LINKS : NAV_LINKS.filter((l) => l.public);
+    isLoaded && isSignedIn
+      ? NAV_LINKS.filter((l) => !l.exec || isExec(role))
+      : NAV_LINKS.filter((l) => l.public);
 
   return (
     <header className="hidden h-[72px] items-center gap-[30px] bg-sched-chrome px-[22px] font-mono lg:flex">

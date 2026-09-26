@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 import api from "@/lib/api";
 import {
   POLL_INTERVAL_MS,
@@ -19,17 +20,20 @@ import { ChevronRight } from "@/components/icons";
 import ScoreChart from "./ScoreChart";
 
 export default function LeaderboardView({ initial }: { initial: Leaderboard }) {
+  const { getToken } = useAuth();
   const [board, setBoard] = useState<Leaderboard>(initial);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [stale, setStale] = useState(false);
   // The team whose points breakdown is open. Only one at a time.
   const [open, setOpen] = useState<Team | null>(null);
 
-  // No auth header: the leaderboard is public, so this polls the same way
-  // for a signed-out visitor as for a logged-in student.
+  // The endpoint is exec-gated, so the poll carries a token like every
+  // other authenticated call. Only execs reach this page at all.
   const poll = useCallback(async () => {
     try {
-      const res = await api.get<Leaderboard>("/api/leaderboard");
+      const res = await api.get<Leaderboard>("/api/leaderboard", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
       setBoard(res.data);
       setUpdatedAt(new Date());
       setStale(false);
@@ -38,7 +42,7 @@ export default function LeaderboardView({ initial }: { initial: Leaderboard }) {
       // phone connection shouldn't blank out the page.
       setStale(true);
     }
-  }, []);
+  }, [getToken]);
 
   useEffect(() => {
     // Polling while the tab is hidden would hammer the backend all day for

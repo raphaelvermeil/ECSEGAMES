@@ -17,6 +17,8 @@ export interface NavLink {
   // Reachable without a session. Signed-out visitors see only these in the
   // nav; the rest are hidden rather than shown and then bounced to sign-in.
   public?: boolean;
+  // Exec/admin only. Hidden from students, who would just be redirected.
+  exec?: boolean;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
@@ -50,6 +52,7 @@ export const NAV_LINKS: NavLink[] = [
   },
   {
     href: "/leaderboard",
+    exec: true,
     label: "Leaderboard",
     description: "Live standings across every event.",
     icon: Trophy,

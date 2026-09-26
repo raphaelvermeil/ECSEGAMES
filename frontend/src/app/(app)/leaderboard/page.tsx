@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
-import api from "@/lib/api";
+import { redirect } from "next/navigation";
+import { API_TIMEOUT_MS, API_URL } from "@/lib/api";
 import { EMPTY_LEADERBOARD, type Leaderboard } from "@/lib/leaderboard";
 import LeaderboardView from "./_components/LeaderboardView";
 
@@ -10,21 +11,40 @@ import LeaderboardView from "./_components/LeaderboardView";
 export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage() {
-  // Members only: signed-out visitors are sent to sign-in, the same gate
-  // cs-comp uses. The backend endpoint itself stays public — the page is
-  // the gate, as everywhere else in this group.
+  // Execs only. Standings are held back from students while the Games run,
+  // so this is a role gate rather than the plain signed-in check the rest of
+  // the group uses. /api/leaderboard is gated to match — the page check
+  // alone would leave the numbers readable straight from the API.
   await auth.protect();
 
+  const { getToken } = await auth();
+  const token = await getToken();
+
+  const meRes = await fetch(`${API_URL}/api/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
+  }).catch(() => null);
+  const role = meRes?.ok ? (await meRes.json()).role : null;
+  if (role !== "exec" && role !== "admin") {
+    // Not an error page: a student following an old link belongs on the
+    // schedule, and a backend hiccup lands them there too rather than on a
+    // leaderboard that would fail to load anyway.
+    redirect("/schedule");
+  }
+
   // Seeded server-side so the standings are on screen in the first paint;
-  // the view polls on from there. The fetch lives here rather than in
-  // lib/leaderboard.ts because that module is also imported by the client
-  // view. No auth header — GET /api/leaderboard is public. Falls back to
-  // empty when the backend is unreachable so the page still renders,
-  // matching listEvents().
+  // the view polls on from there. Carries the token now that the endpoint is
+  // exec-gated. Falls back to empty when the backend is unreachable so the
+  // page still renders, matching listEvents().
   let initial: Leaderboard = EMPTY_LEADERBOARD;
   try {
-    const res = await api.get<Leaderboard>("/api/leaderboard");
-    initial = res.data;
+    const res = await fetch(`${API_URL}/api/leaderboard`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    });
+    if (res.ok) initial = await res.json();
   } catch {
     initial = EMPTY_LEADERBOARD;
   }
