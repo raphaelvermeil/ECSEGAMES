@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { Camera, Check, Trash } from "@/components/icons";
+import { Camera, Check, Trash, X } from "@/components/icons";
 import {
   ACCEPTED_TYPES,
   DEFAULT_TASK_POINTS,
   MAX_CAPTION_LEN,
+  MAX_FILES,
+  MAX_VIDEO_SECONDS,
   createSection,
   createTask,
   deleteTask,
@@ -51,8 +53,11 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
   const [proofFor, setProofFor] = useState<string | null>(null);
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
-  // Video compression progress, 0-1, or null when not compressing.
-  const [compressing, setCompressing] = useState<number | null>(null);
+  // Files picked for the open proof form, each with a local preview URL.
+  // Nothing is sent until Submit.
+  const [picked, setPicked] = useState<{ file: File; url: string }[]>([]);
+  // What the submit button says while it works ("Uploading 2/3…").
+  const [status, setStatus] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => listTasks(await getToken()), [getToken]);
@@ -101,26 +106,59 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
     }
   }
 
-  // Upload proof for one mission. It lands as pending: the mission only
-  // crosses off once an exec accepts it.
-  async function submitProof(
-    task: ScuntsTask,
-    code: string,
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) {
-    const file = e.target.files?.[0];
+  // Stage picked files for preview, up to MAX_FILES in total.
+  function addFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
     // Clear immediately so picking the same file twice still fires onChange.
     e.target.value = "";
-    if (!file) return;
+    const room = MAX_FILES - picked.length;
+    setError(
+      files.length > room
+        ? `A proof can have at most ${MAX_FILES} files.`
+        : null,
+    );
+    setPicked([
+      ...picked,
+      ...files
+        .slice(0, room)
+        .map((file) => ({ file, url: URL.createObjectURL(file) })),
+    ]);
+  }
+
+  function removePicked(index: number) {
+    URL.revokeObjectURL(picked[index].url);
+    setPicked(picked.filter((_, i) => i !== index));
+  }
+
+  function clearPicked() {
+    picked.forEach((p) => URL.revokeObjectURL(p.url));
+    setPicked([]);
+  }
+
+  // Upload the staged files as one proof for a mission. It lands as
+  // pending: the mission only crosses off once an exec accepts it.
+  async function submitProof(task: ScuntsTask, code: string) {
+    if (picked.length === 0) return;
+    const n = picked.length;
+    const of = (i: number) => (n > 1 ? ` ${i + 1}/${n}` : "");
 
     setError(null);
     setNotice(null);
     setBusy(true);
     try {
-      if (file.type.startsWith("video/")) setCompressing(0);
-      const toSend = await prepareProof(file, setCompressing);
-      setCompressing(null);
-      await upload(await getToken(), toSend, task.id, details.trim());
+      const ready: File[] = [];
+      for (const [i, { file }] of picked.entries()) {
+        setStatus(`Preparing${of(i)}…`);
+        ready.push(
+          await prepareProof(file, (p) =>
+            setStatus(`Compressing${of(i)} ${Math.round(p * 100)}%…`),
+          ),
+        );
+      }
+      await upload(await getToken(), ready, task.id, details.trim(), (i) =>
+        setStatus(`Uploading${of(i)}…`),
+      );
+      clearPicked();
       setProofFor(null);
       setDetails("");
       setNotice(`Proof for ${code} sent. An exec will review it.`);
@@ -136,7 +174,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
       );
     } finally {
       setBusy(false);
-      setCompressing(null);
+      setStatus(null);
     }
   }
 
@@ -462,6 +500,7 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                                   proofFor === task.id ? null : task.id,
                                 );
                                 setDetails("");
+                                clearPicked();
                               }}
                               aria-expanded={proofFor === task.id}
                               className={`block w-full text-left font-mono text-[13px] leading-relaxed ${
@@ -525,9 +564,8 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
 
                     {/* Full card width rather than the text column beside
                       the checkbox and exec buttons, which left it a narrow
-                      strip on a phone. Details come first on purpose:
-                      picking a file submits straight away, so anything
-                      typed after that would be lost. */}
+                      strip on a phone. Picked files are previewed below and
+                      only sent on Submit. */}
                     {proofFor === task.id && !task.done && !task.pending && (
                       <div className="mt-3 flex flex-col gap-3 border-t border-sched-hair pt-4">
                         <div className="flex flex-col gap-1.5">
@@ -553,33 +591,82 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
 
                         <div className="flex flex-col gap-1.5">
                           <span className={fieldLabelClass}>
-                            2. Upload photo or video
+                            2. Add photos or videos
                           </span>
                           <label
-                            className={`inline-flex w-full cursor-pointer items-center justify-center gap-2 bg-sched-accent px-5 py-3 font-display text-sm font-semibold tracking-[0.07em] text-sched-fill transition-[filter] hover:brightness-[1.12] sm:w-fit ${
-                              busy ? "pointer-events-none opacity-60" : ""
+                            className={`inline-flex w-full cursor-pointer items-center justify-center gap-2 border border-sched-accent px-5 py-3 font-display text-sm font-semibold tracking-[0.07em] text-sched-accent transition-colors hover:bg-sched-accent hover:text-sched-fill sm:w-fit ${
+                              busy || picked.length >= MAX_FILES
+                                ? "pointer-events-none opacity-60"
+                                : ""
                             }`}
                           >
                             <Camera width={16} height={16} strokeWidth={2} />
-                            {busy
-                              ? compressing !== null
-                                ? `Compressing ${Math.round(compressing * 100)}%…`
-                                : "Uploading…"
-                              : `Upload proof · ${task.code}`}
+                            {picked.length > 0
+                              ? "Add more"
+                              : "Upload photo or video"}
                             <input
                               type="file"
                               accept={ACCEPTED_TYPES}
-                              onChange={(e) => submitProof(task, task.code, e)}
+                              multiple
+                              onChange={addFiles}
                               disabled={busy}
                               className="hidden"
                             />
                           </label>
                           <p className="font-mono text-[11px] leading-relaxed text-sched-text-muted">
-                            Picking a file submits it right away.
-                            <br />
-                            Photos are shrunk automatically · videos up to 60 s.
+                            Up to {MAX_FILES} files · photos are shrunk
+                            automatically · videos up to {MAX_VIDEO_SECONDS} s.
                           </p>
+
+                          {picked.length > 0 && (
+                            <ul className="mt-1 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                              {picked.map((p, i) => (
+                                <li key={p.url} className="relative">
+                                  {p.file.type.startsWith("video/") ? (
+                                    <video
+                                      src={p.url}
+                                      controls
+                                      playsInline
+                                      preload="metadata"
+                                      className="aspect-square w-full bg-black object-cover"
+                                    />
+                                  ) : (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      src={p.url}
+                                      alt={p.file.name}
+                                      className="aspect-square w-full object-cover"
+                                    />
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => removePicked(i)}
+                                    disabled={busy}
+                                    aria-label={`Remove ${p.file.name}`}
+                                    className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-sched-cream hover:bg-sched-coral disabled:opacity-50"
+                                  >
+                                    <X
+                                      width={14}
+                                      height={14}
+                                      strokeWidth={2.5}
+                                    />
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => submitProof(task, task.code)}
+                          disabled={busy || picked.length === 0}
+                          className="inline-flex w-full items-center justify-center gap-2 bg-sched-accent px-5 py-3 font-display text-sm font-semibold tracking-[0.07em] text-sched-fill transition-[filter] hover:brightness-[1.12] disabled:pointer-events-none disabled:opacity-60 sm:w-fit"
+                        >
+                          {busy
+                            ? (status ?? "Uploading…")
+                            : `Submit proof · ${task.code}`}
+                        </button>
                       </div>
                     )}
                   </li>

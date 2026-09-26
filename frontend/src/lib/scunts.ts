@@ -20,6 +20,15 @@ export interface ScuntsSubmission {
   // Absent reads as accepted: older uploads were always public.
   status?: "pending" | "accepted";
   points?: number;
+  // Any files after the first, for proof that needed several shots.
+  extra?: ScuntsMedia[];
+}
+
+export interface ScuntsMedia {
+  kind: "image" | "video";
+  contentType: string;
+  size: number;
+  photoUrl: string;
 }
 
 // Kept in step with the same constants in internal/scunts/scunts.go. The
@@ -29,8 +38,10 @@ export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 // Videos are normally compressed well under this (see compressVideo); the
 // cap is sized for the fallback, where a browser that can't compress sends
 // the phone's original.
-export const MAX_VIDEO_BYTES = 300 * 1024 * 1024;
-export const MAX_VIDEO_SECONDS = 60;
+export const MAX_VIDEO_BYTES = 200 * 1024 * 1024;
+export const MAX_VIDEO_SECONDS = 120;
+// Mirrors scunts.MaxFiles: how many files one proof may carry.
+export const MAX_FILES = 10;
 export const MAX_CAPTION_LEN = 200;
 
 // What the file picker accepts. HEIC is absent on purpose: iPhones offer
@@ -60,16 +71,11 @@ export async function deleteSubmission(
   await api.delete(`/api/scunts/submissions/${id}`, authHeader(token));
 }
 
-// upload runs the three-step handshake: ask for a signed URL, PUT the file
-// straight to R2, then tell the backend which object to record. The middle
-// step deliberately bypasses our own server, so the file size is bounded by
-// the storage provider rather than by the Go server's request limits.
-export async function upload(
-  token: string | null,
-  file: File,
-  taskId: string,
-  caption: string,
-): Promise<ScuntsSubmission> {
+// uploadFile asks for a signed URL and PUTs the file straight to R2,
+// resolving the object key. This deliberately bypasses our own server, so
+// the file size is bounded by the storage provider rather than by the Go
+// server's request limits.
+async function uploadFile(token: string | null, file: File): Promise<string> {
   const { data: signed } = await api.post<{ uploadUrl: string; key: string }>(
     "/api/scunts/upload-url",
     { contentType: file.type, size: file.size },
@@ -86,10 +92,26 @@ export async function upload(
   if (!put.ok) {
     throw new Error("upload failed");
   }
+  return signed.key;
+}
 
+// upload sends every file to R2, then tells the backend to record them all
+// as one submission. onFile reports which file (0-based) is going up.
+export async function upload(
+  token: string | null,
+  files: File[],
+  taskId: string,
+  caption: string,
+  onFile?: (index: number) => void,
+): Promise<ScuntsSubmission> {
+  const keys: string[] = [];
+  for (const [i, file] of files.entries()) {
+    onFile?.(i);
+    keys.push(await uploadFile(token, file));
+  }
   const { data } = await api.post<ScuntsSubmission>(
     "/api/scunts/submissions",
-    { key: signed.key, taskId, caption },
+    { keys, taskId, caption },
     authHeader(token),
   );
   return data;
@@ -137,7 +159,7 @@ export async function prepareProof(
     seconds = await videoDuration(file);
   } catch {}
   if (seconds > MAX_VIDEO_SECONDS) {
-    throw new Error("Videos must be 60 seconds or shorter.");
+    throw new Error(`Videos must be ${MAX_VIDEO_SECONDS} seconds or shorter.`);
   }
 
   const smaller = await compressVideo(file, onProgress);
@@ -151,7 +173,7 @@ export async function prepareProof(
 }
 
 // Target for compressed video: 720p on the short side at 2.5 Mbps, which
-// puts a 60-second clip around 20 MB. Plenty to judge whether a mission was
+// puts a 120-second clip around 40 MB. Plenty to judge whether a mission was
 // done, and far quicker to upload on campus data than a phone's original.
 const VIDEO_SHORT_SIDE = 720;
 const VIDEO_BITRATE = 2_500_000;

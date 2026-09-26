@@ -147,12 +147,12 @@ func (h *Handler) UploadURL(w http.ResponseWriter, r *http.Request) {
 }
 
 type createRequest struct {
-	Key     string `json:"key"`
-	TaskID  string `json:"taskId"`
-	Caption string `json:"caption"`
+	Keys    []string `json:"keys"`
+	TaskID  string   `json:"taskId"`
+	Caption string   `json:"caption"`
 }
 
-// Create records a submission for an object the client says it uploaded.
+// Create records a submission for the objects the client says it uploaded.
 //
 // Everything the client claims is re-derived from the object itself: the
 // content type and size come from a HEAD against R2, not from the request.
@@ -178,11 +178,17 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "caption is too long", http.StatusBadRequest)
 		return
 	}
-	// The key was minted for this caller's team, so anything else is either
-	// a bug or someone claiming another team's object.
-	if !strings.HasPrefix(req.Key, "scunts/"+string(u.Team)+"/") {
-		http.Error(w, "forbidden", http.StatusForbidden)
+	if len(req.Keys) == 0 || len(req.Keys) > MaxFiles {
+		http.Error(w, "attach between 1 and 10 files", http.StatusBadRequest)
 		return
+	}
+	// Each key was minted for this caller's team, so anything else is either
+	// a bug or someone claiming another team's object.
+	for _, key := range req.Keys {
+		if !strings.HasPrefix(key, "scunts/"+string(u.Team)+"/") {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
 	}
 
 	taskID, err := primitive.ObjectIDFromHex(req.TaskID)
@@ -223,30 +229,36 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	contentType, size, err := h.storage.Head(ctx, req.Key)
-	if err != nil {
-		http.Error(w, "upload not found", http.StatusBadRequest)
-		return
-	}
-	kind, allowed := KindFor(contentType)
-	if !allowed {
-		// Stored but unusable, so don't leave it sitting in the bucket.
-		_ = h.storage.Delete(ctx, req.Key)
-		http.Error(w, "unsupported file type", http.StatusBadRequest)
-		return
-	}
-	if size <= 0 || size > MaxBytesFor(kind) {
-		_ = h.storage.Delete(ctx, req.Key)
-		http.Error(w, "file is too large", http.StatusBadRequest)
-		return
+	media := make([]Media, 0, len(req.Keys))
+	for _, key := range req.Keys {
+		contentType, size, err := h.storage.Head(ctx, key)
+		if err != nil {
+			http.Error(w, "upload not found", http.StatusBadRequest)
+			return
+		}
+		kind, allowed := KindFor(contentType)
+		if !allowed {
+			// Stored but unusable, so don't leave it sitting in the bucket.
+			_ = h.storage.Delete(ctx, key)
+			http.Error(w, "unsupported file type", http.StatusBadRequest)
+			return
+		}
+		if size <= 0 || size > MaxBytesFor(kind) {
+			_ = h.storage.Delete(ctx, key)
+			http.Error(w, "file is too large", http.StatusBadRequest)
+			return
+		}
+		media = append(media, Media{Key: key, Kind: kind, ContentType: contentType, Size: size})
 	}
 
+	first := media[0]
 	sub := Submission{
 		Team:            u.Team,
-		Key:             req.Key,
-		Kind:            kind,
-		ContentType:     contentType,
-		Size:            size,
+		Key:             first.Key,
+		Kind:            first.Kind,
+		ContentType:     first.ContentType,
+		Size:            first.Size,
+		Extra:           media[1:],
 		Caption:         caption,
 		SubmittedBy:     u.ClerkID,
 		SubmittedByName: displayName(u),
@@ -254,14 +266,15 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		TaskID:          taskID,
 		Status:          StatusPending,
 	}
+	if len(sub.Extra) == 0 {
+		sub.Extra = nil
+	}
 	saved, err := h.store.Insert(ctx, sub)
 	if err != nil {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
-	if url, err := h.storage.PresignGet(ctx, saved.Key); err == nil {
-		saved.PhotoURL = url
-	}
+	h.presign(ctx, saved)
 	writeJSON(w, http.StatusCreated, saved)
 }
 
@@ -290,15 +303,24 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for i := range list {
-		// Presigning is local signing, not a network call, so doing it per
-		// item costs nothing. An item whose URL can't be signed is still
-		// returned; the client renders a broken tile rather than the whole
-		// gallery failing.
-		if url, err := h.storage.PresignGet(ctx, list[i].Key); err == nil {
-			list[i].PhotoURL = url
-		}
+		h.presign(ctx, &list[i])
 	}
 	writeJSON(w, http.StatusOK, list)
+}
+
+// presign fills in the read URL for every file on a submission. Presigning
+// is local signing, not a network call, so doing it per file costs nothing.
+// A file whose URL can't be signed is still returned; the client renders a
+// broken tile rather than the whole gallery failing.
+func (h *Handler) presign(ctx context.Context, sub *Submission) {
+	if url, err := h.storage.PresignGet(ctx, sub.Key); err == nil {
+		sub.PhotoURL = url
+	}
+	for i := range sub.Extra {
+		if url, err := h.storage.PresignGet(ctx, sub.Extra[i].Key); err == nil {
+			sub.Extra[i].PhotoURL = url
+		}
+	}
 }
 
 // Delete takes a submission down: the object first, then the record, then
@@ -331,6 +353,12 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err := h.storage.Delete(ctx, sub.Key); err != nil {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
+	}
+	for _, m := range sub.Extra {
+		if err := h.storage.Delete(ctx, m.Key); err != nil {
+			http.Error(w, "storage error", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := h.store.Delete(ctx, sub); err != nil {
 		http.Error(w, "storage error", http.StatusInternalServerError)
