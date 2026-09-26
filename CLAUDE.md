@@ -103,7 +103,7 @@ Standard Go layout: `cmd/` holds entry points, `internal/` holds private package
 ([internal/models/user.go](backend/internal/models/user.go)). `RequireRole(repo, minimum)`
 looks up the caller's role and rejects (403) if it ranks below `minimum`. Current policy:
 the schedule (`GET /api/events`, `GET /api/events/{id}`, `GET /api/categories`) and `GET /api/leaderboard` are
-public with no auth at all — the leaderboard returns only aggregates, never event identity
+public with no auth at all — the leaderboard returns only aggregates (per-team totals, with a per-event and Scunts breakdown by public title), never event IDs, descriptions
 or actor. Event and category writes, event history, and the per-event scores surface (reads included)
 require `RoleExec` or above; history carries the who-awarded-what paper trail, so it sits
 behind the same gate as the scores it describes. The CS comp is any signed-in user, except

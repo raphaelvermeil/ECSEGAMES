@@ -9,15 +9,18 @@ import {
   rankTeams,
   type Leaderboard,
 } from "@/lib/leaderboard";
-import { teamLabel } from "@/lib/scores";
+import { teamLabel, type Team } from "@/lib/scores";
 import { formatTime } from "@/lib/schedule";
 import PageBanner from "@/components/PageBanner";
+import { ChevronRight } from "@/components/icons";
 import ScoreChart from "./ScoreChart";
 
 export default function LeaderboardView({ initial }: { initial: Leaderboard }) {
   const [board, setBoard] = useState<Leaderboard>(initial);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [stale, setStale] = useState(false);
+  // The team whose points breakdown is open. Only one at a time.
+  const [open, setOpen] = useState<Team | null>(null);
 
   // No auth header: the leaderboard is public, so this polls the same way
   // for a signed-out visitor as for a logged-in student.
@@ -86,28 +89,75 @@ export default function LeaderboardView({ initial }: { initial: Leaderboard }) {
             Standings
           </h2>
           <ul className="mt-3 space-y-1.5">
-            {standings.map((row) => (
-              <li
-                key={row.team}
-                className="sched-day-row flex items-center gap-4 rounded-sm px-4 py-3"
-                style={
-                  {
-                    "--row-color": TEAM_COLORS[row.team],
-                    borderLeftColor: TEAM_COLORS[row.team],
-                  } as React.CSSProperties
-                }
-              >
-                <span className="w-6 font-display text-lg text-sched-text-muted">
-                  {row.rank}
-                </span>
-                <span className="flex-1 font-display text-lg tracking-wide text-sched-cream">
-                  {teamLabel(row.team)}
-                </span>
-                <span className="font-mono text-lg text-sched-cream">
-                  {row.total}
-                </span>
-              </li>
-            ))}
+            {standings.map((row) => {
+              const isOpen = open === row.team;
+              const sources = board.breakdown?.[row.team] ?? [];
+              return (
+                <li
+                  key={row.team}
+                  className="sched-day-row rounded-sm"
+                  style={
+                    {
+                      "--row-color": TEAM_COLORS[row.team],
+                      borderLeftColor: TEAM_COLORS[row.team],
+                    } as React.CSSProperties
+                  }
+                >
+                  {/* Tapping a team opens its breakdown and closes any
+                      other; tapping it again closes it. */}
+                  <button
+                    type="button"
+                    onClick={() => setOpen(isOpen ? null : row.team)}
+                    aria-expanded={isOpen}
+                    className="flex w-full items-center gap-4 px-4 py-3 text-left"
+                  >
+                    <span className="w-6 font-display text-lg text-sched-text-muted">
+                      {row.rank}
+                    </span>
+                    <span className="flex-1 font-display text-lg tracking-wide text-sched-cream">
+                      {teamLabel(row.team)}
+                    </span>
+                    <span className="font-mono text-lg text-sched-cream">
+                      {row.total}
+                    </span>
+                    <ChevronRight
+                      width={16}
+                      height={16}
+                      strokeWidth={2}
+                      className={`text-sched-text-muted transition-transform ${
+                        isOpen ? "rotate-90" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {isOpen && (
+                    <div className="border-t border-sched-hair px-4 py-3">
+                      {sources.length === 0 ? (
+                        <p className="font-mono text-xs text-sched-text-muted">
+                          No points yet.
+                        </p>
+                      ) : (
+                        <ul className="space-y-1.5">
+                          {sources.map((s, i) => (
+                            <li
+                              key={`${s.label}-${i}`}
+                              className="flex items-baseline gap-4 font-mono text-[13px]"
+                            >
+                              <span className="flex-1 text-sched-text-muted">
+                                {s.label}
+                              </span>
+                              <span className="text-sched-cream">
+                                {s.value}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
 

@@ -316,6 +316,30 @@ func (s *Store) List(ctx context.Context, clerkID string, isExec bool) ([]Submis
 	return list, nil
 }
 
+// AllKeys returns every object key any submission points at, extras
+// included. Unlike List it is uncapped: cmd/cleanscunts deletes whatever is
+// missing from this set, so it must be complete.
+func (s *Store) AllKeys(ctx context.Context) (map[string]bool, error) {
+	cur, err := s.coll.Find(ctx, bson.M{},
+		options.Find().SetProjection(bson.M{"key": 1, "extra.key": 1}))
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+	keys := map[string]bool{}
+	for cur.Next(ctx) {
+		var sub Submission
+		if err := cur.Decode(&sub); err != nil {
+			return nil, err
+		}
+		keys[sub.Key] = true
+		for _, m := range sub.Extra {
+			keys[m.Key] = true
+		}
+	}
+	return keys, cur.Err()
+}
+
 // Get returns one submission, or mongo.ErrNoDocuments if it doesn't exist.
 func (s *Store) Get(ctx context.Context, id primitive.ObjectID) (*Submission, error) {
 	var sub Submission

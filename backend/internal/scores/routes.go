@@ -33,6 +33,9 @@ type Handler struct {
 	// (accepted Scunts proof) that the leaderboard counts too. Set by
 	// cmd/api, which keeps this package from importing scunts.
 	ExtraPoints func(context.Context) ([]LeaderboardPoint, error)
+	// EventTitles, when set, names each event for the leaderboard's
+	// per-team breakdown. Set by cmd/api, like ExtraPoints.
+	EventTitles func(context.Context) (map[primitive.ObjectID]string, error)
 }
 
 // NewHandler builds the handler backed by the given score and audit stores.
@@ -95,12 +98,24 @@ type LeaderboardPoint struct {
 // entry — a team that has not been graded yet is absent, and the client
 // renders it as zero from its own canonical team list.
 //
-// This is the one score shape any signed-in user may read, so it carries
-// no per-event attribution: no event ID, no description.
+// This is the one score shape anyone may read, so it carries no event IDs,
+// descriptions or actors. Breakdown names where each team's points came
+// from — each event by its public schedule title, and all Scunts points as
+// one line — largest first.
 type Leaderboard struct {
-	Totals map[models.Team]int `json:"totals"`
-	Points []LeaderboardPoint  `json:"points"`
+	Totals    map[models.Team]int      `json:"totals"`
+	Points    []LeaderboardPoint       `json:"points"`
+	Breakdown map[models.Team][]Source `json:"breakdown"`
 }
+
+// Source is one line of a team's breakdown.
+type Source struct {
+	Label string `json:"label"`
+	Value int    `json:"value"`
+}
+
+// ScuntsLabel is the breakdown line all Scunts points are lumped into.
+const ScuntsLabel = "Scunts"
 
 // Leaderboard returns standings across every event. Unlike the rest of
 // this package it is public — no auth at all (see Mount).
@@ -114,12 +129,27 @@ func (h *Handler) Leaderboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	titles := map[primitive.ObjectID]string{}
+	if h.EventTitles != nil {
+		if titles, err = h.EventTitles(ctx); err != nil {
+			http.Error(w, "storage error", http.StatusInternalServerError)
+			return
+		}
+	}
+
 	board := Leaderboard{
-		Totals: map[models.Team]int{},
-		Points: make([]LeaderboardPoint, 0, len(list)),
+		Totals:    map[models.Team]int{},
+		Points:    make([]LeaderboardPoint, 0, len(list)),
+		Breakdown: map[models.Team][]Source{},
 	}
 	for _, e := range list {
 		board.Totals[e.Team] += e.Value
+		// One entry per team per event, so each entry is its own line.
+		label, ok := titles[e.EventID]
+		if !ok {
+			label = "Event"
+		}
+		board.Breakdown[e.Team] = append(board.Breakdown[e.Team], Source{Label: label, Value: e.Value})
 		board.Points = append(board.Points, LeaderboardPoint{
 			Team:  e.Team,
 			Value: e.Value,
@@ -132,14 +162,24 @@ func (h *Handler) Leaderboard(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "storage error", http.StatusInternalServerError)
 			return
 		}
+		scunts := map[models.Team]int{}
 		for _, p := range extra {
 			board.Totals[p.Team] += p.Value
+			scunts[p.Team] += p.Value
+		}
+		for team, v := range scunts {
+			board.Breakdown[team] = append(board.Breakdown[team], Source{Label: ScuntsLabel, Value: v})
 		}
 		// The client running-sums Points in order, so the merged list has
 		// to stay oldest-first.
 		board.Points = append(board.Points, extra...)
 		sort.SliceStable(board.Points, func(i, j int) bool {
 			return board.Points[i].At.Before(board.Points[j].At)
+		})
+	}
+	for _, sources := range board.Breakdown {
+		sort.SliceStable(sources, func(i, j int) bool {
+			return sources[i].Value > sources[j].Value
 		})
 	}
 	writeJSON(w, http.StatusOK, board)
