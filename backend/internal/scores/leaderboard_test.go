@@ -98,6 +98,12 @@ func TestLeaderboard_AddsScuntsPointsToEventScores(t *testing.T) {
 	if board.Points[0].Value != 100 || board.Points[2].Value != 30 {
 		t.Fatalf("points out of order: %v", board.Points)
 	}
+	// Scunts is one lumped line, and lines are largest first.
+	want := []Source{{Label: ScuntsLabel, Value: 100}, {Label: "Event", Value: 50}}
+	got := board.Breakdown[models.TeamSoftware]
+	if len(got) != 2 || got[0] != want[0] || got[1] != want[1] {
+		t.Fatalf("software breakdown = %v, want %v", got, want)
+	}
 }
 
 func TestLeaderboard_WithoutExtraPoints_EventScoresOnly(t *testing.T) {

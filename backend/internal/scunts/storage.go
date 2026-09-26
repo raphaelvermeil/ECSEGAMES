@@ -101,6 +101,28 @@ func (s *Storage) Head(ctx context.Context, key string) (contentType string, siz
 	return contentType, size, nil
 }
 
+// ListOlderThan returns the keys of every object under prefix last written
+// before cutoff. Used by cmd/cleanscunts to find orphaned uploads.
+func (s *Storage) ListOlderThan(ctx context.Context, prefix string, cutoff time.Time) ([]string, error) {
+	var keys []string
+	pages := s3.NewListObjectsV2Paginator(s.client, &s3.ListObjectsV2Input{
+		Bucket: aws.String(s.bucket),
+		Prefix: aws.String(prefix),
+	})
+	for pages.HasMorePages() {
+		page, err := pages.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, obj := range page.Contents {
+			if obj.Key != nil && obj.LastModified != nil && obj.LastModified.Before(cutoff) {
+				keys = append(keys, *obj.Key)
+			}
+		}
+	}
+	return keys, nil
+}
+
 // Delete removes an object. Deleting something already gone is not an
 // error in S3, so a retried takedown is safe.
 func (s *Storage) Delete(ctx context.Context, key string) error {

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import PageBanner from "@/components/PageBanner";
 import MissionList from "./MissionList";
-import { Check, Trash } from "@/components/icons";
+import { Check, ChevronRight, Trash } from "@/components/icons";
 import { TEAM_COLORS } from "@/lib/leaderboard";
 import { TEAMS, teamLabel, type Team } from "@/lib/scores";
 import {
@@ -255,29 +255,10 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                         borderLeft: `3px solid ${TEAM_COLORS[s.team as Team]}`,
                       }}
                     >
-                      {s.kind === "video" ? (
-                        // preload="metadata" so opening the page doesn't pull
-                        // down every clip; playsinline so iOS plays it in the
-                        // grid instead of taking over the screen.
-                        <video
-                          src={s.photoUrl}
-                          controls
-                          playsInline
-                          preload="metadata"
-                          className="aspect-square w-full bg-black object-cover"
-                        />
-                      ) : (
-                        // Plain <img>: these are presigned URLs on a storage
-                        // host, which next/image would need configured up front
-                        // and would try to re-optimise for no gain.
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={s.photoUrl}
-                          alt={task?.text ?? s.caption}
-                          loading="lazy"
-                          className="aspect-square w-full object-cover"
-                        />
-                      )}
+                      <ProofMedia
+                        submission={s}
+                        alt={task?.text ?? s.caption}
+                      />
 
                       <div className="p-3">
                         {isPending(s) && (
@@ -346,5 +327,82 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
         )}
       </main>
     </>
+  );
+}
+
+// ProofMedia shows a submission's files one at a time, with arrows to step
+// through them when a proof has more than one.
+function ProofMedia({
+  submission: s,
+  alt,
+}: {
+  submission: ScuntsSubmission;
+  alt: string;
+}) {
+  const media = [s, ...(s.extra ?? [])];
+  const [index, setIndex] = useState(0);
+  const m = media[index];
+  const step = (d: number) =>
+    setIndex((index + d + media.length) % media.length);
+  const arrowClass =
+    "absolute top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-sched-cream transition-colors hover:bg-sched-accent hover:text-sched-fill";
+
+  return (
+    <div className="relative">
+      {m.kind === "video" ? (
+        // preload="metadata" so opening the page doesn't pull down every
+        // clip; playsinline so iOS plays it in the grid instead of taking
+        // over the screen.
+        <video
+          key={m.photoUrl}
+          src={m.photoUrl}
+          controls
+          playsInline
+          preload="metadata"
+          className="aspect-square w-full bg-black object-cover"
+        />
+      ) : (
+        // Plain <img>: these are presigned URLs on a storage host, which
+        // next/image would need configured up front and would try to
+        // re-optimise for no gain.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={m.photoUrl}
+          src={m.photoUrl}
+          alt={alt}
+          loading="lazy"
+          className="aspect-square w-full object-cover"
+        />
+      )}
+
+      {media.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={() => step(-1)}
+            aria-label="Previous"
+            className={`${arrowClass} left-2`}
+          >
+            <ChevronRight
+              width={18}
+              height={18}
+              strokeWidth={2.5}
+              className="rotate-180"
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => step(1)}
+            aria-label="Next"
+            className={`${arrowClass} right-2`}
+          >
+            <ChevronRight width={18} height={18} strokeWidth={2.5} />
+          </button>
+          <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 font-mono text-[11px] text-sched-cream">
+            {index + 1}/{media.length}
+          </span>
+        </>
+      )}
+    </div>
   );
 }

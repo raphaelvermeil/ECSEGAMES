@@ -24,6 +24,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -90,6 +91,18 @@ func main() {
 		scoreStore := scores.NewStore(database)
 		eventHandler := events.NewHandler(eventStore, auditStore, userRepo, scoreStore.ClearByEvent)
 		scoreHandler := scores.NewHandler(scoreStore, auditStore, userRepo, eventStore.Exists)
+		// Names events in the leaderboard's per-team breakdown.
+		scoreHandler.EventTitles = func(ctx context.Context) (map[primitive.ObjectID]string, error) {
+			list, err := eventStore.List(ctx, events.ListFilter{})
+			if err != nil {
+				return nil, err
+			}
+			titles := make(map[primitive.ObjectID]string, len(list))
+			for _, e := range list {
+				titles[e.ID] = e.Title
+			}
+			return titles, nil
+		}
 
 		// Unique indexes are what make the upserts in users, scores and the
 		// comp race-safe (and, for the comp, enforce the claim rules), so a

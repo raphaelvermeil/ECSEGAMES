@@ -37,13 +37,16 @@ const (
 // Images are compressed in the browser before upload (roughly 400 KB), so
 // the image cap is a backstop against an uncompressed original rather than
 // an expected size. Videos are likewise compressed in the browser (a
-// 60-second clip lands around 20 MB); the video cap is sized for the
-// fallback, where a browser that can't compress sends the original, and a
-// 60-second 1080p-4K phone clip is roughly 100-400 MB.
+// 120-second clip lands around 40 MB); the video cap is sized for the
+// fallback, where a browser that can't compress sends the original.
+//
+// MaxFiles is how many photos/videos one proof may carry, for missions that
+// need more than one shot.
 const (
 	MaxImageBytes int64 = 10 << 20  // 10 MB
-	MaxVideoBytes int64 = 300 << 20 // 300 MB
+	MaxVideoBytes int64 = 200 << 20 // 200 MB
 	MaxCaptionLen       = 200
+	MaxFiles            = 10
 )
 
 // allowedTypes is the content types a submission may have, mapped to the
@@ -123,8 +126,22 @@ type Submission struct {
 	Points     int        `bson:"points,omitempty" json:"points,omitempty"`
 	AcceptedAt *time.Time `bson:"acceptedAt,omitempty" json:"acceptedAt,omitempty"`
 
+	// Extra holds any files after the first, for proof that needs several
+	// shots. The first file stays in the fields above so older single-file
+	// submissions read the same as new ones.
+	Extra []Media `bson:"extra,omitempty" json:"extra,omitempty"`
+
 	// PhotoURL is filled in on the way out only.
 	PhotoURL string `bson:"-" json:"photoUrl"`
+}
+
+// Media is one additional file on a submission.
+type Media struct {
+	Key         string `bson:"key" json:"-"`
+	Kind        Kind   `bson:"kind" json:"kind"`
+	ContentType string `bson:"contentType" json:"contentType"`
+	Size        int64  `bson:"size" json:"size"`
+	PhotoURL    string `bson:"-" json:"photoUrl"`
 }
 
 // SubmissionStatus is where a submission is in review.

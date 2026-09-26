@@ -13,9 +13,21 @@ export interface Leaderboard {
   // teamTotal() so an ungraded team reads as 0 rather than undefined.
   totals: Partial<Record<Team, number>>;
   points: LeaderboardPoint[];
+  // Where each team's points came from: one line per event, plus all
+  // Scunts points as a single line. Largest first.
+  breakdown: Partial<Record<Team, PointSource[]>>;
 }
 
-export const EMPTY_LEADERBOARD: Leaderboard = { totals: {}, points: [] };
+export interface PointSource {
+  label: string;
+  value: number;
+}
+
+export const EMPTY_LEADERBOARD: Leaderboard = {
+  totals: {},
+  points: [],
+  breakdown: {},
+};
 
 // How often the view re-polls for scores. The Games are scored by hand by
 // execs, so awards land minutes apart at best — polling faster would just
