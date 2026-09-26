@@ -48,9 +48,10 @@ const (
 
 // DefaultTaskPoints is what a new task is worth. Every mission is flat-rated
 // for now — the source sheets carry 1-3 point values that are deliberately
-// ignored, so this lives as a field rather than a constant in case that
-// changes.
-const DefaultTaskPoints = 100
+// ignored — but it is stored per task rather than read from here at display
+// time, so an exec can price one mission differently without affecting the
+// rest.
+const DefaultTaskPoints = 50
 
 // MaxTaskTextLen bounds a mission's text. The longest in the seed sheets is
 // around 140 characters; this leaves room without being unbounded.

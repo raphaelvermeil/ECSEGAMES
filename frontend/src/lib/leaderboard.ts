@@ -109,35 +109,89 @@ export interface ChartData {
   maxTotal: number;
 }
 
+// The windows the chart can be viewed through. A single early award would
+// otherwise stretch the axis across the whole day and squash a busy evening
+// into the last few pixels.
+export type ChartRange = "1h" | "6h" | "today" | "all";
+
+export const CHART_RANGES: { value: ChartRange; label: string }[] = [
+  { value: "1h", label: "1H" },
+  { value: "6h", label: "6H" },
+  { value: "today", label: "Today" },
+  { value: "all", label: "All" },
+];
+
+// Where a range starts, or null for "all" (which starts at the first
+// award). `now` is injectable so this stays testable.
+export function rangeStart(range: ChartRange, now = Date.now()): number | null {
+  switch (range) {
+    case "1h":
+      return now - 3_600_000;
+    case "6h":
+      return now - 6 * 3_600_000;
+    case "today": {
+      const d = new Date(now);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    }
+    default:
+      return null;
+  }
+}
+
 // Turns the flat award list into one cumulative step curve per team.
 //
-// Every team's curve spans the full time domain — it starts at 0, steps up
-// at each of its own awards, and holds flat to the end — so the lines stay
-// comparable at any x rather than each starting and stopping at its own
-// first and last award.
-export function buildSeries(board: Leaderboard): ChartData {
+// Every team's curve spans the full time domain — it steps up at each of its
+// own awards and holds flat to the end — so the lines stay comparable at any
+// x rather than each starting and stopping at its own first and last award.
+//
+// `since` narrows the view to a window. Awards before it still count: each
+// curve begins at the team's running total as of that moment rather than at
+// zero, so zooming in changes what you can see, never what the totals say.
+export function buildSeries(
+  board: Leaderboard,
+  since: number | null = null,
+): ChartData {
   // Running sums depend on order, so sort here rather than trusting the
   // backend's ordering to hold forever.
   const ordered = [...board.points].sort(
     (a, b) => new Date(a.at).getTime() - new Date(b.at).getTime(),
   );
   const times = ordered.map((p) => new Date(p.at).getTime());
-  const tMin = times.length ? Math.min(...times) : 0;
+  const firstAward = times.length ? Math.min(...times) : 0;
+  const lastAward = times.length ? Math.max(...times) : 0;
+
+  const tMin = since ?? firstAward;
+  // A window runs to now, not to the last award — otherwise "last hour"
+  // would silently end early whenever scoring had paused. Unwindowed keeps
+  // ending at the last award.
+  const rawMax = since !== null ? Math.max(Date.now(), lastAward) : lastAward;
   // A single award (or several at the same instant) would collapse the
   // domain to zero width and divide by zero when scaling x. Give it an
   // hour of span so the curve has somewhere to be drawn.
-  const rawMax = times.length ? Math.max(...times) : 0;
   const tMax = rawMax > tMin ? rawMax : tMin + 3_600_000;
 
   const series = TEAMS.map(({ value: team }) => {
-    const points: SeriesPoint[] = [{ t: tMin, total: 0 }];
     let running = 0;
+    let atStart = 0;
+    const inWindow: SeriesPoint[] = [];
     for (const p of ordered) {
       if (p.team !== team) continue;
+      const t = new Date(p.at).getTime();
       running += p.value;
-      points.push({ t: new Date(p.at).getTime(), total: running });
+      if (t < tMin) {
+        // Before the window: counts towards the total, but is drawn as the
+        // height the curve already starts at.
+        atStart = running;
+        continue;
+      }
+      inWindow.push({ t, total: running });
     }
-    points.push({ t: tMax, total: running });
+    const points: SeriesPoint[] = [
+      { t: tMin, total: atStart },
+      ...inWindow,
+      { t: tMax, total: running },
+    ];
     return { team, points, total: running };
   });
 

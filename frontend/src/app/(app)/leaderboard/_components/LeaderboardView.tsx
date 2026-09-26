@@ -6,6 +6,9 @@ import {
   POLL_INTERVAL_MS,
   TEAM_COLORS,
   buildSeries,
+  CHART_RANGES,
+  rangeStart,
+  type ChartRange,
   rankTeams,
   type Leaderboard,
 } from "@/lib/leaderboard";
@@ -70,7 +73,14 @@ export default function LeaderboardView({ initial }: { initial: Leaderboard }) {
   }, [poll]);
 
   const standings = useMemo(() => rankTeams(board), [board]);
-  const chart = useMemo(() => buildSeries(board), [board]);
+  // 6H by default: wide enough to hold an evening of scoring, narrow enough
+  // that a stray overnight award can't squash it. Recomputed whenever the
+  // board polls, so the window keeps sliding forward on its own.
+  const [range, setRange] = useState<ChartRange>("6h");
+  const chart = useMemo(
+    () => buildSeries(board, rangeStart(range)),
+    [board, range],
+  );
   const hasScores = board.points.length > 0;
 
   const status = stale
@@ -162,9 +172,35 @@ export default function LeaderboardView({ initial }: { initial: Leaderboard }) {
         </section>
 
         <section className="mt-8">
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-sched-text-muted">
-            Score over time
-          </h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-sched-text-muted">
+              Score over time
+            </h2>
+            {/* Time range sits above the chart it filters. Totals are
+                unaffected — only how much of the timeline is on screen. */}
+            {hasScores && (
+              <div className="flex gap-1.5">
+                {CHART_RANGES.map((r) => {
+                  const active = range === r.value;
+                  return (
+                    <button
+                      key={r.value}
+                      type="button"
+                      onClick={() => setRange(r.value)}
+                      aria-pressed={active}
+                      className={`border px-[10px] py-[5px] font-mono text-[10px] font-medium uppercase tracking-[0.1em] transition-colors ${
+                        active
+                          ? "border-sched-accent text-sched-accent"
+                          : "border-sched-hair text-sched-text-muted hover:border-sched-accent-dim"
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           <div className="mt-3 overflow-x-auto rounded-sm border border-sched-hair bg-sched-bg-raised p-3 lg:p-4">
             {hasScores ? (
               <ScoreChart data={chart} />

@@ -354,7 +354,7 @@ export async function listTasks(token: string | null): Promise<ScuntsTask[]> {
 
 // Mirrors scunts.DefaultTaskPoints. Sent explicitly rather than relying on
 // the server default, so the value shown in the form is the value stored.
-export const DEFAULT_TASK_POINTS = 100;
+export const DEFAULT_TASK_POINTS = 50;
 
 export async function createTask(
   token: string | null,
