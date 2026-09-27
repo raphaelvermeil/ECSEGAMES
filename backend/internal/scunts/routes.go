@@ -631,8 +631,10 @@ type rejectRequest struct {
 	Comment string `json:"comment"`
 }
 
-// Reject turns down a pending proof with a comment the submitter sees. The
-// mission stays open, so the team can submit fresh proof. Exec-only.
+// Reject turns down pending or accepted proof with a comment the submitter
+// sees. Rejecting accepted proof takes its points off the leaderboard and
+// reopens the mission for that team, so either way the team can submit
+// fresh proof. Exec-only.
 func (h *Handler) Reject(w http.ResponseWriter, r *http.Request) {
 	id, err := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
 	if err != nil {
@@ -653,14 +655,20 @@ func (h *Handler) Reject(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
-	ok, err := h.store.Reject(ctx, id, comment)
+	before, err := h.store.Reject(ctx, id, comment)
 	if err != nil {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
-	if !ok {
+	if before == nil {
 		http.Error(w, "already reviewed", http.StatusConflict)
 		return
+	}
+	if before.Status == StatusAccepted && !before.TaskID.IsZero() {
+		if err := h.store.ClearDone(ctx, before.TaskID, before.Team); err != nil {
+			http.Error(w, "storage error", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	h.recordReview(ctx, r, id, audit.VerbEdited, "rejected Scunts proof: "+comment)
