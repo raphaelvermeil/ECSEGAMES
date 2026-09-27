@@ -254,6 +254,19 @@ func (s *Store) Accept(ctx context.Context, id primitive.ObjectID, points int) (
 	return res.ModifiedCount == 1, nil
 }
 
+// Reject moves a pending submission to rejected with the exec's comment. It
+// reports false if the submission was no longer pending (or is gone).
+func (s *Store) Reject(ctx context.Context, id primitive.ObjectID, comment string) (bool, error) {
+	res, err := s.coll.UpdateOne(ctx,
+		bson.M{"_id": id, "status": StatusPending},
+		bson.M{"$set": bson.M{"status": StatusRejected, "reviewComment": comment}},
+	)
+	if err != nil {
+		return false, err
+	}
+	return res.ModifiedCount == 1, nil
+}
+
 // AcceptedPoints returns every accepted proof's points, oldest first, for
 // the leaderboard.
 func (s *Store) AcceptedPoints(ctx context.Context) ([]AcceptedPoint, error) {
@@ -287,9 +300,10 @@ func (s *Store) Insert(ctx context.Context, sub Submission) (*Submission, error)
 }
 
 // List returns submissions newest first, capped at ListLimit. Execs see
-// everything; anyone else sees accepted proof plus pending proof they
-// uploaded themselves, so they know it arrived. Teammates only learn a
-// mission is pending from the checklist, never see the media itself.
+// everything; anyone else sees accepted proof plus pending or rejected
+// proof they uploaded themselves, so they know it arrived and why it was
+// turned down. Teammates only learn a mission is pending from the
+// checklist, never see the media itself.
 func (s *Store) List(ctx context.Context, clerkID string, isExec bool) ([]Submission, error) {
 	opts := options.Find().
 		SetSort(bson.D{{Key: "submittedAt", Value: -1}}).
@@ -298,7 +312,7 @@ func (s *Store) List(ctx context.Context, clerkID string, isExec bool) ([]Submis
 	filter := bson.M{}
 	if !isExec {
 		filter = bson.M{"$or": bson.A{
-			bson.M{"status": bson.M{"$ne": StatusPending}},
+			bson.M{"status": bson.M{"$nin": bson.A{StatusPending, StatusRejected}}},
 			bson.M{"submittedBy": clerkID},
 		}}
 	}

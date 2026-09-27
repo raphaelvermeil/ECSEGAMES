@@ -43,6 +43,9 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 		pr.Post("/api/scunts/upload-url", h.UploadURL)
 		pr.Post("/api/scunts/submissions", h.Create)
 		pr.Get("/api/scunts/submissions", h.List)
+		// Execs may take down anything; a student may only cancel their own
+		// proof that hasn't been accepted. Delete checks which applies.
+		pr.Delete("/api/scunts/submissions/{id}", h.Delete)
 
 		// The mission checklist is readable by any signed-in student. There
 		// is no student write: a mission only becomes done when an exec
@@ -50,12 +53,11 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 		pr.Get("/api/scunts/sections", h.ListSections)
 		pr.Get("/api/scunts/tasks", h.ListTasks)
 
-		// Reviewing proof is exec-only: accepting pays out points, and
-		// takedown removes an upload for everyone.
+		// Reviewing proof is exec-only: accepting pays out points.
 		pr.Group(func(er chi.Router) {
 			er.Use(appmw.RequireRole(userRepo, models.RoleExec))
 			er.Post("/api/scunts/submissions/{id}/accept", h.Accept)
-			er.Delete("/api/scunts/submissions/{id}", h.Delete)
+			er.Post("/api/scunts/submissions/{id}/reject", h.Reject)
 
 			// Only execs shape the list itself.
 			er.Post("/api/scunts/tasks", h.CreateTask)
@@ -304,6 +306,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	for i := range list {
 		h.presign(ctx, &list[i])
+		list[i].Mine = list[i].SubmittedBy == clerkID
 	}
 	writeJSON(w, http.StatusOK, list)
 }
@@ -324,7 +327,9 @@ func (h *Handler) presign(ctx context.Context, sub *Submission) {
 }
 
 // Delete takes a submission down: the object first, then the record, then
-// an audit entry naming the exec who did it.
+// an audit entry naming who did it. Execs may remove anything; anyone else
+// only their own proof that hasn't been accepted, since accepted proof
+// carries leaderboard points.
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	if !h.ready(w) {
 		return
@@ -348,6 +353,18 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clerkID, _ := appmw.UserIDFromContext(r.Context())
+	u, err := h.users.GetOrCreate(ctx, clerkID)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	isExec := u.Role == models.RoleExec || u.Role == models.RoleAdmin
+	if !isExec && (sub.SubmittedBy != clerkID || sub.Status == StatusAccepted || sub.Status == "") {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
 	// Object before record: an orphaned object costs storage, whereas a
 	// record pointing at a deleted object renders as a broken tile.
 	if err := h.storage.Delete(ctx, sub.Key); err != nil {
@@ -365,12 +382,11 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clerkID, _ := appmw.UserIDFromContext(r.Context())
 	_ = h.audit.Record(ctx, audit.Entry{
 		EntityType: audit.EntityScuntsSubmission,
 		EntityID:   id,
 		Verb:       audit.VerbDeleted,
-		Actor:      h.actorName(ctx, clerkID),
+		Actor:      displayName(u),
 		At:         time.Now().UTC(),
 		Text:       "removed a Scunts submission by " + sub.SubmittedByName,
 	})
@@ -519,6 +535,54 @@ func (h *Handler) Accept(w http.ResponseWriter, r *http.Request) {
 		Actor:      h.actorName(ctx, clerkID),
 		At:         time.Now().UTC(),
 		Text:       "accepted Scunts proof from " + string(sub.Team) + ": " + task.Text,
+	})
+	w.WriteHeader(http.StatusNoContent)
+}
+
+type rejectRequest struct {
+	Comment string `json:"comment"`
+}
+
+// Reject turns down a pending proof with a comment the submitter sees. The
+// mission stays open, so the team can submit fresh proof. Exec-only.
+func (h *Handler) Reject(w http.ResponseWriter, r *http.Request) {
+	id, err := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	var req rejectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	comment := strings.TrimSpace(req.Comment)
+	if len(comment) > MaxCommentLen {
+		http.Error(w, "comment is too long", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	ok, err := h.store.Reject(ctx, id, comment)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		http.Error(w, "already reviewed", http.StatusConflict)
+		return
+	}
+
+	clerkID, _ := appmw.UserIDFromContext(r.Context())
+	_ = h.audit.Record(ctx, audit.Entry{
+		EntityType: audit.EntityScuntsSubmission,
+		EntityID:   id,
+		Verb:       audit.VerbEdited,
+		Actor:      h.actorName(ctx, clerkID),
+		At:         time.Now().UTC(),
+		Text:       "rejected Scunts proof: " + comment,
 	})
 	w.WriteHeader(http.StatusNoContent)
 }

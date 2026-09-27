@@ -13,7 +13,9 @@ import {
   listSections,
   listSubmissions,
   listTasks,
+  MAX_COMMENT_LEN,
   missionCodes,
+  rejectSubmission,
   type ScuntsSubmission,
   type ScuntsTask,
 } from "@/lib/scunts";
@@ -21,8 +23,13 @@ import {
 const sectionHeadingClass =
   "font-mono text-[11px] uppercase tracking-[0.18em] text-sched-text-muted";
 
-// The filter value for the exec review queue, alongside "all" and the teams.
+const inputClass =
+  "box-border w-full border border-sched-hair bg-sched-bg px-[12px] py-[11px] font-mono text-sm text-sched-cream placeholder:text-[#5d7063] [color-scheme:dark] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sched-accent";
+
+// Filter values for the exec review queue and the caller's own proof,
+// alongside "all" and the teams.
 const PENDING = "pending";
+const MINE = "mine";
 
 export default function ScuntsView({ canManage }: { canManage: boolean }) {
   const { getToken } = useAuth();
@@ -32,9 +39,13 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
   // Filtering happens here rather than on the server: the list is capped at
   // 200 anyway, so refetching per tab would cost a round trip and a fresh
   // set of presigned URLs to show pictures the browser already has.
-  const [teamFilter, setTeamFilter] = useState<Team | "all" | typeof PENDING>(
-    "all",
-  );
+  const [teamFilter, setTeamFilter] = useState<
+    Team | "all" | typeof PENDING | typeof MINE
+  >("all");
+  const [query, setQuery] = useState("");
+  // The submission an exec is writing a rejection comment for.
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [comment, setComment] = useState("");
   // Which half of the page is showing. Missions first: proof is submitted
   // from a mission, so the checklist is where people start.
   const [tab, setTab] = useState<"missions" | "submissions">("missions");
@@ -92,24 +103,47 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
     }
   }
 
-  async function onDelete(id: string) {
-    if (!confirm("Remove this submission for everyone?")) return;
+  async function onReject(id: string) {
     try {
-      await deleteSubmission(await getToken(), id);
-      setItems((prev) => prev?.filter((s) => s.id !== id) ?? null);
+      await rejectSubmission(await getToken(), id, comment);
+      setRejectingId(null);
+      setComment("");
+      setItems(await load());
+    } catch (err) {
+      const status = (err as { response?: { status?: number } }).response
+        ?.status;
+      setError(
+        status === 409
+          ? "Already handled: that submission was reviewed or removed."
+          : "Could not reject that submission.",
+      );
+    }
+  }
+
+  async function onDelete(s: ScuntsSubmission) {
+    const prompt = canManage
+      ? "Remove this submission for everyone?"
+      : isPending(s)
+        ? "Cancel this submission?"
+        : "Remove this submission?";
+    if (!confirm(prompt)) return;
+    try {
+      await deleteSubmission(await getToken(), s.id);
+      setItems((prev) => prev?.filter((x) => x.id !== s.id) ?? null);
     } catch {
       setError("Could not remove that submission.");
     }
   }
 
-  // For execs, pending proof lives only under its own filter so the team
-  // tabs show what's actually been accepted. Students only receive their
-  // own pending uploads, which stay inline with a badge.
+  // Pending and rejected proof live only under their own tabs, so the team
+  // tabs show what's actually been accepted. Execs review pending proof
+  // under "New submissions"; everyone sees their own under "My
+  // submissions", with the exec's comment on anything rejected.
   const isPending = (s: ScuntsSubmission) => s.status === "pending";
+  const isRejected = (s: ScuntsSubmission) => s.status === "rejected";
   const pending = (items ?? []).filter(isPending);
-  const reviewed = canManage
-    ? (items ?? []).filter((s) => !isPending(s))
-    : (items ?? []);
+  const mine = (items ?? []).filter((s) => s.mine);
+  const reviewed = (items ?? []).filter((s) => !isPending(s) && !isRejected(s));
 
   // Counts come from the unfiltered list so each tab still shows its total
   // while another tab is selected.
@@ -117,14 +151,33 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
     acc[s.team] = (acc[s.team] ?? 0) + 1;
     return acc;
   }, {});
-  const shown =
-    items === null
-      ? null
-      : teamFilter === PENDING
-        ? pending
+  const tabbed =
+    teamFilter === PENDING
+      ? pending
+      : teamFilter === MINE
+        ? mine
         : teamFilter === "all"
           ? reviewed
           : reviewed.filter((s) => s.team === teamFilter);
+  // Same matching as the mission search: the mission number (G12), or the
+  // start of any word in the mission, caption or submitter's name.
+  const q = query.trim().toLowerCase();
+  const matches = (s: ScuntsSubmission) => {
+    const code = s.taskId ? codes.get(s.taskId) : undefined;
+    const text = [
+      s.taskId ? tasks.get(s.taskId)?.text : "",
+      s.caption,
+      s.submittedByName,
+    ].join(" ");
+    return (
+      (code?.toLowerCase().startsWith(q) ?? false) ||
+      text
+        .toLowerCase()
+        .split(/\s+/)
+        .some((w) => w.startsWith(q))
+    );
+  };
+  const shown = items === null ? null : q ? tabbed.filter(matches) : tabbed;
 
   return (
     <>
@@ -178,6 +231,17 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
             {/* Team tabs. Each carries its own colour so the filter row reads
               as the same palette as the tiles and the leaderboard. */}
             {items !== null && items.length > 0 && (
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search proof (e.g. G12, a word or a name)"
+                className={`${inputClass} mt-4`}
+                aria-label="Search proof"
+              />
+            )}
+
+            {items !== null && items.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {[
                   ...(canManage
@@ -189,6 +253,11 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                         },
                       ]
                     : []),
+                  {
+                    value: MINE as typeof MINE,
+                    label: "My submissions",
+                    color: undefined,
+                  },
                   { value: "all" as const, label: "All", color: undefined },
                   ...TEAMS.map((t) => ({
                     value: t.value,
@@ -200,9 +269,11 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                   const n =
                     tab.value === PENDING
                       ? pending.length
-                      : tab.value === "all"
-                        ? reviewed.length
-                        : (counts[tab.value] ?? 0);
+                      : tab.value === MINE
+                        ? mine.length
+                        : tab.value === "all"
+                          ? reviewed.length
+                          : (counts[tab.value] ?? 0);
                   return (
                     <button
                       key={tab.value}
@@ -236,9 +307,13 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
               </p>
             ) : shown.length === 0 ? (
               <p className="mt-3 font-mono text-xs text-sched-text-muted">
-                {teamFilter === PENDING
-                  ? "No new submissions to review."
-                  : "Nothing from this team yet."}
+                {q
+                  ? "No proof matches that search."
+                  : teamFilter === PENDING
+                    ? "No new submissions to review."
+                    : teamFilter === MINE
+                      ? "You haven't submitted anything yet."
+                      : "Nothing from this team yet."}
               </p>
             ) : (
               <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -265,6 +340,18 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                           <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-sched-coral">
                             Awaiting review
                           </p>
+                        )}
+                        {isRejected(s) && (
+                          <div className="mb-2 border-l-2 border-sched-coral pl-2">
+                            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-sched-coral">
+                              Not accepted — submit new proof from Missions
+                            </p>
+                            {s.reviewComment && (
+                              <p className="mt-1 text-sm leading-snug text-sched-cream">
+                                {s.reviewComment}
+                              </p>
+                            )}
+                          </div>
                         )}
                         {s.taskId && (
                           <p className="font-mono text-[13px] leading-snug text-sched-cream">
@@ -294,26 +381,78 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                             ? ` · +${s.points} pts`
                             : ""}
                         </p>
-                        {canManage && (
-                          <div className="mt-2.5 flex flex-wrap gap-2">
-                            {isPending(s) && (
+                        {canManage && isPending(s) && rejectingId === s.id && (
+                          <div className="mt-2.5 flex flex-col gap-2">
+                            <textarea
+                              value={comment}
+                              onChange={(e) => setComment(e.target.value)}
+                              placeholder="Leave a comment: why isn't this accepted?"
+                              maxLength={MAX_COMMENT_LEN}
+                              rows={3}
+                              className={inputClass}
+                              aria-label="Rejection comment"
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
                               <button
                                 type="button"
-                                onClick={() => onAccept(s.id)}
-                                className="inline-flex items-center gap-1.5 bg-sched-accent px-[10px] py-[6px] font-mono text-[11px] font-semibold tracking-[0.06em] text-sched-fill transition-[filter] hover:brightness-[1.12]"
+                                onClick={() => onReject(s.id)}
+                                className="border border-sched-coral bg-sched-coral px-[10px] py-[6px] font-mono text-[11px] font-semibold tracking-[0.06em] text-sched-bg"
                               >
-                                <Check width={13} height={13} strokeWidth={3} />
-                                Accept
-                                {task ? ` · ${task.points} pts` : ""}
+                                Send rejection
                               </button>
-                            )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRejectingId(null);
+                                  setComment("");
+                                }}
+                                className="border border-sched-hair px-[10px] py-[6px] font-mono text-[11px] tracking-[0.06em] text-sched-text-muted"
+                              >
+                                Back
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {(canManage ||
+                          (s.mine && (isPending(s) || isRejected(s)))) && (
+                          <div className="mt-2.5 flex flex-wrap gap-2">
+                            {canManage &&
+                              isPending(s) &&
+                              rejectingId !== s.id && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => onAccept(s.id)}
+                                    className="inline-flex items-center gap-1.5 bg-sched-accent px-[10px] py-[6px] font-mono text-[11px] font-semibold tracking-[0.06em] text-sched-fill transition-[filter] hover:brightness-[1.12]"
+                                  >
+                                    <Check
+                                      width={13}
+                                      height={13}
+                                      strokeWidth={3}
+                                    />
+                                    Accept
+                                    {task ? ` · ${task.points} pts` : ""}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setRejectingId(s.id);
+                                      setComment("");
+                                    }}
+                                    className="inline-flex items-center gap-1.5 border border-sched-coral px-[10px] py-[6px] font-mono text-[11px] font-medium tracking-[0.06em] text-sched-coral transition-colors hover:bg-sched-coral hover:text-sched-bg"
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              )}
                             <button
                               type="button"
-                              onClick={() => onDelete(s.id)}
+                              onClick={() => onDelete(s)}
                               className="inline-flex items-center gap-1.5 border border-sched-coral px-[10px] py-[6px] font-mono text-[11px] font-medium tracking-[0.06em] text-sched-coral transition-colors hover:bg-sched-coral hover:text-sched-bg"
                             >
                               <Trash width={13} height={13} strokeWidth={2} />
-                              Remove
+                              {!canManage && isPending(s) ? "Cancel" : "Remove"}
                             </button>
                           </div>
                         )}
