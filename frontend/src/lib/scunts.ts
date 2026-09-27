@@ -425,3 +425,35 @@ export async function deleteTask(
 ): Promise<void> {
   await api.delete(`/api/scunts/tasks/${id}`, authHeader(token));
 }
+
+// --- Submission deadline ---------------------------------------------------
+
+// Mirrors internal/scunts.Settings. closesAt is absent while submissions
+// are open with no end set.
+export interface ScuntsSettings {
+  closesAt?: string;
+  updatedBy?: string;
+}
+
+export async function getSettings(
+  token: string | null,
+): Promise<ScuntsSettings> {
+  const res = await api.get<ScuntsSettings>(
+    "/api/scunts/settings",
+    authHeader(token),
+  );
+  return res.data;
+}
+
+// setClosesAt sets when submissions close, or clears it when at is null.
+export async function setClosesAt(
+  token: string | null,
+  at: Date | null,
+): Promise<ScuntsSettings> {
+  const res = await api.post<ScuntsSettings>(
+    "/api/scunts/settings/closes-at",
+    { closesAt: at ? Math.floor(at.getTime() / 1000) : 0 },
+    authHeader(token),
+  );
+  return res.data;
+}

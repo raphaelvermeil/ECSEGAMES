@@ -17,6 +17,10 @@ const (
 	tasksCollectionName       = "scuntsTasks"
 	completionsCollectionName = "scuntsCompletions"
 	sectionsCollectionName    = "scuntsSections"
+	settingsCollectionName    = "scuntsSettings"
+
+	// settingsID is the _id of the single settings document.
+	settingsID = "settings"
 )
 
 // ListLimit caps how many submissions a single listing returns. The gallery
@@ -31,6 +35,7 @@ type Store struct {
 	tasks       *mongo.Collection
 	completions *mongo.Collection
 	sections    *mongo.Collection
+	settings    *mongo.Collection
 }
 
 // NewStore returns a submission store backed by the given database.
@@ -40,6 +45,7 @@ func NewStore(database *mongo.Database) *Store {
 		tasks:       database.Collection(tasksCollectionName),
 		completions: database.Collection(completionsCollectionName),
 		sections:    database.Collection(sectionsCollectionName),
+		settings:    database.Collection(settingsCollectionName),
 	}
 }
 
@@ -80,6 +86,28 @@ func (s *Store) EnsureIndexes(ctx context.Context) error {
 		Keys:    bson.D{{Key: "taskId", Value: 1}, {Key: "team", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	})
+	return err
+}
+
+// GetSettings returns the Scunts settings, or the zero value (open, no
+// closing time) when none have been saved yet.
+func (s *Store) GetSettings(ctx context.Context) (Settings, error) {
+	var set Settings
+	err := s.settings.FindOne(ctx, bson.M{"_id": settingsID}).Decode(&set)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return Settings{}, nil
+	}
+	return set, err
+}
+
+// SetClosesAt sets when submissions close, or clears it when closesAt is
+// nil.
+func (s *Store) SetClosesAt(ctx context.Context, closesAt *time.Time, by string) error {
+	update := bson.M{"$set": bson.M{"updatedBy": by}, "$unset": bson.M{"closesAt": ""}}
+	if closesAt != nil {
+		update = bson.M{"$set": bson.M{"updatedBy": by, "closesAt": *closesAt}}
+	}
+	_, err := s.settings.UpdateOne(ctx, bson.M{"_id": settingsID}, update, options.Update().SetUpsert(true))
 	return err
 }
 

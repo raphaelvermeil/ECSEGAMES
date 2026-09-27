@@ -29,7 +29,14 @@ const pointsClass = `${fieldClass} w-[104px]`;
 const fieldLabelClass =
   "font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-sched-text-muted";
 
-export default function MissionList({ canManage }: { canManage: boolean }) {
+export default function MissionList({
+  canManage,
+  closed,
+}: {
+  canManage: boolean;
+  // Submissions have closed: the proof form stays viewable but won't send.
+  closed: boolean;
+}) {
   const { getToken } = useAuth();
   const [tasks, setTasks] = useState<ScuntsTask[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -168,9 +175,11 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
       setError(
         res?.status === 409
           ? "Your team already completed this mission, or has proof pending approval."
-          : !res && err instanceof Error && err.message !== "upload failed"
-            ? err.message
-            : "Upload failed. Please try again.",
+          : res?.status === 403
+            ? "Submissions are closed."
+            : !res && err instanceof Error && err.message !== "upload failed"
+              ? err.message
+              : "Upload failed. Please try again.",
       );
     } finally {
       setBusy(false);
@@ -660,12 +669,14 @@ export default function MissionList({ canManage }: { canManage: boolean }) {
                         <button
                           type="button"
                           onClick={() => submitProof(task, task.code)}
-                          disabled={busy || picked.length === 0}
+                          disabled={busy || closed || picked.length === 0}
                           className="inline-flex w-full items-center justify-center gap-2 bg-sched-accent px-5 py-3 font-display text-sm font-semibold tracking-[0.07em] text-sched-fill transition-[filter] hover:brightness-[1.12] disabled:pointer-events-none disabled:opacity-60 sm:w-fit"
                         >
                           {busy
                             ? (status ?? "Uploading…")
-                            : `Submit proof · ${task.code}`}
+                            : closed
+                              ? "Submissions are closed"
+                              : `Submit proof · ${task.code}`}
                         </button>
                       </div>
                     )}

@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import PageBanner from "@/components/PageBanner";
 import MissionList from "./MissionList";
+import DeadlineBar from "./DeadlineBar";
 import { Check, ChevronRight, Trash } from "@/components/icons";
 import { TEAM_COLORS } from "@/lib/leaderboard";
 import { TEAMS, teamLabel, type Team } from "@/lib/scores";
 import {
   acceptSubmission,
   deleteSubmission,
+  getSettings,
   listSections,
   listSubmissions,
   listTasks,
@@ -17,6 +19,8 @@ import {
   missionCodes,
   peakSubmission,
   rejectSubmission,
+  setClosesAt,
+  type ScuntsSettings,
   type ScuntsSubmission,
   type ScuntsTask,
 } from "@/lib/scunts";
@@ -56,6 +60,39 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
   // positions within a section, so they're computed from the live list.
   const [tasks, setTasks] = useState<Map<string, ScuntsTask>>(new Map());
   const [codes, setCodes] = useState<Map<string, string>>(new Map());
+
+  // When submissions close, and the current moment to compare it against.
+  // Refetched on a slow tick so an exec's change reaches open pages, and so
+  // the page flips to closed on time without a reload.
+  const [settings, setSettings] = useState<ScuntsSettings | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const data = await getSettings(await getToken());
+        if (!cancelled) setSettings(data);
+      } catch {}
+      if (!cancelled) setNow(Date.now());
+    };
+    refresh();
+    const tick = setInterval(refresh, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(tick);
+    };
+  }, [getToken]);
+  const closed =
+    !!settings?.closesAt && now >= new Date(settings.closesAt).getTime();
+
+  async function onSetClose(at: Date | null) {
+    try {
+      setSettings(await setClosesAt(await getToken(), at));
+      setNow(Date.now());
+    } catch {
+      setError("Could not change when submissions close.");
+    }
+  }
 
   const load = useCallback(
     async () => listSubmissions(await getToken()),
@@ -241,7 +278,16 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
           })}
         </div>
 
-        {tab === "missions" && <MissionList canManage={canManage} />}
+        <DeadlineBar
+          settings={settings}
+          closed={closed}
+          canManage={canManage}
+          onSet={onSetClose}
+        />
+
+        {tab === "missions" && (
+          <MissionList canManage={canManage} closed={closed} />
+        )}
 
         {tab === "submissions" && (
           <section className="mt-8">
