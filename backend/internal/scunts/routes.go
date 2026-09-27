@@ -52,6 +52,7 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 		// accepts proof for it.
 		pr.Get("/api/scunts/sections", h.ListSections)
 		pr.Get("/api/scunts/tasks", h.ListTasks)
+		pr.Get("/api/scunts/settings", h.GetSettings)
 
 		// Reviewing proof is exec-only: accepting pays out points.
 		pr.Group(func(er chi.Router) {
@@ -59,6 +60,8 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 			er.Post("/api/scunts/submissions/{id}/accept", h.Accept)
 			er.Post("/api/scunts/submissions/{id}/reject", h.Reject)
 			er.Post("/api/scunts/submissions/{id}/peak", h.Peak)
+			// When submissions close, like the CS comp's end time.
+			er.Post("/api/scunts/settings/closes-at", h.SetClosesAt)
 
 			// Only execs shape the list itself.
 			er.Post("/api/scunts/tasks", h.CreateTask)
@@ -93,6 +96,21 @@ func (h *Handler) caller(w http.ResponseWriter, r *http.Request) (*models.User, 
 	return u, true
 }
 
+// open reports whether submissions are still being taken, answering 403
+// once the closing time an exec set has passed.
+func (h *Handler) open(ctx context.Context, w http.ResponseWriter) bool {
+	set, err := h.store.GetSettings(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return false
+	}
+	if set.Closed(time.Now()) {
+		http.Error(w, "submissions are closed", http.StatusForbidden)
+		return false
+	}
+	return true
+}
+
 // ready reports whether R2 is configured, answering 503 when it isn't.
 func (h *Handler) ready(w http.ResponseWriter) bool {
 	if h.storage == nil {
@@ -122,6 +140,10 @@ func (h *Handler) UploadURL(w http.ResponseWriter, r *http.Request) {
 	}
 	u, ok := h.caller(w, r)
 	if !ok {
+		return
+	}
+	// Checked here too so nobody uploads a large video only to be refused.
+	if !h.open(r.Context(), w) {
 		return
 	}
 
@@ -203,6 +225,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
 
+	if !h.open(ctx, w) {
+		return
+	}
 	if _, err := h.store.GetTask(ctx, taskID); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			http.Error(w, "that mission no longer exists", http.StatusBadRequest)
@@ -750,6 +775,56 @@ func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 	h.recordTask(ctx, r, audit.VerbDeleted, id, "removed a Scunts mission")
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// GetSettings returns when submissions close. Readable by any signed-in
+// user, so everyone sees the same deadline.
+func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	set, err := h.store.GetSettings(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, set)
+}
+
+type closesAtRequest struct {
+	// ClosesAt is a Unix timestamp in seconds; 0 clears it. The client
+	// resolves the exec's picked date and time in their own zone first, so
+	// nothing here has to guess a timezone.
+	ClosesAt int64 `json:"closesAt"`
+}
+
+// SetClosesAt sets or clears when submissions close. A time already past
+// closes them immediately. Exec-only.
+func (h *Handler) SetClosesAt(w http.ResponseWriter, r *http.Request) {
+	var req closesAtRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	var closesAt *time.Time
+	if req.ClosesAt != 0 {
+		at := time.Unix(req.ClosesAt, 0).UTC()
+		closesAt = &at
+	}
+	clerkID, _ := appmw.UserIDFromContext(r.Context())
+	if err := h.store.SetClosesAt(ctx, closesAt, h.actorName(ctx, clerkID)); err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	set, err := h.store.GetSettings(ctx)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, set)
 }
 
 // ListSections returns the checklist's headings in display order.

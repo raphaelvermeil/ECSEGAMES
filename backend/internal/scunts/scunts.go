@@ -167,6 +167,18 @@ const (
 	StatusRejected SubmissionStatus = "rejected"
 )
 
+// Settings is the one Scunts-wide settings document. ClosesAt is when
+// submissions stop being taken; nil means they're open with no end set.
+type Settings struct {
+	ClosesAt  *time.Time `bson:"closesAt,omitempty" json:"closesAt,omitempty"`
+	UpdatedBy string     `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
+}
+
+// Closed reports whether submissions have stopped being taken at now.
+func (s Settings) Closed(now time.Time) bool {
+	return s.ClosesAt != nil && !now.Before(*s.ClosesAt)
+}
+
 // AcceptedPoint is one accepted proof's contribution to the leaderboard.
 type AcceptedPoint struct {
 	Team   models.Team `bson:"team"`
