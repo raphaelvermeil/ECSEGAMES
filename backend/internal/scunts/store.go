@@ -22,7 +22,7 @@ const (
 // ListLimit caps how many submissions a single listing returns. The gallery
 // is newest-first and unpaginated for now, so this is what stops a long
 // weekend from producing an unbounded response.
-const ListLimit = 200
+const ListLimit = 1000
 
 // Store persists Scunts submissions in MongoDB. It holds metadata only —
 // the media lives in R2 (see storage.go).

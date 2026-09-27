@@ -40,7 +40,7 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
   const [error, setError] = useState<string | null>(null);
   // "all", one of the four Games teams, or (execs only) the pending queue.
   // Filtering happens here rather than on the server: the list is capped at
-  // 200 anyway, so refetching per tab would cost a round trip and a fresh
+  // 1000 anyway, so refetching per tab would cost a round trip and a fresh
   // set of presigned URLs to show pictures the browser already has.
   const [teamFilter, setTeamFilter] = useState<
     Team | "all" | typeof PENDING | typeof MINE | typeof PEAK
@@ -179,23 +179,27 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
           : teamFilter === "all"
             ? reviewed
             : reviewed.filter((s) => s.team === teamFilter);
-  // Same matching as the mission search: the mission number (G12), or the
-  // start of any word in the mission, caption or submitter's name.
+  // Like the mission search, but every word typed must match: the mission
+  // number (G12), or the start of any word in the mission, caption or
+  // submitter's name. So "album cover" finds "Recreate an album cover".
   const q = query.trim().toLowerCase();
   const matches = (s: ScuntsSubmission) => {
-    const code = s.taskId ? codes.get(s.taskId) : undefined;
-    const text = [
+    const code = s.taskId ? codes.get(s.taskId)?.toLowerCase() : undefined;
+    const words = [
       s.taskId ? tasks.get(s.taskId)?.text : "",
       s.caption,
       s.submittedByName,
-    ].join(" ");
-    return (
-      (code?.toLowerCase().startsWith(q) ?? false) ||
-      text
-        .toLowerCase()
-        .split(/\s+/)
-        .some((w) => w.startsWith(q))
-    );
+    ]
+      .join(" ")
+      .toLowerCase()
+      .split(/\s+/);
+    return q
+      .split(/\s+/)
+      .every(
+        (term) =>
+          (code?.startsWith(term) ?? false) ||
+          words.some((w) => w.startsWith(term)),
+      );
   };
   // Peak proof always leads, whichever tab is showing; the sort is stable,
   // so each group stays newest first.
