@@ -19,6 +19,7 @@ import {
   missionCodes,
   peakSubmission,
   rejectSubmission,
+  unpeakSubmission,
   setClosesAt,
   type ScuntsSettings,
   type ScuntsSubmission,
@@ -155,6 +156,16 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
           ? "Already handled: that proof is already peak, was reviewed, or the mission was deleted."
           : "Could not mark that submission as peak.",
       );
+    }
+  }
+
+  async function onUnpeak(id: string) {
+    if (!confirm("Remove peak and its bonus points?")) return;
+    try {
+      await unpeakSubmission(await getToken(), id);
+      setItems(await load());
+    } catch {
+      setError("Could not remove peak from that submission.");
     }
   }
 
@@ -563,6 +574,15 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                                   🔥 Peak
                                 </button>
                               )}
+                            {canManage && s.peak && (
+                              <button
+                                type="button"
+                                onClick={() => onUnpeak(s.id)}
+                                className="inline-flex items-center gap-1.5 border border-sched-cyan px-[10px] py-[6px] font-mono text-[11px] font-medium tracking-[0.06em] text-sched-cyan transition-colors hover:bg-sched-cyan hover:text-sched-fill"
+                              >
+                                Unpeak
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>

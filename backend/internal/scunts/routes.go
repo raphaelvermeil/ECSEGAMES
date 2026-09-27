@@ -60,6 +60,7 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 			er.Post("/api/scunts/submissions/{id}/accept", h.Accept)
 			er.Post("/api/scunts/submissions/{id}/reject", h.Reject)
 			er.Post("/api/scunts/submissions/{id}/peak", h.Peak)
+			er.Delete("/api/scunts/submissions/{id}/peak", h.Unpeak)
 			// When submissions close, like the CS comp's end time.
 			er.Post("/api/scunts/settings/closes-at", h.SetClosesAt)
 
@@ -501,6 +502,29 @@ func (h *Handler) Accept(w http.ResponseWriter, r *http.Request) {
 // the bonus added. Exec-only.
 func (h *Handler) Peak(w http.ResponseWriter, r *http.Request) {
 	h.accept(w, r, true)
+}
+
+// Unpeak takes peak off accepted proof, removing its bonus. Exec-only.
+func (h *Handler) Unpeak(w http.ResponseWriter, r *http.Request) {
+	id, err := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	ok, err := h.store.Unpeak(ctx, id)
+	if err != nil {
+		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		http.Error(w, "not peak", http.StatusConflict)
+		return
+	}
+	h.recordReview(ctx, r, id, audit.VerbEdited, "removed peak from Scunts proof")
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) accept(w http.ResponseWriter, r *http.Request, peak bool) {

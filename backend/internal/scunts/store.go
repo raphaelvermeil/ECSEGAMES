@@ -310,6 +310,20 @@ func (s *Store) Reject(ctx context.Context, id primitive.ObjectID, comment strin
 	return res.ModifiedCount == 1, nil
 }
 
+// Unpeak clears peak from accepted proof and takes PeakBonus back off its
+// points. It reports false if the submission isn't peak, so the bonus is
+// never removed twice.
+func (s *Store) Unpeak(ctx context.Context, id primitive.ObjectID) (bool, error) {
+	res, err := s.coll.UpdateOne(ctx,
+		bson.M{"_id": id, "status": StatusAccepted, "peak": true},
+		bson.M{"$unset": bson.M{"peak": ""}, "$inc": bson.M{"points": -PeakBonus}},
+	)
+	if err != nil {
+		return false, err
+	}
+	return res.ModifiedCount == 1, nil
+}
+
 // AcceptedPoints returns every accepted proof's points, oldest first, for
 // the leaderboard.
 func (s *Store) AcceptedPoints(ctx context.Context) ([]AcceptedPoint, error) {

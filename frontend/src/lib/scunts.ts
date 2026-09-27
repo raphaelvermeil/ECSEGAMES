@@ -143,6 +143,14 @@ export async function peakSubmission(
   await api.post(`/api/scunts/submissions/${id}/peak`, null, authHeader(token));
 }
 
+// unpeakSubmission takes peak off accepted proof, removing its bonus.
+export async function unpeakSubmission(
+  token: string | null,
+  id: string,
+): Promise<void> {
+  await api.delete(`/api/scunts/submissions/${id}/peak`, authHeader(token));
+}
+
 export async function rejectSubmission(
   token: string | null,
   id: string,
