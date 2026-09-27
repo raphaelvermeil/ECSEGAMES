@@ -297,12 +297,35 @@ func (s *Store) MarkPeak(ctx context.Context, id primitive.ObjectID) (bool, erro
 	return res.ModifiedCount == 1, nil
 }
 
-// Reject moves a pending submission to rejected with the exec's comment. It
-// reports false if the submission was no longer pending (or is gone).
-func (s *Store) Reject(ctx context.Context, id primitive.ObjectID, comment string) (bool, error) {
+// Reject moves a pending or accepted submission to rejected with the
+// exec's comment, dropping any points and peak it had. It returns the
+// submission as it was before, so the caller can tell whether it had been
+// accepted, or nil if it was neither pending nor accepted (or is gone).
+func (s *Store) Reject(ctx context.Context, id primitive.ObjectID, comment string) (*Submission, error) {
+	var before Submission
+	err := s.coll.FindOneAndUpdate(ctx,
+		bson.M{"_id": id, "status": bson.M{"$in": bson.A{StatusPending, StatusAccepted}}},
+		bson.M{
+			"$set":   bson.M{"status": StatusRejected, "reviewComment": comment},
+			"$unset": bson.M{"points": "", "acceptedAt": "", "peak": ""},
+		},
+	).Decode(&before)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &before, nil
+}
+
+// Unpeak clears peak from accepted proof and takes PeakBonus back off its
+// points. It reports false if the submission isn't peak, so the bonus is
+// never removed twice.
+func (s *Store) Unpeak(ctx context.Context, id primitive.ObjectID) (bool, error) {
 	res, err := s.coll.UpdateOne(ctx,
-		bson.M{"_id": id, "status": StatusPending},
-		bson.M{"$set": bson.M{"status": StatusRejected, "reviewComment": comment}},
+		bson.M{"_id": id, "status": StatusAccepted, "peak": true},
+		bson.M{"$unset": bson.M{"peak": ""}, "$inc": bson.M{"points": -PeakBonus}},
 	)
 	if err != nil {
 		return false, err

@@ -19,6 +19,7 @@ import {
   missionCodes,
   peakSubmission,
   rejectSubmission,
+  unpeakSubmission,
   setClosesAt,
   type ScuntsSettings,
   type ScuntsSubmission,
@@ -155,6 +156,16 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
           ? "Already handled: that proof is already peak, was reviewed, or the mission was deleted."
           : "Could not mark that submission as peak.",
       );
+    }
+  }
+
+  async function onUnpeak(id: string) {
+    if (!confirm("Remove peak and its bonus points?")) return;
+    try {
+      await unpeakSubmission(await getToken(), id);
+      setItems(await load());
+    } catch {
+      setError("Could not remove peak from that submission.");
     }
   }
 
@@ -478,12 +489,16 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                             ? ` · +${s.points} pts`
                             : ""}
                         </p>
-                        {canManage && isPending(s) && rejectingId === s.id && (
+                        {canManage && rejectingId === s.id && (
                           <div className="mt-2.5 flex flex-col gap-2">
                             <textarea
                               value={comment}
                               onChange={(e) => setComment(e.target.value)}
-                              placeholder="Leave a comment: why isn't this accepted?"
+                              placeholder={
+                                isPending(s)
+                                  ? "Leave a comment: why isn't this accepted?"
+                                  : "Leave a comment: why is this no longer accepted? Its points come off and the mission reopens."
+                              }
                               maxLength={MAX_COMMENT_LEN}
                               rows={3}
                               className={inputClass}
@@ -515,22 +530,24 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                           (s.mine && (isPending(s) || isRejected(s)))) && (
                           <div className="mt-2.5 flex flex-wrap gap-2">
                             {canManage &&
-                              isPending(s) &&
+                              (isPending(s) || s.status === "accepted") &&
                               rejectingId !== s.id && (
                                 <>
-                                  <button
-                                    type="button"
-                                    onClick={() => onAccept(s.id)}
-                                    className="inline-flex items-center gap-1.5 bg-sched-accent px-[10px] py-[6px] font-mono text-[11px] font-semibold tracking-[0.06em] text-sched-fill transition-[filter] hover:brightness-[1.12]"
-                                  >
-                                    <Check
-                                      width={13}
-                                      height={13}
-                                      strokeWidth={3}
-                                    />
-                                    Accept
-                                    {task ? ` · ${task.points} pts` : ""}
-                                  </button>
+                                  {isPending(s) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => onAccept(s.id)}
+                                      className="inline-flex items-center gap-1.5 bg-sched-accent px-[10px] py-[6px] font-mono text-[11px] font-semibold tracking-[0.06em] text-sched-fill transition-[filter] hover:brightness-[1.12]"
+                                    >
+                                      <Check
+                                        width={13}
+                                        height={13}
+                                        strokeWidth={3}
+                                      />
+                                      Accept
+                                      {task ? ` · ${task.points} pts` : ""}
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -563,6 +580,15 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                                   🔥 Peak
                                 </button>
                               )}
+                            {canManage && s.peak && (
+                              <button
+                                type="button"
+                                onClick={() => onUnpeak(s.id)}
+                                className="inline-flex items-center gap-1.5 border border-sched-cyan px-[10px] py-[6px] font-mono text-[11px] font-medium tracking-[0.06em] text-sched-cyan transition-colors hover:bg-sched-cyan hover:text-sched-fill"
+                              >
+                                Unpeak
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
