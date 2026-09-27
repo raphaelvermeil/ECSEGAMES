@@ -47,6 +47,10 @@ const (
 	MaxVideoBytes int64 = 200 << 20 // 200 MB
 	MaxCaptionLen       = 200
 	MaxFiles            = 10
+	MaxCommentLen       = 500
+
+	// PeakBonus is the extra a peak proof earns on top of its mission.
+	PeakBonus = 10
 )
 
 // allowedTypes is the content types a submission may have, mapped to the
@@ -125,14 +129,22 @@ type Submission struct {
 	// mission later doesn't rewrite the leaderboard.
 	Points     int        `bson:"points,omitempty" json:"points,omitempty"`
 	AcceptedAt *time.Time `bson:"acceptedAt,omitempty" json:"acceptedAt,omitempty"`
+	// Peak marks standout proof an exec singled out. It earns PeakBonus on
+	// top of the mission's points, already included in Points.
+	Peak bool `bson:"peak,omitempty" json:"peak,omitempty"`
+	// ReviewComment is the exec's reason when proof is rejected, shown to
+	// the submitter so they know what to redo.
+	ReviewComment string `bson:"reviewComment,omitempty" json:"reviewComment,omitempty"`
 
 	// Extra holds any files after the first, for proof that needs several
 	// shots. The first file stays in the fields above so older single-file
 	// submissions read the same as new ones.
 	Extra []Media `bson:"extra,omitempty" json:"extra,omitempty"`
 
-	// PhotoURL is filled in on the way out only.
+	// PhotoURL and Mine are filled in on the way out only. Mine is true
+	// when the caller submitted this proof.
 	PhotoURL string `bson:"-" json:"photoUrl"`
+	Mine     bool   `bson:"-" json:"mine,omitempty"`
 }
 
 // Media is one additional file on a submission.
@@ -150,6 +162,9 @@ type SubmissionStatus string
 const (
 	StatusPending  SubmissionStatus = "pending"
 	StatusAccepted SubmissionStatus = "accepted"
+	// StatusRejected is proof an exec turned down. Only its submitter still
+	// sees it, and it no longer blocks a fresh submission for the mission.
+	StatusRejected SubmissionStatus = "rejected"
 )
 
 // AcceptedPoint is one accepted proof's contribution to the leaderboard.

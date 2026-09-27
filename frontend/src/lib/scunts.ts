@@ -18,8 +18,14 @@ export interface ScuntsSubmission {
   // tied to missions.
   taskId?: string;
   // Absent reads as accepted: older uploads were always public.
-  status?: "pending" | "accepted";
+  status?: "pending" | "accepted" | "rejected";
   points?: number;
+  // Standout proof an exec marked, worth +10; points already include it.
+  peak?: boolean;
+  // The exec's reason, on rejected proof.
+  reviewComment?: string;
+  // True when the caller submitted this proof.
+  mine?: boolean;
   // Any files after the first, for proof that needed several shots.
   extra?: ScuntsMedia[];
 }
@@ -127,6 +133,30 @@ export async function acceptSubmission(
     authHeader(token),
   );
 }
+
+// peakSubmission marks proof as peak (+10 points). Pending proof is
+// accepted as peak in one step.
+export async function peakSubmission(
+  token: string | null,
+  id: string,
+): Promise<void> {
+  await api.post(`/api/scunts/submissions/${id}/peak`, null, authHeader(token));
+}
+
+export async function rejectSubmission(
+  token: string | null,
+  id: string,
+  comment: string,
+): Promise<void> {
+  await api.post(
+    `/api/scunts/submissions/${id}/reject`,
+    { comment },
+    authHeader(token),
+  );
+}
+
+// Mirrors scunts.MaxCommentLen.
+export const MAX_COMMENT_LEN = 500;
 
 // Compression target for photos. 1600px on the long edge is still sharp on
 // a laptop, and it takes an 8 MB phone original down to a few hundred KB —

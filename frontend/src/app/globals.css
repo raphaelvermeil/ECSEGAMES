@@ -165,6 +165,114 @@ a:hover {
   }
 }
 
+/* Peak Scunts proof: an orange border with a flickering flame glow. */
+.scunts-peak {
+  border-color: #ff8a1f;
+  box-shadow:
+    0 0 10px rgba(255, 138, 31, 0.55),
+    0 0 22px rgba(255, 69, 0, 0.35);
+  animation: scunts-flame 1.6s ease-in-out infinite alternate;
+}
+@keyframes scunts-flame {
+  0% {
+    box-shadow:
+      0 0 8px rgba(255, 138, 31, 0.5),
+      0 0 18px rgba(255, 69, 0, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 14px rgba(255, 170, 40, 0.7),
+      0 0 30px rgba(255, 69, 0, 0.45);
+  }
+  100% {
+    box-shadow:
+      0 0 10px rgba(255, 110, 20, 0.6),
+      0 0 24px rgba(255, 40, 0, 0.4);
+  }
+}
+
+/* A row of flame tongues burning along the bottom edge of a peak card.
+   Two rows, offset and flickering at different speeds, so the fire dances
+   rather than bobbing as one piece. The flame shape is a mask; the colour
+   is a gradient from red at the base to yellow at the tips. */
+.scunts-peak {
+  position: relative;
+  padding-bottom: 14px;
+}
+.scunts-peak::before,
+.scunts-peak::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  transform-origin: 50% 100%;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 28'%3E%3Cpath d='M0 28C3 22 1 16 6 9c1 7 4 9 6 5 2-5 3-10 8-14 0 8 6 11 5 18 3-2 4-6 3-10 5 5 8 12 8 20Z'/%3E%3C/svg%3E")
+    repeat-x bottom / 30px 100%;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 28'%3E%3Cpath d='M0 28C3 22 1 16 6 9c1 7 4 9 6 5 2-5 3-10 8-14 0 8 6 11 5 18 3-2 4-6 3-10 5 5 8 12 8 20Z'/%3E%3C/svg%3E")
+    repeat-x bottom / 30px 100%;
+}
+.scunts-peak::before {
+  height: 24px;
+  background: linear-gradient(to top, #d42a00, #ff6a00 45%, #ffb000 85%);
+  animation: scunts-flicker-a 0.8s ease-in-out infinite alternate;
+}
+.scunts-peak::after {
+  height: 16px;
+  background: linear-gradient(to top, #ff6a00, #ffc300 55%, #fff3a0);
+  -webkit-mask-position: 15px bottom;
+  mask-position: 15px bottom;
+  animation: scunts-flicker-b 0.55s ease-in-out infinite alternate;
+}
+@keyframes scunts-flicker-a {
+  0% {
+    transform: scaleY(0.85);
+  }
+  50% {
+    transform: scaleY(1.1) skewX(3deg);
+  }
+  100% {
+    transform: scaleY(0.95) skewX(-3deg);
+  }
+}
+@keyframes scunts-flicker-b {
+  0% {
+    transform: scaleY(1.05) skewX(-4deg);
+  }
+  50% {
+    transform: scaleY(0.8);
+  }
+  100% {
+    transform: scaleY(1.15) skewX(4deg);
+  }
+}
+
+/* The badge on the photo burns too. */
+.scunts-peak-badge {
+  background: linear-gradient(90deg, #ffd000, #ff6a00, #ff2e00);
+  background-size: 200% 100%;
+  color: #1a0500;
+  box-shadow: 0 0 12px rgba(255, 100, 0, 0.8);
+  animation: scunts-badge-burn 1.4s ease-in-out infinite alternate;
+}
+@keyframes scunts-badge-burn {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scunts-peak,
+  .scunts-peak::before,
+  .scunts-peak::after,
+  .scunts-peak-badge {
+    animation: none;
+  }
+}
+
 @keyframes sched-fade {
   from {
     opacity: 0;
