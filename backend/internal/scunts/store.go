@@ -240,13 +240,28 @@ func (s *Store) PendingTaskIDs(ctx context.Context, team models.Team) (map[primi
 	return out, nil
 }
 
-// Accept moves a pending submission to accepted with the given points. It
-// reports false if the submission was no longer pending (or is gone), so a
-// double click can't accept twice.
-func (s *Store) Accept(ctx context.Context, id primitive.ObjectID, points int) (bool, error) {
+// Accept moves a pending submission to accepted with the given points,
+// marked peak if asked. It reports false if the submission was no longer
+// pending (or is gone), so a double click can't accept twice.
+func (s *Store) Accept(ctx context.Context, id primitive.ObjectID, points int, peak bool) (bool, error) {
+	set := bson.M{"status": StatusAccepted, "points": points, "acceptedAt": time.Now().UTC()}
+	if peak {
+		set["peak"] = true
+	}
+	res, err := s.coll.UpdateOne(ctx, bson.M{"_id": id, "status": StatusPending}, bson.M{"$set": set})
+	if err != nil {
+		return false, err
+	}
+	return res.ModifiedCount == 1, nil
+}
+
+// MarkPeak marks accepted proof as peak and adds PeakBonus to its points.
+// It reports false if the submission isn't accepted or is already peak, so
+// the bonus is never paid twice.
+func (s *Store) MarkPeak(ctx context.Context, id primitive.ObjectID) (bool, error) {
 	res, err := s.coll.UpdateOne(ctx,
-		bson.M{"_id": id, "status": StatusPending},
-		bson.M{"$set": bson.M{"status": StatusAccepted, "points": points, "acceptedAt": time.Now().UTC()}},
+		bson.M{"_id": id, "status": StatusAccepted, "peak": bson.M{"$ne": true}},
+		bson.M{"$set": bson.M{"peak": true}, "$inc": bson.M{"points": PeakBonus}},
 	)
 	if err != nil {
 		return false, err

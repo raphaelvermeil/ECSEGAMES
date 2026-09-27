@@ -20,6 +20,8 @@ export interface ScuntsSubmission {
   // Absent reads as accepted: older uploads were always public.
   status?: "pending" | "accepted" | "rejected";
   points?: number;
+  // Standout proof an exec marked, worth +10; points already include it.
+  peak?: boolean;
   // The exec's reason, on rejected proof.
   reviewComment?: string;
   // True when the caller submitted this proof.
@@ -130,6 +132,15 @@ export async function acceptSubmission(
     null,
     authHeader(token),
   );
+}
+
+// peakSubmission marks proof as peak (+10 points). Pending proof is
+// accepted as peak in one step.
+export async function peakSubmission(
+  token: string | null,
+  id: string,
+): Promise<void> {
+  await api.post(`/api/scunts/submissions/${id}/peak`, null, authHeader(token));
 }
 
 export async function rejectSubmission(

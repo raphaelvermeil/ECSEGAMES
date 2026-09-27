@@ -58,6 +58,7 @@ func Mount(r chi.Router, h *Handler, userRepo *users.Repository, clerkSecretKey 
 			er.Use(appmw.RequireRole(userRepo, models.RoleExec))
 			er.Post("/api/scunts/submissions/{id}/accept", h.Accept)
 			er.Post("/api/scunts/submissions/{id}/reject", h.Reject)
+			er.Post("/api/scunts/submissions/{id}/peak", h.Peak)
 
 			// Only execs shape the list itself.
 			er.Post("/api/scunts/tasks", h.CreateTask)
@@ -467,6 +468,17 @@ func (h *Handler) ListTasks(w http.ResponseWriter, r *http.Request) {
 // Accept approves a pending proof: the mission becomes done for that team
 // and the mission's points go to the team on the leaderboard. Exec-only.
 func (h *Handler) Accept(w http.ResponseWriter, r *http.Request) {
+	h.accept(w, r, false)
+}
+
+// Peak marks standout proof, worth PeakBonus on top of the mission's
+// points. Pending proof is accepted as peak in one step; accepted proof has
+// the bonus added. Exec-only.
+func (h *Handler) Peak(w http.ResponseWriter, r *http.Request) {
+	h.accept(w, r, true)
+}
+
+func (h *Handler) accept(w http.ResponseWriter, r *http.Request, peak bool) {
 	id, err := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
 	if err != nil {
 		http.Error(w, "invalid id", http.StatusBadRequest)
@@ -482,6 +494,20 @@ func (h *Handler) Accept(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.Error(w, "storage error", http.StatusInternalServerError)
+		return
+	}
+	if peak && sub.Status == StatusAccepted {
+		ok, err := h.store.MarkPeak(ctx, id)
+		if err != nil {
+			http.Error(w, "storage error", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			http.Error(w, "already peak", http.StatusConflict)
+			return
+		}
+		h.recordReview(ctx, r, id, audit.VerbAwarded, "marked Scunts proof from "+string(sub.Team)+" as peak")
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	if sub.Status != StatusPending {
@@ -515,7 +541,11 @@ func (h *Handler) Accept(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
-	ok, err := h.store.Accept(ctx, id, task.Points)
+	points := task.Points
+	if peak {
+		points += PeakBonus
+	}
+	ok, err := h.store.Accept(ctx, id, points, peak)
 	if err != nil || !ok {
 		// Lost a race with a takedown; don't leave the mission claimed.
 		_ = h.store.ClearDone(ctx, task.ID, sub.Team)
@@ -527,16 +557,25 @@ func (h *Handler) Accept(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	text := "accepted Scunts proof from " + string(sub.Team) + ": " + task.Text
+	if peak {
+		text = "accepted Scunts proof from " + string(sub.Team) + " as peak: " + task.Text
+	}
+	h.recordReview(ctx, r, id, audit.VerbAwarded, text)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// recordReview logs an exec's decision on a submission.
+func (h *Handler) recordReview(ctx context.Context, r *http.Request, id primitive.ObjectID, verb audit.Verb, text string) {
 	clerkID, _ := appmw.UserIDFromContext(r.Context())
 	_ = h.audit.Record(ctx, audit.Entry{
 		EntityType: audit.EntityScuntsSubmission,
 		EntityID:   id,
-		Verb:       audit.VerbAwarded,
+		Verb:       verb,
 		Actor:      h.actorName(ctx, clerkID),
 		At:         time.Now().UTC(),
-		Text:       "accepted Scunts proof from " + string(sub.Team) + ": " + task.Text,
+		Text:       text,
 	})
-	w.WriteHeader(http.StatusNoContent)
 }
 
 type rejectRequest struct {
@@ -575,15 +614,7 @@ func (h *Handler) Reject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clerkID, _ := appmw.UserIDFromContext(r.Context())
-	_ = h.audit.Record(ctx, audit.Entry{
-		EntityType: audit.EntityScuntsSubmission,
-		EntityID:   id,
-		Verb:       audit.VerbEdited,
-		Actor:      h.actorName(ctx, clerkID),
-		At:         time.Now().UTC(),
-		Text:       "rejected Scunts proof: " + comment,
-	})
+	h.recordReview(ctx, r, id, audit.VerbEdited, "rejected Scunts proof: "+comment)
 	w.WriteHeader(http.StatusNoContent)
 }
 

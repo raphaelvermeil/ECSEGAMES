@@ -48,6 +48,9 @@ const (
 	MaxCaptionLen       = 200
 	MaxFiles            = 10
 	MaxCommentLen       = 500
+
+	// PeakBonus is the extra a peak proof earns on top of its mission.
+	PeakBonus = 10
 )
 
 // allowedTypes is the content types a submission may have, mapped to the
@@ -126,6 +129,9 @@ type Submission struct {
 	// mission later doesn't rewrite the leaderboard.
 	Points     int        `bson:"points,omitempty" json:"points,omitempty"`
 	AcceptedAt *time.Time `bson:"acceptedAt,omitempty" json:"acceptedAt,omitempty"`
+	// Peak marks standout proof an exec singled out. It earns PeakBonus on
+	// top of the mission's points, already included in Points.
+	Peak bool `bson:"peak,omitempty" json:"peak,omitempty"`
 	// ReviewComment is the exec's reason when proof is rejected, shown to
 	// the submitter so they know what to redo.
 	ReviewComment string `bson:"reviewComment,omitempty" json:"reviewComment,omitempty"`

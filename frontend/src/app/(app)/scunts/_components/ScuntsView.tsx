@@ -15,6 +15,7 @@ import {
   listTasks,
   MAX_COMMENT_LEN,
   missionCodes,
+  peakSubmission,
   rejectSubmission,
   type ScuntsSubmission,
   type ScuntsTask,
@@ -26,10 +27,12 @@ const sectionHeadingClass =
 const inputClass =
   "box-border w-full border border-sched-hair bg-sched-bg px-[12px] py-[11px] font-mono text-sm text-sched-cream placeholder:text-[#5d7063] [color-scheme:dark] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sched-accent";
 
-// Filter values for the exec review queue and the caller's own proof,
-// alongside "all" and the teams.
+// Filter values for the exec review queue, the caller's own proof and peak
+// proof, alongside "all" and the teams.
 const PENDING = "pending";
 const MINE = "mine";
+const PEAK = "peak";
+const PEAK_COLOR = "#ff8a1f";
 
 export default function ScuntsView({ canManage }: { canManage: boolean }) {
   const { getToken } = useAuth();
@@ -40,7 +43,7 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
   // 200 anyway, so refetching per tab would cost a round trip and a fresh
   // set of presigned URLs to show pictures the browser already has.
   const [teamFilter, setTeamFilter] = useState<
-    Team | "all" | typeof PENDING | typeof MINE
+    Team | "all" | typeof PENDING | typeof MINE | typeof PEAK
   >("all");
   const [query, setQuery] = useState("");
   // The submission an exec is writing a rejection comment for.
@@ -103,6 +106,21 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
     }
   }
 
+  async function onPeak(id: string) {
+    try {
+      await peakSubmission(await getToken(), id);
+      setItems(await load());
+    } catch (err) {
+      const status = (err as { response?: { status?: number } }).response
+        ?.status;
+      setError(
+        status === 409
+          ? "Already handled: that proof is already peak, was reviewed, or the mission was deleted."
+          : "Could not mark that submission as peak.",
+      );
+    }
+  }
+
   async function onReject(id: string) {
     try {
       await rejectSubmission(await getToken(), id, comment);
@@ -156,9 +174,11 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
       ? pending
       : teamFilter === MINE
         ? mine
-        : teamFilter === "all"
-          ? reviewed
-          : reviewed.filter((s) => s.team === teamFilter);
+        : teamFilter === PEAK
+          ? reviewed.filter((s) => s.peak)
+          : teamFilter === "all"
+            ? reviewed
+            : reviewed.filter((s) => s.team === teamFilter);
   // Same matching as the mission search: the mission number (G12), or the
   // start of any word in the mission, caption or submitter's name.
   const q = query.trim().toLowerCase();
@@ -177,7 +197,14 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
         .some((w) => w.startsWith(q))
     );
   };
-  const shown = items === null ? null : q ? tabbed.filter(matches) : tabbed;
+  // Peak proof always leads, whichever tab is showing; the sort is stable,
+  // so each group stays newest first.
+  const shown =
+    items === null
+      ? null
+      : (q ? tabbed.filter(matches) : tabbed).toSorted(
+          (a, b) => Number(!!b.peak) - Number(!!a.peak),
+        );
 
   return (
     <>
@@ -264,6 +291,11 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                     label: t.label,
                     color: TEAM_COLORS[t.value],
                   })),
+                  {
+                    value: PEAK as typeof PEAK,
+                    label: "🔥 Peak",
+                    color: PEAK_COLOR,
+                  },
                 ].map((tab) => {
                   const active = teamFilter === tab.value;
                   const n =
@@ -271,9 +303,11 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                       ? pending.length
                       : tab.value === MINE
                         ? mine.length
-                        : tab.value === "all"
-                          ? reviewed.length
-                          : (counts[tab.value] ?? 0);
+                        : tab.value === PEAK
+                          ? reviewed.filter((s) => s.peak).length
+                          : tab.value === "all"
+                            ? reviewed.length
+                            : (counts[tab.value] ?? 0);
                   return (
                     <button
                       key={tab.value}
@@ -313,27 +347,40 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                     ? "No new submissions to review."
                     : teamFilter === MINE
                       ? "You haven't submitted anything yet."
-                      : "Nothing from this team yet."}
+                      : teamFilter === PEAK
+                        ? "No peak proof yet."
+                        : "Nothing from this team yet."}
               </p>
             ) : (
-              <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              // No scroll anchoring: marking proof peak moves its card to the
+              // top, and the browser would otherwise scroll up to follow it.
+              <ul className="mt-3 grid gap-3 [overflow-anchor:none] sm:grid-cols-2 lg:grid-cols-3">
                 {shown.map((s) => {
                   const task = s.taskId ? tasks.get(s.taskId) : undefined;
                   const code = s.taskId ? codes.get(s.taskId) : undefined;
                   return (
                     <li
                       key={s.id}
-                      className="overflow-hidden rounded-sm border border-sched-hair bg-sched-bg-raised"
+                      className={`overflow-hidden rounded-sm border bg-sched-bg-raised ${
+                        s.peak ? "scunts-peak" : "border-sched-hair"
+                      }`}
                       // Same team palette the leaderboard uses, so a team reads
                       // as one colour everywhere in the app.
                       style={{
                         borderLeft: `3px solid ${TEAM_COLORS[s.team as Team]}`,
                       }}
                     >
-                      <ProofMedia
-                        submission={s}
-                        alt={task?.text ?? s.caption}
-                      />
+                      <div className="relative">
+                        <ProofMedia
+                          submission={s}
+                          alt={task?.text ?? s.caption}
+                        />
+                        {s.peak && (
+                          <span className="pointer-events-none scunts-peak-badge absolute left-2 top-2 rounded-full px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em]">
+                            🔥 Peak
+                          </span>
+                        )}
+                      </div>
 
                       <div className="p-3">
                         {isPending(s) && (
@@ -454,6 +501,18 @@ export default function ScuntsView({ canManage }: { canManage: boolean }) {
                               <Trash width={13} height={13} strokeWidth={2} />
                               {!canManage && isPending(s) ? "Cancel" : "Remove"}
                             </button>
+                            {canManage &&
+                              !s.peak &&
+                              (isPending(s) || s.status === "accepted") &&
+                              rejectingId !== s.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => onPeak(s.id)}
+                                  className="inline-flex items-center gap-1.5 bg-sched-cyan px-[10px] py-[6px] font-mono text-[11px] font-semibold tracking-[0.06em] text-sched-fill transition-[filter] hover:brightness-[1.12]"
+                                >
+                                  🔥 Peak
+                                </button>
+                              )}
                           </div>
                         )}
                       </div>
